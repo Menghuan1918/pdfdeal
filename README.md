@@ -10,6 +10,19 @@ Its going to use [easyocr](https://github.com/JaidedAI/EasyOCR) to recognise the
 > Unprocessed document encoding results <----> Processed file encoding results
 
 ## Usage
+### Install
+Install from PyPI:
+
+```bash
+pip install pdfdeal
+```
+
+Install from source:
+
+```bash
+pip install git+https://github.com/Menghuan1918/pdfdeal.git
+```
+
 ### Parameters
 Import the function by`from pdfdeal import deal_pdf`. Explanation of the parameters accepted by the function:
 
