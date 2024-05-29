@@ -14,25 +14,25 @@ Its going to use [easyocr](https://github.com/JaidedAI/EasyOCR) to recognise the
 Install from PyPI:
 
 ```bash
-pip install pdfdeal
+pip install 'pdfdeal[easyocr]'
 ```
 
-Using `pytesseract` instead of default `easyocr`:
+Using `pytesseract`, make sure you have install [tesseract](https://github.com/tesseract-ocr/tesseract) first:
 
 ```bash
-pip install pdfdeal[pytesseract]
+pip install 'pdfdeal[pytesseract]'
 ```
 
 Using own custom OCR function or skip OCR:
 
 ```bash
-pip install pdfdeal[custom]
+pip install pdfdeal
 ```
 
 Install from source:
 
 ```bash
-pip install git+https://github.com/Menghuan1918/pdfdeal.git
+pip install 'pdfdeal[all] @ git+https://github.com/Menghuan1918/pdfdeal.git'
 ```
 
 ### Parameters
