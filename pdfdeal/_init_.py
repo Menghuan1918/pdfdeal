@@ -1,0 +1,1 @@
+from get_file import deal_pdf

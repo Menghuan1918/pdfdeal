@@ -32,11 +32,11 @@ def deal_pdf(
 ):
     """
     input: str, the url or path to a PDF file
-    output: str, the type of output, "text" "md" or "pdf", default is "text"
+    output: str, the type of output, "text" "texts" "md" or "pdf", default is "text"
     ocr: custom ocr function, default is None
     language: list, the language used in OCR, default is ["ch_sim", "en"]
     GPU: bool, whether to use GPU in OCR, default is False
-    path: str, the path of folder to save the output, default is None
+    path: str, the path of folder to save the output, default is None, only used when output is "md" or "pdf"
     """
     if isinstance(input, str):
         if input.endswith(".pdf"):
@@ -49,7 +49,9 @@ def deal_pdf(
         RuntimeError("The input must be a string or url or path to a PDF file")
     Text = extract_text_and_images(pdf_path, ocr, language, GPU)
     Final = ""
-    if output == "text":
+    if output == "texts":
+        return Text
+    elif output == "text":
         for text in Text:
             Final += text + "\n"
         return Final

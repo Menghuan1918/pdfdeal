@@ -1,0 +1,21 @@
+[project]
+name = "pdfdeal"
+version = "0.0.1"
+authors = [{ name = "Menghuan1918", email = "menghuan@menghuan1918.com" }]
+description = "Easier to deal with PDF, extract readable text and OCR to recognise image text and clean the format. Make it more suitable for knowledge base construction."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+
+Homepage = "https://github.com/Menghuan1918/pdfdeal"
+Issues = "https://github.com/Menghuan1918/pdfdeal/issues"
+
+[build-system]
+requires = ["hatchling", "emoji", "pypdf", "Pillow", "easyocr", "requests"]
+build-backend = "hatchling.build"
