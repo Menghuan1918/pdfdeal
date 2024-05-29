@@ -53,6 +53,16 @@ def clean_text(text):
     return text
 
 
+def clear_cache():
+    temp_image_folder = os.path.join(
+        os.path.expanduser("~"), ".cache", "pdfdeal", "pictures"
+    )
+    for file in os.listdir(temp_image_folder):
+        file_path = os.path.join(temp_image_folder, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+
 def extract_text_and_images(
     pdf_path, ocr=OCR_easyocr, language=["ch_sim", "en"], GPU=False
 ):
@@ -65,30 +75,30 @@ def extract_text_and_images(
         for page in reader.pages:
             # Get the text content of the page
             text = page.extract_text()
-
+            temp_image_folder = os.path.join(
+                os.path.expanduser("~"), ".cache", "pdfdeal", "pictures"
+            )
+            os.makedirs(temp_image_folder, exist_ok=True)
+            clear_cache()
             # Get the images on the page
             images = page.images
-            for image in images:
+            for id, image in enumerate(images):
                 image_data = image.data
                 image_stream = io.BytesIO(image_data)
                 pil_image = Image.open(image_stream)
-
                 # Save to HOME/.cache/pdfdeal/pictures, if the directory does not exist, create it
                 temp_image_path = os.path.join(
                     os.path.expanduser("~"),
                     ".cache",
                     "pdfdeal",
                     "pictures",
-                    f"{image.id}.png",
+                    f"{id}.png",
                 )
-                os.makedirs(os.path.dirname(temp_image_path), exist_ok=True)
                 pil_image.save(temp_image_path)
 
             # Use ocr to extract text from images
-            temp_image_path = os.path.join(
-                os.path.expanduser("~"), ".cache", "pdfdeal", "pictures"
-            )
-            ocr_text = ocr(temp_image_path, language, GPU)
+            ocr_text = ocr(temp_image_folder, language, GPU)
             text += f"\n{ocr_text}"
             Text.append(clean_text(text))
+        clear_cache()
     return Text

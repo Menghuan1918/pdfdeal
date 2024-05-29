@@ -10,12 +10,15 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = ["emoji", "pypdf", "Pillow", "easyocr", "requests", "reportlab"]
 
 [project.urls]
-
 Homepage = "https://github.com/Menghuan1918/pdfdeal"
 Issues = "https://github.com/Menghuan1918/pdfdeal/issues"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/pdfdeal"]
+
 [build-system]
-requires = ["hatchling", "emoji", "pypdf", "Pillow", "easyocr", "requests"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"

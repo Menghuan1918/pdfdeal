@@ -1,8 +1,8 @@
 import requests
 import os
-from file_tools import extract_text_and_images
-from pypdf import PdfWriter
-
+from .file_tools import extract_text_and_images
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 def download_pdfs_from_url(url):
     temp_pdf_path = os.path.join(os.path.expanduser("~"), ".cache", "pdfdeal")
@@ -26,6 +26,12 @@ def download_pdfs_from_url(url):
         return None
     return temp_pdf_path
 
+def strore_pdf(pdf_path, Text):
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+    for text in Text:
+        c.drawString(100, 100, text)
+        c.showPage()
+    c.save()
 
 def deal_pdf(
     input, output="text", ocr=None, language=["ch_sim", "en"], GPU=False, path=None
@@ -39,7 +45,7 @@ def deal_pdf(
     path: str, the path of folder to save the output, default is None, only used when output is "md" or "pdf"
     """
     if isinstance(input, str):
-        if input.endswith(".pdf"):
+        if not input.endswith(".pdf"):
             RuntimeError("The input must be a string of url or path to a PDF file")
         elif input.startswith("http") and input.endswith(".pdf"):
             pdf_path = download_pdfs_from_url(input)
@@ -47,7 +53,12 @@ def deal_pdf(
             pdf_path = input
     else:
         RuntimeError("The input must be a string or url or path to a PDF file")
-    Text = extract_text_and_images(pdf_path, ocr, language, GPU)
+    if ocr is None:
+        Text = extract_text_and_images(pdf_path=pdf_path, language=language, GPU=GPU)
+    else:
+        Text = extract_text_and_images(
+            pdf_path=pdf_path, ocr=ocr, language=language, GPU=GPU
+        )
     Final = ""
     if output == "texts":
         return Text
@@ -63,27 +74,16 @@ def deal_pdf(
             os.makedirs(path)
         if output == "md":
             try:
-                with open(os.path.join(path, filename, ".md"), "w") as file:
+                with open(os.path.join(path, filename), "w") as file:
                     for text in Text:
                         file.write(text + "\n")
-                return os.path.join(path, filename, ".md")
+                return os.path.join(path, filename)
             except Exception as e:
                 RuntimeError(f"Failed to save the markdown file: {e}")
         elif output == "pdf":
-            output_pdf_path = os.path.join(path, filename, ".pdf")
+            output_pdf_path = os.path.join(path, filename)
             try:
-                pdf_writer = PdfWriter()
-                for i, text in enumerate(Text):
-                    page = pdf_writer.add_blank_page()
-                    page.merge_page(text)
-                    page_number = i + 1
-                    page["/Contents"] = f"{page_number} 0 R"
-                    page["/Parent"] = (
-                        f"{page_number - 1} 0 R" if page_number > 1 else "null"
-                    )
-
-                with open(output_pdf_path, "wb") as output_pdf:
-                    pdf_writer.write(output_pdf)
+                strore_pdf(output_pdf_path, Text)
                 return output_pdf_path
             except Exception as e:
                 RuntimeError(f"Failed to save the PDF file: {e}")
