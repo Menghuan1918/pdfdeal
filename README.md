@@ -17,6 +17,18 @@ Install from PyPI:
 pip install pdfdeal
 ```
 
+Using `pytesseract` instead of default `easyocr`:
+
+```bash
+pip install pdfdeal[pytesseract]
+```
+
+Using own custom OCR function or skip OCR:
+
+```bash
+pip install pdfdeal[custom]
+```
+
 Install from source:
 
 ```bash
@@ -39,12 +51,12 @@ Import the function by`from pdfdeal import deal_pdf`. Explanation of the paramet
   - Example: `"md"`
 
 - **ocr**: `function`, optional, default: `None`
-  - Description: A custom OCR (Optical Character Recognition) function. If not provided, the default OCR function will be used.
-  - Example: `custom_ocr_function`, input is :`(path, language=["ch_sim", "en"], GPU=False)`, return a `string`
+  - Description: A custom OCR (Optical Character Recognition) function. If not provided, the default OCR function will be used. Use string "pytesseract" to use pytesseract, string "pass" to skip OCR
+  - Example custom OCR function: `custom_ocr_function`, input is :`(path, language=["ch_sim", "en"], GPU=False)`, return a `string`
 
 
 - **language**: `list`, optional, default: `["ch_sim", "en"]`
-  - Description: A list of languages to be used in OCR. The default languages are Simplified Chinese (`"ch_sim"`) and English (`"en"`).
+  - Description: A list of languages to be used in OCR. The default languages are Simplified Chinese (`"ch_sim"`) and English (`"en"`). ["eng"] for pytesseract.
   - Example: `["en", "fr"]`
 
 - **GPU**: `bool`, optional, default: `False`
@@ -56,6 +68,7 @@ Import the function by`from pdfdeal import deal_pdf`. Explanation of the paramet
   - Example: `"/path/to/save/output"`
 
 ### Processes all the files in a file and saves them in the Output folder
+
 ```python
 import os
 from pdfdeal import deal_pdf
@@ -68,10 +81,30 @@ for root, dirs, files in os.walk("./PPT"):
         print(f"Deal with {file_path} successfully!")
 ```
 
-### Get the the list of the pdf
+### Get the the list of text in the pdf
+
 ```python
 from pdfdeal import deal_pdf
 Text = deal_pdf(input="test.pdf", output="texts", language=["en"], GPU=True)
 for text in Text:
   print(text)
+```
+
+### Using pytesseract to do OCR
+
+```python
+output_path = deal_pdf(
+    input="test.pdf",
+    output="md",
+    ocr="pytesseract",
+    language=["eng"],
+    path="markdown"
+)
+print(f"Save processed file to {output_path}")
+```
+
+### Skip OCR
+
+```python
+print(deal_pdf(input="test.pdf",ocr="pass"))
 ```
