@@ -1,8 +1,12 @@
 import requests
 import os
 from .file_tools import extract_text_and_images
+from .file_tools import OCR_easyocr
+from .file_tools import OCR_pytesseract
+from .file_tools import OCR_pass
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+
 
 def download_pdfs_from_url(url):
     temp_pdf_path = os.path.join(os.path.expanduser("~"), ".cache", "pdfdeal")
@@ -26,12 +30,16 @@ def download_pdfs_from_url(url):
         return None
     return temp_pdf_path
 
+
 def strore_pdf(pdf_path, Text):
     c = canvas.Canvas(pdf_path, pagesize=letter)
     for text in Text:
-        c.drawString(100, 100, text)
+        lines = text.split("\n")
+        for i, line in enumerate(lines):
+            c.drawString(100, 750 - i * 13, line)
         c.showPage()
     c.save()
+
 
 def deal_pdf(
     input, output="text", ocr=None, language=["ch_sim", "en"], GPU=False, path=None
@@ -39,9 +47,9 @@ def deal_pdf(
     """
     input: str, the url or path to a PDF file
     output: str, the type of output, "text" "texts" "md" or "pdf", default is "text"
-    ocr: custom ocr function, default is None
-    language: list, the language used in OCR, default is ["ch_sim", "en"]
-    GPU: bool, whether to use GPU in OCR, default is False
+    ocr: function, custom ocr function, not define will use easyocr, string "pytesseract" to use pytesseract, string "pass" to skip OCR
+    language: list, the language used in OCR, default is ["ch_sim", "en"] for easyocr, ["eng"] for pytesseract
+    GPU: bool, whether to use GPU in OCR, default is False, not working for pytesseract
     path: str, the path of folder to save the output, default is None, only used when output is "md" or "pdf"
     """
     if isinstance(input, str):
@@ -54,7 +62,17 @@ def deal_pdf(
     else:
         RuntimeError("The input must be a string or url or path to a PDF file")
     if ocr is None:
-        Text = extract_text_and_images(pdf_path=pdf_path, language=language, GPU=GPU)
+        Text = extract_text_and_images(
+            pdf_path=pdf_path, ocr=OCR_easyocr, language=language, GPU=GPU
+        )
+    elif ocr == "pytesseract":
+        Text = extract_text_and_images(
+            pdf_path=pdf_path, ocr=OCR_pytesseract, language=language, GPU=GPU
+        )
+    elif ocr == "pass":
+        Text = extract_text_and_images(
+            pdf_path=pdf_path, ocr=OCR_pass, language=language, GPU=GPU
+        )
     else:
         Text = extract_text_and_images(
             pdf_path=pdf_path, ocr=ocr, language=language, GPU=GPU
