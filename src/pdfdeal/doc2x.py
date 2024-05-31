@@ -84,6 +84,8 @@ def pic2file(
     `output_format`: output format, default is 'text', which will return the text content.
     Also accept "md", "md_dollar", "latex", "docx", which will save to output_path
     `img_correction`: whether to correct the image, default is True
+
+    return: text content or output file path
     """
     url = Base_URL + "/platform/img"
     img_correction = "true" if img_correction else "false"
@@ -108,7 +110,9 @@ def pic2file(
             time.sleep(10)
             print("10s left")
             time.sleep(10)
-            temp = pic2file(api_key, image_file, output_path, output_format, img_correction)
+            temp = pic2file(
+                api_key, image_file, output_path, output_format, img_correction
+            )
             return temp
         raise RuntimeError(
             f"Pic2file failed, status code: {get_res.status_code}:{get_res.text}"
@@ -142,6 +146,8 @@ def pdf2file(api_key, pdf_file, output_path=None, output_format="text", ocr=True
     `output_format`: output format, default is 'text', which will return the text content.
     Also accept "md", "md_dollar", "latex", "docx", which will save to output_path
     `ocr`: whether to use OCR, default is True
+
+    return: text content or output file path
     """
     url = Base_URL + "/platform/pdf"
     ocr = "true" if ocr else "false"
@@ -191,6 +197,7 @@ def pdf2file(api_key, pdf_file, output_path=None, output_format="text", ocr=True
         except Exception as e:
             raise RuntimeError(f"Deal with uuid: \n {uuid} \n failed: {e}")
 
+
 def get_limit(api_key):
     url = Base_URL + "/platform/limit"
     get_res = requests.get(url, headers={"Authorization": "Bearer " + api_key})
@@ -201,6 +208,7 @@ def get_limit(api_key):
             f"Get limit failed, status code: {get_res.status_code}:{get_res.text}"
         )
 
+
 class Doc2x:
     def __init__(self, api_key) -> None:
         self.key = refresh_key(api_key)
@@ -208,6 +216,16 @@ class Doc2x:
     def pic2file(
         self, image_file, output_path=None, output_format="text", img_correction=True
     ):
+        """
+        `api_key`: personal key, get from function 'refresh_key'
+        `image_file`: image file path
+        `output_path`: output file path, default is None, which means same directory as the input file
+        `output_format`: output format, default is 'text', which will return the text content.
+        Also accept "md", "md_dollar", "latex", "docx", which will save to output_path
+        `img_correction`: whether to correct the image, default is True
+
+        return: text content or output file path
+        """
         return pic2file(
             self.key, image_file, output_path, output_format, img_correction
         )
@@ -220,11 +238,23 @@ class Doc2x:
             for file in os.listdir(path):
                 file_path = os.path.join(path, file)
                 if file.endswith((".jpg", ".png", ".jpeg")):
-                    text += pic2file(self.key, file_path, output_format="text", img_correction=True)
+                    text += pic2file(
+                        self.key, file_path, output_format="text", img_correction=True
+                    )
                     text += "\n"
             return text
 
     def pdf2file(self, pdf_file, output_path=None, output_format="text", ocr=True):
+        """
+        `api_key`: personal key, get from function 'refresh_key'
+        `pdf_file`: pdf file path
+        `output_path`: output file path, default is None, which means same directory as the input file
+        `output_format`: output format, default is 'text', which will return the text content.
+        Also accept "md", "md_dollar", "latex", "docx", which will save to output_path
+        `ocr`: whether to use OCR, default is True
+
+        return: text content or output file path
+        """
         return pdf2file(self.key, pdf_file, output_path, output_format, ocr)
 
     def get_limit(self):

@@ -1,15 +1,23 @@
 # pdfdeal
 
+🗺️ ENGLISH | [简体中文](README_CN.md)
+
 Easier to deal with PDF, extract readable text and OCR to recognise image text and clean the format. Make it more suitable for knowledge base construction.
 
 Its going to use [easyocr](https://github.com/JaidedAI/EasyOCR) to recognise the image and add it to the original text. If the output format uses pdf format, this ensures that the text is on the same number of pages in the new PDF as the original. You can use knowledge base applications (such as [Dify](https://github.com/langgenius/dify),[FastGPT](https://github.com/labring/FastGPT)) after the PDF processing, so that theoretically can reach a better recognition rate.
 
 ![image](https://github.com/Menghuan1918/pdfdeal/assets/122662527/371a17c5-e0cb-464b-a1c4-61d2963c772f)
 
-> The figure above shows a comparison of the results before and after the processing of the same PDF
+> The figure above shows a comparison of the results before and after the processing of the same PDF(version > 0.0.2 will have better results).
 > Unprocessed document encoding results <----> Processed file encoding results
 
+## Support for Doc2x
+
+Added support for Doc2x, which currently has a daily 500-page **free** usage quota, and its recognition of tables/formulas is excellent. You can also use Doc2x support module alone to convert pdf to markdown/latex/docx directly. See [Doc2x Support](./docs/doc2x.md).
+
 ## Usage
+See the [example codes](https://github.com/Menghuan1918/pdfdeal?tab=readme-ov-file#processes-all-the-files-in-a-file-and-saves-them-in-the-output-folder).
+
 ### Install
 Install from PyPI:
 
@@ -23,7 +31,7 @@ Using `pytesseract`, make sure you have install [tesseract](https://github.com/t
 pip install 'pdfdeal[pytesseract]'
 ```
 
-Using own custom OCR function or skip OCR:
+Using own custom OCR function or Doc2x or skip OCR:
 
 ```bash
 pip install pdfdeal
@@ -108,3 +116,7 @@ print(f"Save processed file to {output_path}")
 ```python
 print(deal_pdf(input="test.pdf",ocr="pass"))
 ```
+
+### Doc2x support
+
+See [Doc2x Support](./docs/doc2x.md).
