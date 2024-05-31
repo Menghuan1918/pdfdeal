@@ -8,6 +8,8 @@ pip install pdfdeal
 
 > 当然我肯定推荐你使用我的邀请链接进行注册：[https://doc2x.noedgeai.com/login?invite_code=4AREZ6](https://doc2x.noedgeai.com/login?invite_code=4AREZ6)
 
+![图片](https://github.com/Menghuan1918/pdfdeal/assets/122662527/0b41b142-8210-4009-9ece-ce6f7bf2591a)
+
 # 基本使用
 
 ## PDF转文本/MD/Latex
