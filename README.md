@@ -1,5 +1,7 @@
 # pdfdeal
 
+For better RAG!
+
 🗺️ ENGLISH | [简体中文](README_CN.md)
 
 Easier to deal with PDF, extract readable text and OCR to recognise image text and clean the format. Make it more suitable for knowledge base construction.
@@ -13,7 +15,15 @@ Its going to use [easyocr](https://github.com/JaidedAI/EasyOCR) to recognise the
 
 ## Support for Doc2x
 
-Added support for Doc2x, which currently has a daily 500-page **free** usage quota, and its recognition of tables/formulas is excellent. You can also use Doc2x support module alone to convert pdf to markdown/latex/docx directly. See [Doc2x Support](./docs/doc2x.md).
+Added support for Doc2x, which currently has a daily 500-page **free** usage quota, and its recognition of tables/formulas is excellent. 
+
+You can also use Doc2x support module **alone** to convert pdf to markdown/latex/docx directly like below. See [Doc2x Support](./docs/doc2x.md) for more.
+
+```python
+from pdfdeal.doc2x import Doc2x
+Client = Doc2x(api_key=your_api)
+Client.pdf2file(pdf_file="./ppt/test.pdf", output_path="./output", output_format="md_dollar", ocr=True)
+```
 
 ## Usage
 See the [example codes](https://github.com/Menghuan1918/pdfdeal?tab=readme-ov-file#processes-all-the-files-in-a-file-and-saves-them-in-the-output-folder).

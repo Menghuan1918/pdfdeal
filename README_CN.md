@@ -1,5 +1,7 @@
 # pdfdeal
 
+为了更好的RAG效果！(浓浓机翻味)
+
 更轻松简单地处理 PDF，提取可读文本，用 OCR 识别图像文本并清理格式,使其更适合构建知识库。
 
 使用 [easyocr](https://github.com/JaidedAI/EasyOCR) 来识别图像并将其添加到原始文本中。可以设置输出格式使用 pdf 格式，这将确保文本在新 PDF 中的页数与原始文本相同。对 PDF 进行处理后与知识库应用程序（如[Dify](https://github.com/langgenius/dify)、[FastGPT](https://github.com/labring/FastGPT)），理论上可以达到更好的识别率。
@@ -11,10 +13,18 @@
 
 ## 对Doc2x的支持
 
-新增对Doc2x的支持，目前其每日有500页的**免费**使用额度，其对表格/公式的识别效果卓越。你也可以单独使用Doc2x的支持模块直接将pdf转换为markdown/latex/docx等格式。请参阅[Doc2x支持](./docs/doc2x_cn.md)。
+新增对Doc2x的支持，目前其每日有500页的**免费**使用额度，其对表格/公式的识别效果卓越。
+
+你也可以**单独使用**Doc2x的支持模块直接将pdf转换为markdown/latex/docx等格式，就像下面这样。详细请参阅[Doc2x支持](./docs/doc2x_cn.md)。
+
+```python
+from pdfdeal.doc2x import Doc2x
+Client = Doc2x(api_key=your_api)
+Client.pdf2file(pdf_file="./ppt/test.pdf", output_path="./output", output_format="md_dollar", ocr=True)
+```
 
 ## 使用方法
-
+[示范代码](https://github.com/Menghuan1918/pdfdeal/blob/main/README_CN.md#%E5%B0%86%E6%96%87%E4%BB%B6%E5%A4%B9%E4%B8%AD%E7%9A%84%E6%89%80%E6%9C%89%E6%96%87%E4%BB%B6%E8%BF%9B%E8%A1%8C%E5%A4%84%E7%90%86%E5%B9%B6%E6%94%BE%E7%BD%AE%E5%9C%A8output%E6%96%87%E4%BB%B6%E5%A4%B9%E4%B8%AD)
 
 ### 安装
 从 PyPI 安装：
