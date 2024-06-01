@@ -285,19 +285,19 @@ def async_uuid2file(api_key, uuid):
             print("Waiting to process the file...")
             time.sleep(5)
             return async_uuid2file(api_key, uuid)
-        elif datas["status"] != "processing":
-            print(f"Doc2x is processing the file: {datas['data']['progress']}")
+        elif datas["status"] == "processing":
+            print(f"Doc2x is processing the file: {datas['progress']}%")
             time.sleep(5)
             return async_uuid2file(api_key, uuid)
         elif datas["status"] == "success":
             texts = []
-            for data in datas["data"]["pages"]:
+            for data in datas["result"]["pages"]:
                 texts.append(data["md"])
             return texts
         elif datas["status"] == "pages limit exceeded":
             raise RuntimeError(f"You have exceeded the page limit!")
         else:
-            raise RuntimeError(f"Get error: {datas['data']}")
+            raise RuntimeError(f"Get error: {datas}")
     else:
         raise RuntimeError(
             f"Async_uuid2file failed, status code: {get_res.status_code}:{get_res.text}"
@@ -392,7 +392,7 @@ class Doc2x:
         time.sleep(5)
         texts = async_uuid2file(self.key, uuid)
         os.makedirs(path, exist_ok=True)
-        filename = path.split("/")[-1].replace(".pdf", f".{output}")
+        filename = input.split("/")[-1].replace(".pdf", f".{output}")
         path = os.path.join(path, filename)
         if output == "pdf":
             from .get_file import strore_pdf
