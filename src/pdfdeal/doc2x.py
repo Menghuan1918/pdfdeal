@@ -312,7 +312,6 @@ class Doc2x:
         self, image_file, output_path=None, output_format="text", img_correction=True
     ):
         """
-        `api_key`: personal key, get from function 'refresh_key'
         `image_file`: image file path
         `output_path`: output file path, default is None, which means same directory as the input file
         `output_format`: output format, default is 'text', which will return the text content.
@@ -341,7 +340,6 @@ class Doc2x:
 
     def pdf2file(self, pdf_file, output_path=None, output_format="text", ocr=True):
         """
-        `api_key`: personal key, get from function 'refresh_key'
         `pdf_file`: pdf file path
         `output_path`: output file path, default is None, which means same directory as the input file
         `output_format`: output format, default is 'text', which will return the text content.
@@ -357,7 +355,6 @@ class Doc2x:
 
     def async_pic2file(self, image_file, option=False):
         """
-        `api_key`: personal key, get from function
         `image_file`: image file path
         `option`: only output equation, default is False
         return: uuid of the file
@@ -366,7 +363,6 @@ class Doc2x:
 
     def async_pdf2file(self, pdf_file, ocr=True):
         """
-        `api_key`: personal key, get from function
         `pdf_file`: pdf file path
         `ocr`: whether to use OCR, default is True
         return: uuid of the file
@@ -375,7 +371,6 @@ class Doc2x:
 
     def async_uuid2file(self, uuid):
         """
-        `api_key`: personal key, get from function
         `uuid`: uuid of the file
         return: text content
         """

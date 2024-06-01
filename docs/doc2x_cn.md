@@ -36,7 +36,18 @@ Client.pic2file(image_file="image.png", output_path="./output", output_format="d
 
 其中`output_format`接受'text'，"md", "md_dollar", "latex", "docx"。"md"和"md_dollar"的区别在于公式表示是否使用“$”号，"text"代表直接返回文本而不保存。
 
+## 保留原有页数的转换
+这种方法会保留文本以及图片中文本的原有页数。即处理后的pdf每一页的内容就是源文件对应页数的内容。
+
+```python
+from pdfdeal.doc2x import Doc2x
+Client = Doc2x(api_key=your_api)
+file_path = "./test.pdf"
+Client.pdfdeal(input=file_path, output="pdf", path="./Output")
+```
+
 ## 作为pdfdeal的OCR引擎
+推荐使用上面的方法`保留原有页数的转换`而不是将doc2x作为OCR引擎。
 
 ```python
 import os
@@ -50,5 +61,24 @@ for root, dirs, files in os.walk("./ppt"):
         file_path = os.path.join(root, file)
         deal_pdf(input=file_path, output="pdf", ocr=Client.OCR, path="./output")
         print(f"Deal with {file_path} successfully!")
+```
+## 获得剩余的额度
+```python
+from pdfdeal.doc2x import Doc2x
 
+Client = Doc2x(api_key=your_api)
+
+print(Client.get_limit())
+```
+
+## 异步的使用
+```python
+from pdfdeal.doc2x import Doc2x
+Client = Doc2x(api_key=your_api)
+uuid = Client.async_pic2file(image_file="test.png")
+# uuid = Client.async_pdf2file(pdf_file="test.pdf")
+# If the input file is PDF
+texts = Client.async_uuid2file(uuid)
+for text in texts:
+    print(text)
 ```
