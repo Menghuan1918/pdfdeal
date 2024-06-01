@@ -88,7 +88,7 @@ def pic2file(
     return: text content or output file path
     """
     url = Base_URL + "/platform/img"
-    img_correction = "true" if img_correction else "false"
+    img_correction = "1" if img_correction else "0"
     get_res = requests.post(
         url,
         headers={"Authorization": "Bearer " + api_key},
@@ -150,7 +150,7 @@ def pdf2file(api_key, pdf_file, output_path=None, output_format="text", ocr=True
     return: text content or output file path
     """
     url = Base_URL + "/platform/pdf"
-    ocr = "true" if ocr else "false"
+    ocr = "1" if ocr else "0"
     get_res = requests.post(
         url,
         headers={"Authorization": "Bearer " + api_key},
@@ -209,6 +209,101 @@ def get_limit(api_key):
         )
 
 
+def async_pdf2file(api_key, pdf_file, ocr=True):
+    """
+    `api_key`: personal key, get from function
+    `pdf_file`: pdf file path
+    `ocr`: whether to use OCR, default is True
+    return: uuid of the file
+    """
+    url = Base_URL + "/platform/async/pdf"
+    ocr = "1" if ocr else "0"
+    get_res = requests.post(
+        url,
+        headers={"Authorization": "Bearer " + api_key},
+        files={"file": open(pdf_file, "rb")},
+        data={"ocr": ocr},
+        stream=True,
+    )
+    if get_res.status_code == 200:
+        return json.loads(get_res.content.decode("utf-8"))["data"]["uuid"]
+    else:
+        if get_res.status_code == 429:
+            print("Too many requests, wait for 20s and try again")
+            time.sleep(10)
+            print("10s left")
+            time.sleep(10)
+            temp = async_pdf2file(api_key, pdf_file, ocr)
+            return temp
+        raise RuntimeError(
+            f"Async_pdf2file failed, status code: {get_res.status_code}:{get_res.text}"
+        )
+
+
+def async_pic2file(api_key, image_file, option=False):
+    """
+    `api_key`: personal key, get from function
+    `image_file`: image file path
+    `option`: only output equation, default is False
+    return: uuid of the file
+    """
+    url = Base_URL + "/platform/async/img"
+    option = "true" if option else "false"
+    get_res = requests.post(
+        url,
+        headers={"Authorization": "Bearer " + api_key},
+        files={"file": open(image_file, "rb")},
+        data={"option": option},
+        stream=True,
+    )
+    if get_res.status_code == 200:
+        return json.loads(get_res.content.decode("utf-8"))["data"]["uuid"]
+    else:
+        if get_res.status_code == 429:
+            print("Too many requests, wait for 20s and try again")
+            time.sleep(10)
+            print("10s left")
+            time.sleep(10)
+            temp = async_pic2file(api_key, image_file, option)
+            return temp
+        raise RuntimeError(
+            f"Async_pic2file failed, status code: {get_res.status_code}:{get_res.text}"
+        )
+
+
+def async_uuid2file(api_key, uuid):
+    """
+    `api_key`: personal key, get from function 'refresh_key'
+    `uuid`: uuid of the file
+    output will return a list of text content in pages
+    """
+    url = Base_URL + "/platform/async/status?uuid=" + uuid
+    get_res = requests.get(url, headers={"Authorization": "Bearer " + api_key})
+    if get_res.status_code == 200:
+        datas = json.loads(get_res.content.decode("utf-8"))["data"]
+        if datas["status"] == "ready":
+            print("Waiting to process the file...")
+            time.sleep(5)
+            return async_uuid2file(api_key, uuid)
+        elif datas["status"] != "processing":
+            print(f"Doc2x is processing the file: {datas['data']['progress']}")
+            time.sleep(5)
+            return async_uuid2file(api_key, uuid)
+        elif datas["status"] == "success":
+            texts = []
+            for data in datas["data"]["pages"]:
+                texts.append(data["md"])
+            return texts
+        elif datas["status"] == "pages limit exceeded":
+            raise RuntimeError(f"You have exceeded the page limit!")
+        else:
+            raise RuntimeError(f"Get error: {datas['data']}")
+    else:
+        raise RuntimeError(
+            f"Async_uuid2file failed, status code: {get_res.status_code}:{get_res.text}"
+        )
+
+
 class Doc2x:
     def __init__(self, api_key) -> None:
         self.key = refresh_key(api_key)
@@ -259,3 +354,54 @@ class Doc2x:
 
     def get_limit(self):
         return get_limit(self.key)
+
+    def async_pic2file(self, image_file, option=False):
+        """
+        `api_key`: personal key, get from function
+        `image_file`: image file path
+        `option`: only output equation, default is False
+        return: uuid of the file
+        """
+        return async_pic2file(self.key, image_file, option)
+
+    def async_pdf2file(self, pdf_file, ocr=True):
+        """
+        `api_key`: personal key, get from function
+        `pdf_file`: pdf file path
+        `ocr`: whether to use OCR, default is True
+        return: uuid of the file
+        """
+        return async_pdf2file(self.key, pdf_file, ocr)
+
+    def async_uuid2file(self, uuid):
+        """
+        `api_key`: personal key, get from function
+        `uuid`: uuid of the file
+        return: text content
+        """
+        return async_uuid2file(self.key, uuid)
+
+    def pdfdeal(self, input, output="pdf", path="./Output"):
+        """
+        `input`: input file path
+        `output`: output format, default is 'pdf', accept 'pdf', 'md'
+        `path`: output path, default is './Output'
+        """
+        uuid = async_pdf2file(self.key, input)
+        print(f"Waiting to process the file, uuid: {uuid}")
+        time.sleep(5)
+        texts = async_uuid2file(self.key, uuid)
+        os.makedirs(path, exist_ok=True)
+        filename = path.split("/")[-1].replace(".pdf", f".{output}")
+        path = os.path.join(path, filename)
+        if output == "pdf":
+            from .get_file import strore_pdf
+
+            strore_pdf(path, texts)
+        elif output == "md":
+            with open(path, "w") as f:
+                f.write(texts)
+        else:
+            raise ValueError("Output format should be 'pdf' or 'md'")
+        print(f"Doc2x remaining page limit: {get_limit(self.key)}")
+        return path
