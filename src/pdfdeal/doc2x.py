@@ -3,6 +3,7 @@ import json
 import os
 import zipfile
 import time
+import re
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
@@ -75,7 +76,12 @@ def uuid2file(api_key, uuid, output_format, output_path=None):
 
 
 def pic2file(
-    api_key, image_file, output_path=None, output_format="text", img_correction=True
+    api_key,
+    image_file,
+    output_path=None,
+    output_format="text",
+    img_correction=True,
+    equation=False,
 ):
     """
     `api_key`: personal key, get from function 'refresh_key'
@@ -84,16 +90,18 @@ def pic2file(
     `output_format`: output format, default is 'text', which will return the text content.
     Also accept "md", "md_dollar", "latex", "docx", which will save to output_path
     `img_correction`: whether to correct the image, default is True
+    `equation`: whether only output equation, default is False
 
     return: text content or output file path
     """
     url = Base_URL + "/platform/img"
     img_correction = "1" if img_correction else "0"
+    equation = "1" if equation else "0"
     get_res = requests.post(
         url,
         headers={"Authorization": "Bearer " + api_key},
         files={"file": open(image_file, "rb")},
-        data={"img_correction": img_correction},
+        data={"img_correction": img_correction, "equation": equation},
         stream=True,
     )
     text_json = []
@@ -271,10 +279,12 @@ def async_pic2file(api_key, image_file, option=False):
         )
 
 
-def async_uuid2file(api_key, uuid):
+def async_uuid2file(api_key, uuid, convert=False):
     """
     `api_key`: personal key, get from function 'refresh_key'
     `uuid`: uuid of the file
+    `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
+
     output will return a list of text content in pages
     """
     url = Base_URL + "/platform/async/status?uuid=" + uuid
@@ -292,7 +302,14 @@ def async_uuid2file(api_key, uuid):
         elif datas["status"] == "success":
             texts = []
             for data in datas["result"]["pages"]:
-                texts.append(data["md"])
+                try:
+                    text = data["md"]
+                except:
+                    continue
+                if convert:
+                    text = re.sub(r"\\[()]", "$", text)
+                    text = re.sub(r"\\[\[\]]", "$$", text)
+                texts.append(text)
             return texts
         elif datas["status"] == "pages limit exceeded":
             raise RuntimeError(f"You have exceeded the page limit!")
@@ -309,7 +326,12 @@ class Doc2x:
         self.key = refresh_key(api_key)
 
     def pic2file(
-        self, image_file, output_path=None, output_format="text", img_correction=True
+        self,
+        image_file,
+        output_path=None,
+        output_format="text",
+        img_correction=True,
+        equation=False,
     ):
         """
         `image_file`: image file path
@@ -317,6 +339,7 @@ class Doc2x:
         `output_format`: output format, default is 'text', which will return the text content.
         Also accept "md", "md_dollar", "latex", "docx", which will save to output_path
         `img_correction`: whether to correct the image, default is True
+        `equation`: whether only output equation, default is False
 
         return: text content or output file path
         """
@@ -369,23 +392,25 @@ class Doc2x:
         """
         return async_pdf2file(self.key, pdf_file, ocr)
 
-    def async_uuid2file(self, uuid):
+    def async_uuid2file(self, uuid, convert=False):
         """
         `uuid`: uuid of the file
+        `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
         return: text content
         """
-        return async_uuid2file(self.key, uuid)
+        return async_uuid2file(self.key, uuid, convert)
 
-    def pdfdeal(self, input, output="pdf", path="./Output"):
+    def pdfdeal(self, input, output="pdf", path="./Output", convert=False):
         """
         `input`: input file path
         `output`: output format, default is 'pdf', accept 'pdf', 'md'
         `path`: output path, default is './Output'
+        `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
         """
         uuid = async_pdf2file(self.key, input)
         print(f"Waiting to process the file, uuid: {uuid}")
         time.sleep(5)
-        texts = async_uuid2file(self.key, uuid)
+        texts = async_uuid2file(self.key, uuid, convert)
         os.makedirs(path, exist_ok=True)
         filename = input.split("/")[-1].replace(".pdf", f".{output}")
         path = os.path.join(path, filename)
