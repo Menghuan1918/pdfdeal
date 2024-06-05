@@ -32,7 +32,7 @@ from pdfdeal.doc2x import Doc2x
 
 Client = Doc2x(api_key=your_api)
 
-Client.pic2file(image_file="image.png", output_path="./output", output_format="docx")
+Client.pic2file(image_file="image.png", output_path="./output", output_format="docx", equation=True)
 ```
 
 where `output_format` accepts 'text', “md”, “md_dollar”, “latex”, “docx”.” The difference between “md” and “md_dollar” is that the formula indicates whether or not to use the “$” sign, and “text” means to return the text directly without saving.
@@ -44,7 +44,7 @@ This method preserves the original page count of the text as well as the text in
 from pdfdeal.doc2x import Doc2x
 Client = Doc2x(api_key=your_api)
 file_path = "./test.pdf"
-Client.pdfdeal(input=file_path, output="pdf", path="./Output")
+Client.pdfdeal(input=file_path, output="pdf", path="./Output", convert=True)
 ```
 
 ## As an OCR engine for pdfdeal

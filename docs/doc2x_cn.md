@@ -31,7 +31,7 @@ from pdfdeal.doc2x import Doc2x
 
 Client = Doc2x(api_key=your_api)
 
-Client.pic2file(image_file="image.png", output_path="./output", output_format="docx")
+Client.pic2file(image_file="image.png", output_path="./output", output_format="docx", equation=True)
 ```
 
 其中`output_format`接受'text'，"md", "md_dollar", "latex", "docx"。"md"和"md_dollar"的区别在于公式表示是否使用“$”号，"text"代表直接返回文本而不保存。
@@ -43,7 +43,7 @@ Client.pic2file(image_file="image.png", output_path="./output", output_format="d
 from pdfdeal.doc2x import Doc2x
 Client = Doc2x(api_key=your_api)
 file_path = "./test.pdf"
-Client.pdfdeal(input=file_path, output="pdf", path="./Output")
+Client.pdfdeal(input=file_path, output="pdf", path="./Output", convert=True)
 ```
 
 ## 作为pdfdeal的OCR引擎

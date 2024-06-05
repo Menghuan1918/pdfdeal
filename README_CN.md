@@ -129,7 +129,7 @@ print(deal_pdf(input="test.pdf",ocr="pass"))
 from pdfdeal.doc2x import Doc2x
 Client = Doc2x(api_key=your_api)
 file_path = "./test.pdf"
-Client.pdfdeal(input=file_path, output="pdf", path="./Output")
+Client.pdfdeal(input=file_path, output="pdf", path="./Output", convert=True)
 ```
 
 请参阅[Doc2x支持](./docs/doc2x_cn.md)。
