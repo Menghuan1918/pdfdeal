@@ -50,6 +50,7 @@ def OCR_pytesseract(path, language=["eng"], GPU=False):
 def OCR_pass(path, language=["ch_sim", "en"], GPU=False):
     return ""
 
+
 def clean_text(text):
     # remove extra whitespaces
     text = re.sub(r"\n\s*\n", "\n\n", text)
@@ -128,3 +129,29 @@ def extract_text_and_images(
             Text.append(clean_text(text))
         clear_cache()
     return Text
+
+
+def texts_to_file(texts, filepath, output_format="txt"):
+    """
+    Write texts to a file.
+    `texts`: a list of strings, each string is a paragraph.
+    `filepath`: the folder path of the file to write.
+    `output_format`: the format of the output file, default is "txt",acceptable values are "txt", "md".
+
+    Return the path of the output file.
+    """
+    import time
+
+    if output_format not in ["txt", "md"]:
+        raise ValueError("The output format is not supported.")
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+    try:
+        temp_file = os.path.join(filepath, f"{time.time()}.{output_format}")
+    except Exception as e:
+        raise RuntimeError(f"Error: {e}")
+    with open(temp_file, "w") as file:
+        for text in texts:
+            file.write(text)
+            file.write("\n")
+    return temp_file

@@ -4,6 +4,7 @@ import os
 import zipfile
 import time
 import re
+from .file_tools import texts_to_file
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
@@ -217,11 +218,13 @@ def get_limit(api_key):
         )
 
 
-def async_pdf2file(api_key, pdf_file, ocr=True):
+def async_pdf2file(api_key, pdf_file, ocr=True, parse_to=1):
     """
     `api_key`: personal key, get from function
     `pdf_file`: pdf file path
     `ocr`: whether to use OCR, default is True
+    `parse_to`: 1 for OCR, 2 for translate, default is 1
+
     return: uuid of the file
     """
     url = Base_URL + "/platform/async/pdf"
@@ -230,7 +233,7 @@ def async_pdf2file(api_key, pdf_file, ocr=True):
         url,
         headers={"Authorization": "Bearer " + api_key},
         files={"file": open(pdf_file, "rb")},
-        data={"ocr": ocr},
+        data={"ocr": ocr, "parse_to": parse_to},
         stream=True,
     )
     if get_res.status_code == 200:
@@ -241,7 +244,7 @@ def async_pdf2file(api_key, pdf_file, ocr=True):
             time.sleep(10)
             print("10s left")
             time.sleep(10)
-            temp = async_pdf2file(api_key, pdf_file, ocr)
+            temp = async_pdf2file(api_key, pdf_file, ocr, parse_to)
             return temp
         raise RuntimeError(
             f"Async_pdf2file failed, status code: {get_res.status_code}:{get_res.text}"
@@ -279,38 +282,72 @@ def async_pic2file(api_key, image_file, option=False):
         )
 
 
-def async_uuid2file(api_key, uuid, convert=False):
+def reqRank_ask(api_key, uuid):
+    url = Base_URL + "/reqRank" + uuid
+    get_res = requests.get(url, headers={"Authorization": "Bearer " + api_key})
+
+
+def async_uuid2file(api_key, uuid, convert=False, Translate=False):
     """
     `api_key`: personal key, get from function 'refresh_key'
     `uuid`: uuid of the file
     `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
 
     output will return a list of text content in pages
+
+    if Translate is True, output will return list of Translated_texts, texts, Text_location:
+    `Translated_texts, texts, Text_location {page_idx","page_width","page_height","x","y"}`
     """
     url = Base_URL + "/platform/async/status?uuid=" + uuid
+    if Translate:
+        url += "&parseTo=2"
     get_res = requests.get(url, headers={"Authorization": "Bearer " + api_key})
     if get_res.status_code == 200:
         datas = json.loads(get_res.content.decode("utf-8"))["data"]
         if datas["status"] == "ready":
             print("Waiting to process the file...")
             time.sleep(5)
-            return async_uuid2file(api_key, uuid)
-        elif datas["status"] == "processing":
+            return async_uuid2file(api_key, uuid, convert, Translate)
+        elif (
+            datas["status"] == "processing" or datas["status"] == "translate_processing"
+        ):
             print(f"Doc2x is processing the file: {datas['progress']}%")
             time.sleep(5)
-            return async_uuid2file(api_key, uuid)
-        elif datas["status"] == "success":
+            return async_uuid2file(api_key, uuid, convert, Translate)
+        elif datas["status"] == "success" or datas["status"] == "translate_success":
             texts = []
-            for data in datas["result"]["pages"]:
-                try:
-                    text = data["md"]
-                except:
-                    continue
-                if convert:
-                    text = re.sub(r"\\[()]", "$", text)
-                    text = re.sub(r"\\[\[\]]", "$$", text)
-                texts.append(text)
-            return texts
+            if Translate:
+                Translated_texts = []
+                Text_location = []
+                Rawinput =  json.loads(datas["result"])
+                for data in Rawinput:
+                    try:
+                        text = data["raw"]
+                        translate_text = data["translated"]
+                        location = {
+                            "page_idx": data["page_idx"],
+                            "page_width": data["page_width"],
+                            "page_height": data["page_height"],
+                            "x": data["x"],
+                            "y": data["y"],
+                        }
+                    except:
+                        continue
+                    texts.append(text)
+                    Translated_texts.append(translate_text)
+                    Text_location.append(location)
+                return Translated_texts, texts, Text_location
+            else:
+                for data in datas["result"]["pages"]:
+                    try:
+                        text = data["md"]
+                    except:
+                        continue
+                    if convert:
+                        text = re.sub(r"\\[()]", "$", text)
+                        text = re.sub(r"\\[\[\]]", "$$", text)
+                    texts.append(text)
+                return texts
         elif datas["status"] == "pages limit exceeded":
             raise RuntimeError(f"You have exceeded the page limit!")
         else:
@@ -384,21 +421,38 @@ class Doc2x:
         """
         return async_pic2file(self.key, image_file, option)
 
-    def async_pdf2file(self, pdf_file, ocr=True):
+    def async_pdf2file(self, pdf_file, ocr=True, Translate=False):
         """
         `pdf_file`: pdf file path
         `ocr`: whether to use OCR, default is True
+        `Translate`: whether to translate the content, default is False
+
         return: uuid of the file
         """
-        return async_pdf2file(self.key, pdf_file, ocr)
+        parse_to = 2 if Translate else 1
+        return async_pdf2file(self.key, pdf_file, ocr, parse_to)
 
-    def async_uuid2file(self, uuid, convert=False):
+    def async_uuid2file(self, uuid, convert=False, Translate=False):
         """
         `uuid`: uuid of the file
         `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
+        `Translate`: whether to translate the content, default is False
+
         return: text content
+
+        if Translate is True, output will return list of Translated_texts, texts, Text_location:
+        `Translated_texts, texts, Text_location {page_idx","page_width","page_height","x","y"}`
         """
-        return async_uuid2file(self.key, uuid, convert)
+        return async_uuid2file(self.key, uuid, convert, Translate)
+
+    def text2file(self, texts, filepath, output_format="txt"):
+        """
+        Write texts to a file.
+        `texts`: a list of strings, each string is a paragraph.
+        `filepath`: the folder path of the file to write.
+        `output_format`: the format of the output file, default is "txt",acceptable values are "txt", "md".
+        """
+        return texts_to_file(texts, filepath, output_format)
 
     def pdfdeal(self, input, output="pdf", path="./Output", convert=False):
         """
