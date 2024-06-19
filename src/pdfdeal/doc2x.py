@@ -43,14 +43,19 @@ async def pdf2file_v1(
     ocr: bool,
     maxretry: int,
     rpm: int,
+    convert: bool,
+    translate: bool = False,
 ) -> str:
     """
-    将pdf文件转换为指定文件
+    Convert pdf file to specified file
     """
+    # Upload the file and get uuid
     try:
-        uuid = await upload_pdf(apikey=apikey, pdffile=pdf_path, ocr=ocr)
+        uuid = await upload_pdf(
+            apikey=apikey, pdffile=pdf_path, ocr=ocr, translate=translate
+        )
     except RateLimit:
-        # 根据maxretry以及当前的rpm等待时间重试
+        # Retry according to maxretry and current rpm
         for i in range(maxretry):
             print(f"Reach the rate limit, wait for {60 // rpm} seconds")
             await asyncio.sleep(60 // rpm)
@@ -59,8 +64,25 @@ async def pdf2file_v1(
                 uuid = await upload_pdf(apikey=apikey, pdffile=pdf_path, ocr=ocr)
             except RateLimit:
                 if i == maxretry - 1:
-                    raise RuntimeError("Reach the max retry times, but still get rate limit")
+                    raise RuntimeError(
+                        "Reach the max retry times, but still get rate limit"
+                    )
                 continue
+    # Wait for the process to finish
+    while True:
+        status_process, status_str, texts, other = await uuid_status(
+            apikey=apikey, uuid=uuid, convert=convert, translate=translate
+        )
+        if status_process == 100 and status_str == "Success" and not translate:
+            # If output_format is texts, return texts directly
+            if output_format == "texts":
+                return texts
+            break
+        elif status_process == 100 and status_str == "Translate success":
+            return texts
+        print(f"{status_str}: {status_process}%")
+        await asyncio.sleep(1)
+    # Convert uuid to file
     return await uuid2file(
         apikey=apikey, uuid=uuid, output_path=output_path, output_format=output_format
     )
@@ -75,24 +97,49 @@ async def img2file_v1(
     img_correction: bool,
     maxretry: int,
     rpm: int,
+    convert: bool,
 ) -> str:
     """
-    将图片文件转换为指定文件
+    Convert image file to specified file, async version
     """
     try:
-        uuid = await upload_img(apikey=apikey, imgfile=img_path, formula=formula, img_correction=img_correction)
+        uuid = await upload_img(
+            apikey=apikey,
+            imgfile=img_path,
+            formula=formula,
+            img_correction=img_correction,
+        )
     except RateLimit:
-        # 根据maxretry以及当前的rpm等待时间重试
+        # Retry according to maxretry and current rpm
         for i in range(maxretry):
             print(f"Reach the rate limit, wait for {60 // rpm} seconds")
             await asyncio.sleep(60 // rpm)
             try:
                 print(f"Retrying {i+1} / {maxretry} times")
-                uuid = await upload_img(apikey=apikey, imgfile=img_path, formula=formula, img_correction = img_correction)
+                uuid = await upload_img(
+                    apikey=apikey,
+                    imgfile=img_path,
+                    formula=formula,
+                    img_correction=img_correction,
+                )
             except RateLimit:
                 if i == maxretry - 1:
-                    raise RuntimeError("Reach the max retry times, but still get rate limit")
+                    raise RuntimeError(
+                        "Reach the max retry times, but still get rate limit"
+                    )
                 continue
+    # Wait for the process to finish
+    while True:
+        status_process, status_str, texts, other = await uuid_status(
+            apikey=apikey, uuid=uuid, convert=convert
+        )
+        if status_process == 100 and status_str == "Success":
+            # If output_format is texts, return texts directly
+            if output_format == "texts":
+                return texts
+            break
+        print(f"{status_str}: {status_process}%")
+        await asyncio.sleep(1)
     return await uuid2file(
         apikey=apikey, uuid=uuid, output_path=output_path, output_format=output_format
     )
@@ -115,15 +162,15 @@ class Doc2X:
         self.threadnum = asyncio.Semaphore(thread)
         self.maxretry = maxretry
 
-
     async def pic2file_back(
         self,
         image_file: str,
         output_path: str = "./Output",
-        output_format:str = "md_dollar",
-        img_correction: bool=True,
+        output_format: str = "md_dollar",
+        img_correction: bool = True,
         equation=False,
-    )->str:
+        convert: bool = False,
+    ) -> str:
         """
         Convert image file to specified file, with rate/thread limit
         """
@@ -138,35 +185,51 @@ class Doc2X:
                     img_correction=img_correction,
                     maxretry=self.maxretry,
                     rpm=self.rmp,
+                    convert=convert,
                 )
 
     def pic2file(
         self,
         image_file: str,
         output_path: str = "./Output",
-        output_format:str = "md_dollar",
-        img_correction: bool=True,
+        output_format: str = "md_dollar",
+        img_correction: bool = True,
         equation=False,
-    )-> str:
+        convert: bool = False,
+    ) -> str:
         """
         Convert image file to specified file
         `image_file`: image file path
         `output_path`: output folder path, default is "./Output"
-        `output_format`: output format, accept `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
+        `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
+        `img_correction`: whether to correct the image, default is `True`
+        `equation`: whether the image is an equation, default is `False`
+        `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
 
         return: output file path
         """
-        return asyncio.run(self.pic2file_back(image_file, output_path, output_format, img_correction, equation))
+        return asyncio.run(
+            self.pic2file_back(
+                image_file,
+                output_path,
+                output_format,
+                img_correction,
+                equation,
+                convert,
+            )
+        )
 
     async def pdf2file_back(
         self,
         pdf_file: str,
         output_path: str = "./Output",
-        output_format:str = "md_dollar",
-        ocr: bool=True,
-    )->str:
+        output_format: str = "md_dollar",
+        ocr: bool = True,
+        convert: bool = False,
+        translate: bool = False,
+    ) -> str:
         """
-        Convert pdf file to specified file, with rate/thread limit
+        Convert pdf file to specified file, with rate/thread limit, async version
         """
         async with self.limiter:
             async with self.threadnum:
@@ -178,15 +241,18 @@ class Doc2X:
                     ocr=ocr,
                     maxretry=self.maxretry,
                     rpm=self.rmp,
+                    convert=convert,
+                    translate=translate,
                 )
-    
+
     def pdf2file(
         self,
         pdf_file: str,
         output_path: str = "./Output",
-        output_format:str = "md_dollar",
-        ocr: bool=True,
-    )-> str:
+        output_format: str = "md_dollar",
+        ocr: bool = True,
+        convert: bool = False,
+    ) -> str:
         """
         Convert pdf file to specified file
         `pdf_file`: pdf file path
@@ -195,4 +261,8 @@ class Doc2X:
 
         return: output file path
         """
-        return asyncio.run(self.pdf2file_back(pdf_file, output_path, output_format, ocr))
+        return asyncio.run(
+            self.pdf2file_back(
+                pdf_file, output_path, output_format, ocr, convert, False
+            )
+        )

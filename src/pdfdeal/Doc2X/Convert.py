@@ -219,9 +219,14 @@ async def decode_data(datas: json, convert: bool) -> Tuple[list, list]:
             url = data["url"]
         except KeyError:
             url = ""
+        # When processing image, there is no page_idx
+        try:
+            page_id = data["page_idx"]
+        except KeyError:
+            page_id = 0
         location = {
             "url": url,
-            "page_idx": data["page_idx"],
+            "page_idx": page_id,
             "page_width": data["page_width"],
             "page_height": data["page_height"],
         }
