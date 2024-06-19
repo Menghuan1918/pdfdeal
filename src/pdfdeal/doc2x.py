@@ -25,7 +25,7 @@ async def refresh_key(key: str) -> str:
         raise Exception(f"Refresh key error! {get_res.status_code}:{get_res.text}")
 
 
-async def upload_pdf(zip_path: str) -> str:
+async def unzip(zip_path: str) -> str:
     """
     用于创建响应文件夹并解压文件
     """
@@ -52,6 +52,8 @@ async def check_folder(path: str) -> bool:
         raise Exception("Input path already exists as a file!")
     except NotADirectoryError:
         raise Exception("Input path is not a directory!")
+    except Exception as e:
+        raise Exception(f"Create folder error! {e}")
     return True
 
 
@@ -62,7 +64,7 @@ async def uuid2file(
     output_path: str = "./Output",
 ) -> str:
     """
-    用于获取文件，入参：
+    用于获取文件，输入：
     `apikey`: key
     `uuid`: 文件uuid
     `output_format`: 输出格式
@@ -90,4 +92,221 @@ async def uuid2file(
         if get_res.status_code == 429:
             raise RateLimit()
         else:
-            raise Exception(f"Download file error! {get_res.status_code}:{get_res.text}")
+            raise Exception(
+                f"Download file error! {get_res.status_code}:{get_res.text}"
+            )
+
+
+async def get_limit(apikey: str) -> int:
+    """
+    获取剩余可用的次数
+
+    输入：
+    `apikey`: key
+
+    返回：
+    `int`：剩余次数
+    """
+    if apikey.startswith("sk-"):
+        url = f"{Base_URL}/v1/limit"
+    else:
+        url = f"{Base_URL}/platform/limit"
+    async with httpx.AsyncClient() as client:
+        get_res = await client.get(url, headers={"Authorization": "Bearer " + apikey})
+    if get_res.status_code == 200:
+        return int(get_res.json()["data"]["remain"])
+    else:
+        raise RuntimeError(f"Get limit error! {get_res.status_code}:{get_res.text}")
+
+
+async def upload_pdf(
+    apikey: str,
+    pdffile: str,
+    ocr: bool = True,
+    translate: bool = False,
+) -> str:
+    """
+    上传pdf文件到服务器，返回文件的uuid
+
+    输入：
+    `apikey`: key
+    `pdffile`: pdf文件路径
+    `ocr`: 是否使用ocr，默认为True
+    `translate`: 是否翻译，默认为False
+
+    返回：
+    `str`：文件的uuid
+    """
+    if apikey.startswith("sk-"):
+        url = f"{Base_URL}/v1/async/pdf"
+    else:
+        url = f"{Base_URL}/platform/async/pdf"
+    try:
+        file = {"file": open(pdffile, "rb")}
+    except Exception as e:
+        raise Exception(f"Open file error! {e}")
+    ocr = 1 if ocr else 0
+    translate = 2 if translate else 1
+    async with httpx.AsyncClient() as client:
+        post_res = await client.post(
+            url,
+            headers={"Authorization": "Bearer " + apikey},
+            files=file,
+            data={"ocr": ocr, "parse_to": translate},
+            stream=True,
+        )
+    if post_res.status_code == 200:
+        return post_res.json()["data"]["request_id"]
+    elif post_res.status_code == 429:
+        raise RateLimit()
+    else:
+        raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
+
+
+async def upload_img(
+    apikey: str,
+    imgfile: str,
+    formula: bool = False,
+) -> str:
+    """
+    上传图片文件到服务器，返回文件的uuid
+    输入：
+    `apikey`: key
+    `imgfile`: 图片文件路径
+    `formula`: 是否返回纯公式，默认为False
+
+    返回：
+    `str`：文件的uuid
+    """
+    if apikey.startswith("sk-"):
+        url = f"{Base_URL}/v1/async/img"
+    else:
+        url = f"{Base_URL}/platform/async/img"
+    formula = 1 if formula else 0
+    try:
+        file = {"file": open(imgfile, "rb")}
+    except Exception as e:
+        raise Exception(f"Open file error! {e}")
+    async with httpx.AsyncClient() as client:
+        post_res = await client.post(
+            url,
+            headers={"Authorization": "Bearer " + apikey},
+            files=file,
+            data={"option": formula},
+            stream=True,
+        )
+    if post_res.status_code == 200:
+        return post_res.json()["data"]["request_id"]
+    elif post_res.status_code == 429:
+        raise RateLimit()
+    else:
+        raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
+
+
+async def decode_data(datas: json, convert: bool) -> Tuple[list, list]:
+    """
+    用于解码基本数据
+    """
+    texts = []
+    locations = []
+    for data in datas["result"]["pages"]:
+        try:
+            text = data["md"]
+        except KeyError:
+            text = ""
+        if convert:
+            text = re.sub(r"\\[()]", "$", text)
+            text = re.sub(r"\\[\[\]]", "$$", text)
+        try:
+            url = data["url"]
+        except KeyError:
+            url = ""
+        location = {
+            "url": url,
+            "page_idx": data["page_idx"],
+            "page_width": data["page_width"],
+            "page_height": data["page_height"],
+        }
+        texts.append(text)
+        locations.append(location)
+    return texts, locations
+
+
+async def decode_translate(datas: json, convert: bool) -> Tuple[list, list]:
+    """
+    用于解码翻译数据
+    """
+    texts = []
+    locations = []
+    Rawinput = json.loads(datas["result"])
+    for data in Rawinput:
+        try:
+            text = data["raw"]
+            translate_text = data["translated"]
+            location = {
+                "raw_text": text,
+                "page_idx": data["page_idx"],
+                "page_width": data["page_width"],
+                "page_height": data["page_height"],
+                "x": data["x"],
+                "y": data["y"],
+            }
+            texts.append(translate_text)
+            locations.append(location)
+        except KeyError:
+            continue
+    return texts, locations
+
+
+async def uuid_status(
+    apikey: str,
+    uuid: str,
+    convert: bool = False,
+    translate: bool = False,
+) -> Tuple[int, str, list]:
+    """
+    获取文件的状态和转换后的uuid
+
+    输入：
+    `apikey`: key
+    `uuid`: 文件uuid
+    `convert`: 是否转换"["和"[["到"$""$$"，默认为False
+    `translate`: 是否翻译，默认为False
+
+    返回：
+    `Tuple[int, str, list, list]`: 转换进度，当前状态，转换后的文本列表，文本坐标列表
+    """
+    if apikey.startswith("sk-"):
+        url = f"{Base_URL}/v1/async/status?uuid={uuid}"
+    else:
+        url = f"{Base_URL}/platform/async/status?uuid={uuid}"
+    if translate:
+        url += "&parse_to=2"
+    async with httpx.AsyncClient() as client:
+        get_res = await client.get(url, headers={"Authorization": "Bearer " + apikey})
+    if get_res.status_code == 200:
+        datas = json.loads(get_res.content.decode("utf-8"))["data"]
+        if datas["status"] == "ready":
+            return 0, "Waiting for processing", [], []
+
+        elif datas["status"] == "processing":
+            return int(datas["progress"]), "Processing file", [], []
+
+        elif datas["status"] == "translate_processing":
+            return int(datas["progress"]), "Translating file", [], []
+
+        elif datas["status"] == "success":
+            texts, locations = await decode_data(datas, convert)
+            return 100, "Success", texts, locations
+
+        elif datas["status"] == "translate_success":
+            texts, locations = await decode_translate(datas, convert)
+            return 100, "Translate success", texts, locations
+
+        elif datas["status"] == "pages limit exceeded":
+            raise RuntimeError("Pages limit exceeded!")
+
+        else:
+            raise RuntimeError(f"Unknown status! {datas['status']}")
+
+    raise Exception(f"Get status error! {get_res.status_code}:{get_res.text}")
