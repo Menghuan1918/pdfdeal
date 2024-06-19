@@ -83,7 +83,7 @@ async def pdf2file_v1(
             break
         elif status_process == 100 and status_str == "Translate success":
             return texts
-        print(f"{status_str}: {status_process}%")
+        print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
         await asyncio.sleep(1)
     # Convert uuid to file
     return await uuid2file(
@@ -141,7 +141,7 @@ async def img2file_v1(
             if output_format == "texts":
                 return texts
             break
-        print(f"{status_str}: {status_process}%")
+        print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
         await asyncio.sleep(1)
     return await uuid2file(
         apikey=apikey, uuid=uuid, output_path=output_path, output_format=output_format
