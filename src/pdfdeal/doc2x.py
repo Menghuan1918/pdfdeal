@@ -160,7 +160,7 @@ class Doc2X:
         self.apikey = asyncio.run(get_key(apikey))
         self.limiter = AsyncLimiter(rpm, 60)
         self.rmp = rpm
-        self.threadnum = asyncio.Semaphore(thread)
+        self.thread = thread
         self.maxretry = maxretry
 
     async def pic2file_back(
@@ -192,7 +192,7 @@ class Doc2X:
             for img in image_file
         ]
         async with self.limiter:
-            async with self.threadnum:
+            async with asyncio.Semaphore(self.thread):
                 completed_tasks = await asyncio.gather(*task)
                 for i, _ in enumerate(completed_tasks):
                     print(f"PICTURE Progress: {i + 1}/{total} files processed.")
@@ -270,7 +270,7 @@ class Doc2X:
             for pdf in pdf_file
         ]
         async with self.limiter:
-            async with self.threadnum:
+            async with asyncio.Semaphore(self.thread):
                 completed_tasks = await asyncio.gather(*tasks)
                 for i, _ in enumerate(completed_tasks):
                     print(f"PDF Progress: {i + 1}/{total} files processed.")
@@ -321,7 +321,7 @@ class Doc2X:
         async version function
         """
         async with self.limiter:
-            async with self.threadnum:
+            async with asyncio.Semaphore(self.thread):
                 texts = await pdf2file_v1(
                     apikey=self.apikey,
                     pdf_path=input,
@@ -403,3 +403,12 @@ class Doc2X:
         return asyncio.run(
             self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
         )
+
+
+def Doc2x(api_key):
+    """
+    Deprecated function, use `from pdfdeal.doc2x import Doc2X` instead
+    """
+    from .doc2x_old import Doc2x
+    Warning("This function is deprecated, please use `from pdfdeal.doc2x import Doc2X` instead")
+    return Doc2x(api_key)
