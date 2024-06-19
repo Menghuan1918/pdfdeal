@@ -155,7 +155,7 @@ class Doc2X:
     """
 
     def __init__(
-        self, apikey: str = "", rpm: int = 4, thread: int = 1, maxretry: int = 3
+        self, apikey: str = None, rpm: int = 4, thread: int = 1, maxretry: int = 3
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
         self.limiter = AsyncLimiter(rpm, 60)
