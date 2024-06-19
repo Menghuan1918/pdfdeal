@@ -150,10 +150,9 @@ async def upload_pdf(
             headers={"Authorization": "Bearer " + apikey},
             files=file,
             data={"ocr": ocr, "parse_to": translate},
-            stream=True,
         )
     if post_res.status_code == 200:
-        return post_res.json()["data"]["request_id"]
+        return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
     elif post_res.status_code == 429:
         raise RateLimit()
     else:
@@ -164,6 +163,7 @@ async def upload_img(
     apikey: str,
     imgfile: str,
     formula: bool = False,
+    img_correction: bool = False,
 ) -> str:
     """
     上传图片文件到服务器，返回文件的uuid
@@ -171,6 +171,7 @@ async def upload_img(
     `apikey`: key
     `imgfile`: 图片文件路径
     `formula`: 是否返回纯公式，默认为False
+    `img_correction`: 是否进行图片校正，默认为False
 
     返回：
     `str`：文件的uuid
@@ -180,6 +181,7 @@ async def upload_img(
     else:
         url = f"{Base_URL}/platform/async/img"
     formula = 1 if formula else 0
+    img_correction = 1 if img_correction else 0
     try:
         file = {"file": open(imgfile, "rb")}
     except Exception as e:
@@ -189,11 +191,10 @@ async def upload_img(
             url,
             headers={"Authorization": "Bearer " + apikey},
             files=file,
-            data={"option": formula},
-            stream=True,
+            data={"option": formula, "img_correction": img_correction},
         )
     if post_res.status_code == 200:
-        return post_res.json()["data"]["request_id"]
+        return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
     elif post_res.status_code == 429:
         raise RateLimit()
     else:
