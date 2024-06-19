@@ -7,13 +7,12 @@ import zipfile
 import time
 import re
 from .file_tools import texts_to_file
-from typing import Tuple, Literal
 from .Doc2X.Exception import RateLimit
 from .get_file import strore_pdf
+from typing import Tuple
 
 from .Doc2X.Convert import (
     refresh_key,
-    unzip,
     get_limit,
     uuid2file,
     upload_pdf,
@@ -25,8 +24,7 @@ from .Doc2X.Convert import (
 
 async def get_key(apikey: str) -> str:
     """
-    从服务器获取新的key(不适用于sk开头的key)
-    可从环境变量获得
+    Get apikey from environment variable or input
     """
     if apikey is None:
         apikey = os.getenv("DOC2X_APIKEY", "")
@@ -37,7 +35,6 @@ async def get_key(apikey: str) -> str:
     return apikey
 
 
-# 一些常用功能的封装
 async def pdf2file_v1(
     apikey: str,
     pdf_path: str,
@@ -48,7 +45,7 @@ async def pdf2file_v1(
     rpm: int,
     convert: bool,
     translate: bool = False,
-) -> str:
+):
     """
     Convert pdf file to specified file
     """
@@ -81,8 +78,9 @@ async def pdf2file_v1(
             if output_format == "texts":
                 return texts
             break
+        # If translate is True, return texts and other(texts location inside)
         elif status_process == 100 and status_str == "Translate success":
-            return texts
+            return texts, other
         print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
         await asyncio.sleep(1)
     # Convert uuid to file
@@ -167,7 +165,7 @@ class Doc2X:
 
     async def pic2file_back(
         self,
-        image_file: str,
+        image_file: list,
         output_path: str = "./Output",
         output_format: str = "md_dollar",
         img_correction: bool = True,
@@ -176,24 +174,33 @@ class Doc2X:
     ) -> str:
         """
         Convert image file to specified file, with rate/thread limit
+        input refers to `pic2file` function
         """
+        total = len(image_file)
+        task = [
+            img2file_v1(
+                apikey=self.apikey,
+                img_path=img,
+                output_path=output_path,
+                output_format=output_format,
+                formula=equation,
+                img_correction=img_correction,
+                maxretry=self.maxretry,
+                rpm=self.rmp,
+                convert=convert,
+            )
+            for img in image_file
+        ]
         async with self.limiter:
             async with self.threadnum:
-                return await img2file_v1(
-                    apikey=self.apikey,
-                    img_path=image_file,
-                    output_path=output_path,
-                    output_format=output_format,
-                    formula=equation,
-                    img_correction=img_correction,
-                    maxretry=self.maxretry,
-                    rpm=self.rmp,
-                    convert=convert,
-                )
+                completed_tasks = await asyncio.gather(*task)
+                for i, _ in enumerate(completed_tasks):
+                    print(f"PICTURE Progress: {i + 1}/{total} files processed.")
+                return completed_tasks
 
     def pic2file(
         self,
-        image_file: str,
+        image_file,
         output_path: str = "./Output",
         output_format: str = "md_dollar",
         img_correction: bool = True,
@@ -202,7 +209,7 @@ class Doc2X:
     ) -> str:
         """
         Convert image file to specified file
-        `image_file`: image file path
+        `image_file`: image file path or a list of image file path
         `output_path`: output folder path, default is "./Output"
         `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
         `img_correction`: whether to correct the image, default is `True`
@@ -211,6 +218,18 @@ class Doc2X:
 
         return: output file path
         """
+        if isinstance(image_file, str):
+            image_file = [image_file]
+            return asyncio.run(
+                self.pic2file_back(
+                    image_file,
+                    output_path,
+                    output_format,
+                    img_correction,
+                    equation,
+                    convert,
+                )
+            )[0]
         return asyncio.run(
             self.pic2file_back(
                 image_file,
@@ -224,7 +243,7 @@ class Doc2X:
 
     async def pdf2file_back(
         self,
-        pdf_file: str,
+        pdf_file: list,
         output_path: str = "./Output",
         output_format: str = "md_dollar",
         ocr: bool = True,
@@ -233,24 +252,33 @@ class Doc2X:
     ) -> str:
         """
         Convert pdf file to specified file, with rate/thread limit, async version
+        input refers to `pdf2file` function
         """
+        total = len(pdf_file)
+        tasks = [
+            pdf2file_v1(
+                apikey=self.apikey,
+                pdf_path=pdf,
+                output_path=output_path,
+                output_format=output_format,
+                ocr=ocr,
+                maxretry=self.maxretry,
+                rpm=self.rmp,
+                convert=convert,
+                translate=translate,
+            )
+            for pdf in pdf_file
+        ]
         async with self.limiter:
             async with self.threadnum:
-                return await pdf2file_v1(
-                    apikey=self.apikey,
-                    pdf_path=pdf_file,
-                    output_path=output_path,
-                    output_format=output_format,
-                    ocr=ocr,
-                    maxretry=self.maxretry,
-                    rpm=self.rmp,
-                    convert=convert,
-                    translate=translate,
-                )
+                completed_tasks = await asyncio.gather(*tasks)
+                for i, _ in enumerate(completed_tasks):
+                    print(f"PDF Progress: {i + 1}/{total} files processed.")
+                return completed_tasks
 
     def pdf2file(
         self,
-        pdf_file: str,
+        pdf_file,
         output_path: str = "./Output",
         output_format: str = "md_dollar",
         ocr: bool = True,
@@ -258,16 +286,21 @@ class Doc2X:
     ) -> str:
         """
         Convert pdf file to specified file
-        `pdf_file`: pdf file path
+        `pdf_file`: pdf file path, or a list of pdf file path
         `output_path`: output folder path, default is "./Output"
         `output_format`: output format, accept `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
 
         return: output file path
         """
+        if isinstance(pdf_file, str):
+            input = [pdf_file]
+            return asyncio.run(
+                self.pdf2file_back(
+                    input, output_path, output_format, ocr, convert, False
+                )
+            )[0]
         return asyncio.run(
-            self.pdf2file_back(
-                pdf_file, output_path, output_format, ocr, convert, False
-            )
+            self.pdf2file_back(input, output_path, output_format, ocr, convert, False)
         )
 
     def get_limit(self) -> int:
@@ -317,17 +350,17 @@ class Doc2X:
         output_format: str = "pdf",
         convert: bool = True,
     ) -> list:
-        # 根据线程和速率限制，协程式将pdf文件转换为可识别的pdf文件
-        task = []
+        """
+        Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
+        async version function, input refers to `pdfdeal` function
+        """
         total = len(pdf_files)
-        for pdf_file in pdf_files:
-            task.append(
-                self.pdfdeal_back(pdf_file, output_format, output_path, convert)
-            )
-        completed_tasks = []
-        for i, task in enumerate(asyncio.as_completed(task)):
-            result = await task
-            completed_tasks.append(result)
+        tasks = [
+            self.pdfdeal_back(pdf_file, output_format, output_path, convert)
+            for pdf_file in pdf_files
+        ]
+        completed_tasks = await asyncio.gather(*tasks)
+        for i, _ in enumerate(completed_tasks):
             print(f"PDFDEAL Progress: {i + 1}/{total} files processed.")
         return completed_tasks
 
@@ -349,23 +382,24 @@ class Doc2X:
             return asyncio.run(self.pdfdeals(input, path, output, convert))[0]
         return asyncio.run(self.pdfdeals(input, path, output, convert))
 
-    def gen_folder_list(self, path: str, mode: str) -> list:
+    def pdf_translate(
+        self,
+        pdf_file,
+        output_path: str = "./Output",
+        convert: bool = False,
+    ) -> Tuple[list, list]:
         """
-        Generate a list of files in the folder
-        `path`: folder path
-        `mode`: 'pdf' or 'img'
-
-        return: list of files
+        Translate pdf file to specified file
+        `pdf_file`: pdf file path, or a list of pdf file path
+        `output_path`: output folder path, default is "./Output"
+        `ocr`: whether to use OCR, default is True
+        `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
         """
-        if mode == "pdf":
-            return [
-                os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")
-            ]
-        elif mode == "img":
-            return [
-                os.path.join(path, f)
-                for f in os.listdir(path)
-                if f.endswith(".png") or f.endswith(".jpg") or f.endswith(".jpeg")
-            ]
-        else:
-            raise ValueError("Mode should be 'pdf' or 'img'")
+        if isinstance(pdf_file, str):
+            pdf_file = [pdf_file]
+            return asyncio.run(
+                self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
+            )
+        return asyncio.run(
+            self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
+        )

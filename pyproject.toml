@@ -10,7 +10,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["emoji", "pypdf", "Pillow", "requests", "reportlab"]
+dependencies = ["emoji", "pypdf", "Pillow", "requests", "reportlab", "aiolimiter", "httpx"]
 
 [project.optional-dependencies]
 all = ["pytesseract", "easyocr"]

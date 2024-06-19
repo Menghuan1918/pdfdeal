@@ -1,7 +1,6 @@
 import httpx
 import json
 import os
-import zipfile
 import re
 from typing import Tuple, Literal
 from .Exception import RateLimit
@@ -11,7 +10,7 @@ Base_URL = "https://api.doc2x.noedgeai.com/api"
 
 async def refresh_key(key: str) -> str:
     """
-    从服务器获取新的key(不使用于sk开头的key)
+    Get new key by refresh key
     """
     url = f"{Base_URL}/token/refresh"
     async with httpx.AsyncClient() as client:
@@ -22,20 +21,7 @@ async def refresh_key(key: str) -> str:
         raise Exception(f"Refresh key error! {get_res.status_code}:{get_res.text}")
 
 
-async def unzip(zip_path: str) -> str:
-    """
-    用于创建响应文件夹并解压文件
-    """
-    folder_name = os.path.splitext(os.path.basename(zip_path))[0]
-    extract_path = os.path.join(os.path.dirname(zip_path), folder_name)
-    os.makedirs(extract_path, exist_ok=True)
-    try:
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall(extract_path)
-        os.remove(zip_path)
-        return extract_path
-    except Exception as e:
-        raise Exception(f"Unzip file error! {e}")
+
 
 
 async def check_folder(path: str) -> bool:
