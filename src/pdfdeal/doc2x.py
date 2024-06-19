@@ -9,6 +9,8 @@ import re
 from .file_tools import texts_to_file
 from typing import Tuple, Literal
 from .Doc2X.Exception import RateLimit
+from .get_file import strore_pdf
+
 from .Doc2X.Convert import (
     refresh_key,
     unzip,
@@ -17,6 +19,7 @@ from .Doc2X.Convert import (
     upload_pdf,
     upload_img,
     uuid_status,
+    check_folder,
 )
 
 
@@ -266,3 +269,103 @@ class Doc2X:
                 pdf_file, output_path, output_format, ocr, convert, False
             )
         )
+
+    def get_limit(self) -> int:
+        """
+        Get the limit of the apikey
+        """
+        return asyncio.run(get_limit(self.apikey))
+
+    async def pdfdeal_back(
+        self,
+        input: str,
+        output: str,
+        path: str,
+        convert: bool,
+    ) -> str:
+        """
+        Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
+        async version function
+        """
+        async with self.limiter:
+            async with self.threadnum:
+                texts = await pdf2file_v1(
+                    apikey=self.apikey,
+                    pdf_path=input,
+                    output_path=output,
+                    output_format="texts",
+                    ocr=True,
+                    maxretry=self.maxretry,
+                    rpm=self.rmp,
+                    convert=convert,
+                    translate=False,
+                )
+                await check_folder(path)
+                file_name = os.path.basename(input).replace(".pdf", f".{output}")
+                output_path = os.path.join(path, file_name)
+                if output == "pdf":
+                    strore_pdf(output_path, texts)
+                else:
+                    with open(output_path, "w", encoding="utf-8") as f:
+                        f.write(texts)
+                return output_path
+
+    async def pdfdeals(
+        self,
+        pdf_files: list,
+        output_path: str = "./Output",
+        output_format: str = "pdf",
+        convert: bool = True,
+    ) -> list:
+        # 根据线程和速率限制，协程式将pdf文件转换为可识别的pdf文件
+        task = []
+        total = len(pdf_files)
+        for pdf_file in pdf_files:
+            task.append(
+                self.pdfdeal_back(pdf_file, output_format, output_path, convert)
+            )
+        completed_tasks = []
+        for i, task in enumerate(asyncio.as_completed(task)):
+            result = await task
+            completed_tasks.append(result)
+            print(f"PDFDEAL Progress: {i + 1}/{total} files processed.")
+        return completed_tasks
+
+    def pdfdeal(
+        self,
+        input,
+        output: str = "pdf",
+        path: str = "./Output",
+        convert: bool = True,
+    ) -> str:
+        """
+        `input`: input file path
+        `output`: output format, default is 'pdf', accept 'pdf', 'md'
+        `path`: output path, default is './Output'
+        `convert`: whether to convert "[" to "$" and "[[" to "$$", default is True
+        """
+        if isinstance(input, str):
+            input = [input]
+            return asyncio.run(self.pdfdeals(input, path, output, convert))[0]
+        return asyncio.run(self.pdfdeals(input, path, output, convert))
+
+    def gen_folder_list(self, path: str, mode: str) -> list:
+        """
+        Generate a list of files in the folder
+        `path`: folder path
+        `mode`: 'pdf' or 'img'
+
+        return: list of files
+        """
+        if mode == "pdf":
+            return [
+                os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")
+            ]
+        elif mode == "img":
+            return [
+                os.path.join(path, f)
+                for f in os.listdir(path)
+                if f.endswith(".png") or f.endswith(".jpg") or f.endswith(".jpeg")
+            ]
+        else:
+            raise ValueError("Mode should be 'pdf' or 'img'")
