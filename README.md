@@ -7,6 +7,7 @@
 
 ## What's new
 
+> [!IMPORTANT]
 > The Doc2x methods in version `0.0.X` have been deprecated and will be removed in the future, please migrate to the new implementation as soon as possible. You will receive a warning when you still use the old methods.
 >
 > Most of its interface has not changed, you can try to change `from pdfdeal.doc2x import Doc2x` to `from pdfdeal.doc2x import Doc2X` directly.
