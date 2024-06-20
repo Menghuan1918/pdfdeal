@@ -1,12 +1,6 @@
-import httpx
 import asyncio
 from aiolimiter import AsyncLimiter
-import json
 import os
-import zipfile
-import time
-import re
-from .file_tools import texts_to_file
 from .Doc2X.Exception import RateLimit
 from .get_file import strore_pdf
 from typing import Tuple
@@ -80,7 +74,8 @@ async def pdf2file_v1(
             break
         # If translate is True, return texts and other(texts location inside)
         elif status_process == 100 and status_str == "Translate success":
-            return texts, other
+            final = {"texts": texts, "location": other}
+            return final
         print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
         await asyncio.sleep(1)
     # Convert uuid to file
@@ -396,6 +391,8 @@ class Doc2X:
         `output_path`: output folder path, default is "./Output"
         `ocr`: whether to use OCR, default is True
         `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
+
+        return: list of translated texts and list of translated texts location
         """
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]

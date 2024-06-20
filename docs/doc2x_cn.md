@@ -163,3 +163,50 @@ from pdfdeal.doc2x import Doc2X
 Client = Doc2X()
 print(f"Pages remaining: {Client.get_limit()}")
 ```
+
+### 用于RAG知识库预处理
+
+`Client.pdfdeal`
+
+接收一个或以多个(列表)的pdf路径，返回处理后的输出文件路径。
+
+接受参数：
+- `input`：pdf文件路径或pdf文件路径列表
+- `output`：`str`，可选，输出格式，接受`pdf`、`md`，默认为`pdf`
+- `path`：`str`，可选，输出文件夹路径，默认为`"./Output"`
+- `convert`：`bool`，可选，是否将`[`转换为`$`，`[[`转换为`$$`，默认为`True`
+
+```python
+from pdfdeal.doc2x import Doc2X
+
+Client = Doc2X()
+filelist = gen_folder_list("./test","pdf")
+# 这是内置的一个函数，用于生成文件夹下所有pdf的路径，你可以给定任意list形式的pdf路径
+Client.pdfdeal(filelist)
+```
+
+### 翻译pdf文档
+获得翻译后的文本和位置信息。
+
+```python
+from pdfdeal.doc2x import Doc2X
+
+Client = Doc2X()
+translate = Client.pdf_translate("test.pdf")
+for text in translate:
+    print(text["texts"])
+    print(text["location"])
+```
+
+其中`text["texts"]`是翻译后的文本，为一个列表，空字符串代表当前文本块没有翻译(例如：是表格文本)，示例输出：
+
+```
+['翻译之后']
+```
+
+
+`text["location"]`是文本的位置信息，为一个列表，与`text["texts"]`对应，示例输出：
+
+```
+[{'raw_text': 'xxx', 'page_idx': 0, 'page_width': 1581, 'page_height': 2047, 'x': 178, 'y': 184}]
+```
