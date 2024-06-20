@@ -51,8 +51,8 @@ async def pdf2file_v1(
     except RateLimit:
         # Retry according to maxretry and current rpm
         for i in range(maxretry):
-            print(f"Reach the rate limit, wait for {60 // rpm} seconds")
-            await asyncio.sleep(60 // rpm)
+            print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
+            await asyncio.sleep(60 // rpm + 15)
             try:
                 print(f"Retrying {i+1} / {maxretry} times")
                 uuid = await upload_pdf(apikey=apikey, pdffile=pdf_path, ocr=ocr)
@@ -108,8 +108,8 @@ async def img2file_v1(
     except RateLimit:
         # Retry according to maxretry and current rpm
         for i in range(maxretry):
-            print(f"Reach the rate limit, wait for {60 // rpm} seconds")
-            await asyncio.sleep(60 // rpm)
+            print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
+            await asyncio.sleep(60 // rpm + 15)
             try:
                 print(f"Retrying {i+1} / {maxretry} times")
                 uuid = await upload_img(
@@ -153,7 +153,7 @@ class Doc2X:
         self, apikey: str = None, rpm: int = 4, thread: int = 1, maxretry: int = 3
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
-        self.limiter = AsyncLimiter(rpm, 60)
+        self.limiter = AsyncLimiter(rpm)
         self.rmp = rpm
         self.thread = thread
         self.maxretry = maxretry
@@ -186,8 +186,8 @@ class Doc2X:
             )
             for img in image_file
         ]
-        async with self.limiter:
-            async with asyncio.Semaphore(self.thread):
+        async with asyncio.Semaphore(self.thread):
+            async with self.limiter:
                 completed_tasks = await asyncio.gather(*task)
                 for i, _ in enumerate(completed_tasks):
                     print(f"PICTURE Progress: {i + 1}/{total} files processed.")
@@ -264,8 +264,8 @@ class Doc2X:
             )
             for pdf in pdf_file
         ]
-        async with self.limiter:
-            async with asyncio.Semaphore(self.thread):
+        async with asyncio.Semaphore(self.thread):
+            async with self.limiter:
                 completed_tasks = await asyncio.gather(*tasks)
                 for i, _ in enumerate(completed_tasks):
                     print(f"PDF Progress: {i + 1}/{total} files processed.")
@@ -317,8 +317,8 @@ class Doc2X:
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function
         """
-        async with self.limiter:
-            async with asyncio.Semaphore(self.thread):
+        async with asyncio.Semaphore(self.thread):
+            async with self.limiter:
                 texts = await pdf2file_v1(
                     apikey=self.apikey,
                     pdf_path=input,
