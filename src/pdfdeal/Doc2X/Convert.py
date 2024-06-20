@@ -21,9 +21,6 @@ async def refresh_key(key: str) -> str:
         raise Exception(f"Refresh key error! {get_res.status_code}:{get_res.text}")
 
 
-
-
-
 async def check_folder(path: str) -> bool:
     """
     检查输入的是否为文件夹，是则保证文件夹存在并返回True,否则抛出异常
@@ -60,8 +57,8 @@ async def uuid2file(
     await check_folder(output_path)
     url = f"{Base_URL}/export?request_id={uuid}&to={output_format}"
     download_format = output_format if output_format == "docx" else "zip"
-
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(120)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         get_res = await client.get(url, headers={"Authorization": "Bearer " + apikey})
     if get_res.status_code == 200:
         output_path = os.path.join(output_path, uuid + "." + download_format)

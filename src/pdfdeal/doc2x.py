@@ -27,7 +27,7 @@ async def get_key(apikey: str) -> str:
     Get apikey from environment variable or input
     """
     if apikey is None:
-        apikey = os.getenv("DOC2X_APIKEY", "")
+        apikey = os.environ.get("DOC2X_APIKEY", "")
     if apikey == "":
         raise ValueError("No apikey found")
     if not apikey.startswith("sk-"):
@@ -410,5 +410,6 @@ def Doc2x(api_key):
     Deprecated function, use `from pdfdeal.doc2x import Doc2X` instead
     """
     from .doc2x_old import Doc2x
-    Warning("This function is deprecated, please use `from pdfdeal.doc2x import Doc2X` instead")
+    import warnings
+    warnings.warn("This function is deprecated, please use `from pdfdeal.doc2x import Doc2X` instead")
     return Doc2x(api_key)
