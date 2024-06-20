@@ -1,11 +1,11 @@
 > [!IMPORTANT]
-> `0.0.X`版本的方法已经弃用，其将会在未来删除，请尽快迁移至新的实现。您可以在[此处](./doc2x_old_cn.md)查看旧版本的文档。
+> `0.0.X`版本的方法已经弃用，其将会在未来删除，请尽快迁移至新的实现。你可以在[此处](./doc2x_old_cn.md)查看旧版本的文档。
 >
-> 其大部分接口并没变动，您可以尝试直接将`from pdfdeal.doc2x import Doc2x`改为`from pdfdeal.doc2x import Doc2X`。
+> 其大部分接口并没变动，你可以尝试直接将`from pdfdeal.doc2x import Doc2x`改为`from pdfdeal.doc2x import Doc2X`。
 
 ## 安装
 
-`pdfdeal`兼容python3.9以及更高版本，使用`pip`进行安装：
+`pdfdeal`支持python3.9以及更高版本，使用`pip`进行安装：
 
 ```bash
 pip install --upgrade pdfdeal
@@ -13,11 +13,11 @@ pip install --upgrade pdfdeal
 
 ## 配置API密匙
 
-对于个人使用，请登录[https://doc2x.noedgeai.com](https://doc2x.noedgeai.com/)，点击`个人信息`，复制其中的身份令牌作为您的API密匙。
+对于个人使用，请登录[https://doc2x.noedgeai.com](https://doc2x.noedgeai.com/)，点击`个人信息`，复制其中的身份令牌作为你的API密匙。
 
 ### 使用环境变量(推荐)
 
-运行以下代码以导入您的API密匙：
+运行以下代码以导入你的API密匙：
 
 ```python
 from pdfdeal.doc2x import Doc2X
@@ -32,7 +32,7 @@ Client = Doc2X()
 export DOC2X_APIKEY = "Your API Key"
 ```
 
-您也可以将以上命令添加到`~/.zshrc`或`~/.bashrc`以持久化环境变量。
+你也可以将以上命令添加到`~/.zshrc`或`~/.bashrc`以持久化环境变量。
 
 #### Windows
 
@@ -42,11 +42,11 @@ export DOC2X_APIKEY = "Your API Key"
 setx DOC2X_APIKEY "Your API Key"
 ```
 
-您可以将其添加至`此电脑` -> `属性` -> `高级系统设置` -> `环境变量` -> `系统变量`中以持久化。
+你可以将其添加至`此电脑` -> `属性` -> `高级系统设置` -> `环境变量` -> `系统变量`中以持久化。
 
 ### 为项目单独设置API密匙
 
-若您希望 API 密钥仅对单个项目可见，可创建一个包含您的API密钥的本地`.env`文件。以下是一个`.env`文件的示范：
+若你希望 API 密钥仅对单个项目可见，可创建一个包含你的API密钥的本地`.env`文件。以下是一个`.env`文件的示范：
 
 ```
 DOC2X_APIKEY = "Your API Key"
@@ -56,7 +56,7 @@ DOC2X_APIKEY = "Your API Key"
 
 ### 指定API密匙(不推荐)
 
-如果您想指定您的API密匙，您可以通过以下代码导入：
+如果你想指定你的API密匙，你可以通过以下代码导入：
 
 ```python
 from pdfdeal.doc2x import Doc2X
@@ -65,7 +65,7 @@ Client = Doc2X(apikey="Your API key")
 
 ## 全局设置
 
-您还可以配置密匙时同时配置请求的全局设置：
+你还可以配置密匙时同时配置请求的全局设置：
 
 ```python
 from pdfdeal.doc2x import Doc2X
@@ -82,21 +82,21 @@ Client = Doc2X(api,rpm=4,thread=1,maxretry=3)
 
 ## 发起请求
 
-如未特殊声明，默认已经通过上述方法配置好了API密匙。
+请首先通过上述方法配置好API密匙。
 
 ### 图片处理
 
 `Client.pic2file`
 
-给定一个或以多个(列表)的图片路径，返回处理后的输出文件路径。
+接收一个或以多个(列表)的图片路径，返回处理后的输出文件路径。
 
 输入参数：
 - `image_file`：图片文件路径或图片文件路径列表
 - `output_path`：`str`，可选，输出文件夹路径，默认为`"./Output"`
-- `output_format`：`str`，可选，输出格式，接受`texts`、`md`、`md_dollar`、`latex`，默认为`md_dollar`。其中选择`texts`时直接返回文本，并不会生成文件。
+- `output_format`：`str`，可选，输出格式，接受`texts`、`md`、`md_dollar`、`latex`，默认为`md_dollar`。其中选择`texts`时直接返回文本，并不会保存到文件。
 - `img_correction`：`bool`，可选，是否进行图片矫正，默认为`True`
 - `equation`：`bool`，可选，使用纯公式输出模式，默认为`False`
-- `convert`：`bool`，可选，是否将`[`转换为`$`，`[[`转换为`$$`，默认为`False`
+- `convert`：`bool`，可选，是否将`[`转换为`$`，`[[`转换为`$$`，默认为`False`，仅在`output_format`为`texts`时有效
 
 示例：按照rpm限制处理多个图片
 
@@ -105,8 +105,9 @@ from pdfdeal.doc2x import Doc2X
 from pdfdeal.file_tools import gen_folder_list
 Client = Doc2X()
 filelist = gen_folder_list("./test","img")
-# 这是内置的一个函数，用于生成文件夹下所有图片的路径，您可以给定任意list形式的图片路径
+# 这是内置的一个函数，用于生成文件夹下所有图片的路径，你可以给定任意list形式的图片路径
 finished_list =  Client.pic2file(filelist,output_format="docx")
+print(*finished_list, sep='\n')
 ```
 
 示例：处理单个图片，获得公式格式为`$公式$`形式的内容
@@ -116,4 +117,49 @@ from pdfdeal.doc2x import Doc2X
 Client = Doc2X()
 text = Client.pic2file("./test.png", output_format="texts", convert=True)
 print(*text, sep='\n')
+```
+
+### PDF处理
+`Client.pdf2file`
+
+接收一个或以多个(列表)的pdf路径，返回处理后的输出文件路径。
+
+输入参数：
+- `pdf_file`：pdf文件路径或pdf文件路径列表
+- `output_path`：`str`，可选，输出文件夹路径，默认为`"./Output"`
+- `output_format`：`str`，可选，输出格式，接受`texts`、`md`、`md_dollar`、`latex`、`docx`，默认为`md_dollar`。其中选择`texts`时直接返回文本，并不会保存到文件。
+- `ocr`：`bool`，可选，是否使用OCR，默认为`True`
+- `convert`：`bool`，可选，是否将`[`转换为`$`，`[[`转换为`$$`，默认为`False`，仅在`output_format`为`texts`时有效
+
+示例：将单个pdf转换为latex文件
+
+```python
+from pdfdeal.doc2x import Doc2X
+Client = Doc2X()
+filepath = Client.pdf2file("test.pdf",output_format ="latex")
+print(filepath)
+# 返回值为输出文件路径
+```
+
+示例：将多个pdf转换为docx文件
+
+```python
+from pdfdeal.doc2x import Doc2X
+from pdfdeal.file_tools import gen_folder_list
+Client = Doc2X()
+filelist = gen_folder_list("./test","pdf")
+# 这是内置的一个函数，用于生成文件夹下所有pdf的路径，你可以给定任意list形式的pdf路径
+finished_list =  Client.pdf2file(filelist,output_format="docx")
+print(*finished_list, sep='\n')
+```
+
+### 获得剩余请求次数
+`Client.get_limit`
+
+返回API剩余请求次数。
+
+```python
+from pdfdeal.doc2x import Doc2X
+Client = Doc2X()
+print(f"Pages remaining: {Client.get_limit()}")
 ```

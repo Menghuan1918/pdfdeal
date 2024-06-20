@@ -288,7 +288,9 @@ class Doc2X:
         Convert pdf file to specified file
         `pdf_file`: pdf file path, or a list of pdf file path
         `output_path`: output folder path, default is "./Output"
-        `output_format`: output format, accept `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
+        `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
+        `ocr`: whether to use OCR, default is True
+        `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
 
         return: output file path
         """
@@ -300,7 +302,7 @@ class Doc2X:
                 )
             )[0]
         return asyncio.run(
-            self.pdf2file_back(input, output_path, output_format, ocr, convert, False)
+            self.pdf2file_back(pdf_file, output_path, output_format, ocr, convert, False)
         )
 
     def get_limit(self) -> int:
