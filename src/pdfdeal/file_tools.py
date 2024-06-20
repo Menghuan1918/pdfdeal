@@ -5,7 +5,7 @@ import re
 import emoji
 import unicodedata
 import os
-
+import zipfile
 
 def OCR_easyocr(path, language=["ch_sim", "en"], GPU=False):
     try:
@@ -130,6 +130,40 @@ def extract_text_and_images(
         clear_cache()
     return Text
 
+
+def gen_folder_list(path: str, mode: str) -> list:
+    """
+    Generate a list of files in the folder
+    `path`: folder path
+    `mode`: 'pdf' or 'img'
+
+    return: list of files
+    """
+    if mode == "pdf":
+        return [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")]
+    elif mode == "img":
+        return [
+            os.path.join(path, f)
+            for f in os.listdir(path)
+            if f.endswith(".png") or f.endswith(".jpg") or f.endswith(".jpeg")
+        ]
+    else:
+        raise ValueError("Mode should be 'pdf' or 'img'")
+
+def unzip(zip_path: str) -> str:
+    """
+    Unzip file and return the extract path
+    """
+    folder_name = os.path.splitext(os.path.basename(zip_path))[0]
+    extract_path = os.path.join(os.path.dirname(zip_path), folder_name)
+    os.makedirs(extract_path, exist_ok=True)
+    try:
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(extract_path)
+        os.remove(zip_path)
+        return extract_path
+    except Exception as e:
+        raise Exception(f"Unzip file error! {e}")
 
 def texts_to_file(texts, filepath, output_format="txt"):
     """

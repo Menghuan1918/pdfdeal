@@ -6,6 +6,8 @@ from .file_tools import OCR_pytesseract
 from .file_tools import OCR_pass
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.pdfbase import pdfmetrics
 
 
 def download_pdfs_from_url(url):
@@ -33,6 +35,10 @@ def download_pdfs_from_url(url):
 
 def strore_pdf(pdf_path, Text):
     c = canvas.Canvas(pdf_path, pagesize=letter)
+
+    pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+    c.setFont("STSong-Light", 12)
+
     for text in Text:
         lines = text.split("\n")
         for i, line in enumerate(lines):

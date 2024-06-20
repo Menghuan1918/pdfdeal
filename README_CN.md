@@ -4,6 +4,28 @@
 
 更轻松简单地处理 PDF，提取可读文本，用 OCR 识别图像文本并清理格式,使其更适合构建知识库。
 
+## 最近更新
+
+> [!IMPORTANT]
+> `0.0.X`版本的Doc2x方法已经弃用，其将会在未来删除，请尽快迁移至新的实现。当你依然使用旧方法时会收到一个警告。
+>
+> 其大部分接口并没变动，你可以尝试直接将`from pdfdeal.doc2x import Doc2x`改为`from pdfdeal.doc2x import Doc2X`。
+
+重构的Doc2X支持，使用协程加速处理速度。快速开始：
+
+```python
+from pdfdeal.doc2x import Doc2X
+
+Client = Doc2X()
+filelist = gen_folder_list("./test","pdf")
+# 这是内置的一个函数，用于生成文件夹下所有pdf的路径，你可以给定任意list形式的pdf路径
+Client.pdfdeal(filelist)
+```
+
+详细请参阅[Doc2x支持](./docs/doc2x_cn.md)
+
+## 简介
+
 使用 [easyocr](https://github.com/JaidedAI/EasyOCR) 来识别图像并将其添加到原始文本中。可以设置输出格式使用 pdf 格式，这将确保文本在新 PDF 中的页数与原始文本相同。对 PDF 进行处理后与知识库应用程序（如[Dify](https://github.com/langgenius/dify)、[FastGPT](https://github.com/labring/FastGPT)），理论上可以达到更好的识别率。
 
 ![111](https://github.com/Menghuan1918/pdfdeal/assets/122662527/58155389-f846-41fd-9314-1cd86282e66a)

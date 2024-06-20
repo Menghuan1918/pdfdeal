@@ -1,16 +1,16 @@
 [project]
 name = "pdfdeal"
-version = "0.0.7"
+version = "0.1.0"
 authors = [{ name = "Menghuan1918", email = "menghuan@menghuan1918.com" }]
-description = "Easier to deal with PDF, extract readable text and OCR to recognise image text and clean the format. Make it more suitable for knowledge base construction."
+description = "Easier to deal with PDF, extract readable text and OCR to recognise image text and clean the format. Make it more suitable for knowledge base construction. Best performance with Doc2X."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["emoji", "pypdf", "Pillow", "requests", "reportlab"]
+dependencies = ["emoji", "pypdf", "Pillow", "requests", "reportlab", "aiolimiter", "httpx"]
 
 [project.optional-dependencies]
 all = ["pytesseract", "easyocr"]
