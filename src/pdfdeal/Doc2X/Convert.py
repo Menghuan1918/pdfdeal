@@ -13,7 +13,8 @@ async def refresh_key(key: str) -> str:
     Get new key by refresh key
     """
     url = f"{Base_URL}/token/refresh"
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(30)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         get_res = await client.post(url, headers={"Authorization": "Bearer " + key})
     if get_res.status_code == 200:
         return json.loads(get_res.content.decode("utf-8"))["data"]["token"]
@@ -127,7 +128,8 @@ async def upload_pdf(
         raise Exception(f"Open file error! {e}")
     ocr = 1 if ocr else 0
     translate = 2 if translate else 1
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(120)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         post_res = await client.post(
             url,
             headers={"Authorization": "Bearer " + apikey},
@@ -169,7 +171,8 @@ async def upload_img(
         file = {"file": open(imgfile, "rb")}
     except Exception as e:
         raise Exception(f"Open file error! {e}")
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(120)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         post_res = await client.post(
             url,
             headers={"Authorization": "Bearer " + apikey},
@@ -273,7 +276,8 @@ async def uuid_status(
         url = f"{Base_URL}/platform/async/status?uuid={uuid}"
     if translate:
         url += "&parse_to=2"
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(30)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         get_res = await client.get(url, headers={"Authorization": "Bearer " + apikey})
     if get_res.status_code == 200:
         datas = json.loads(get_res.content.decode("utf-8"))["data"]
