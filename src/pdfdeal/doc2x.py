@@ -144,17 +144,19 @@ async def img2file_v1(
 class Doc2X:
     """
     `apikey`: Your apikey, or get from environment variable `DOC2X_APIKEY`
-    `rpm`: Request per minute, default is `4`
+    `rpm`: Request per minute, default is `3`
     `thread`: Max thread number, default is `1`
-    `maxretry`: Max retry times, default is `3`
+    `maxretry`: Max retry times, default is `5`
     """
 
     def __init__(
-        self, apikey: str = None, rpm: int = 4, thread: int = 1, maxretry: int = 3
+        self, apikey: str = None, rpm: int = 3, thread: int = 1, maxretry: int = 5
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
-        self.limiter = AsyncLimiter(rpm)
-        self.rmp = rpm
+        self.limiter = AsyncLimiter(max_rate=rpm - 1, time_period=60)
+        time_period = int(60 // rpm)
+        self.concurrency = AsyncLimiter(max_rate=thread, time_period=time_period)
+        self.rpm = rpm
         self.thread = thread
         self.maxretry = maxretry
 
@@ -172,26 +174,27 @@ class Doc2X:
         input refers to `pic2file` function
         """
         total = len(image_file)
-        task = [
-            img2file_v1(
-                apikey=self.apikey,
-                img_path=img,
-                output_path=output_path,
-                output_format=output_format,
-                formula=equation,
-                img_correction=img_correction,
-                maxretry=self.maxretry,
-                rpm=self.rmp,
-                convert=convert,
-            )
-            for img in image_file
-        ]
-        async with asyncio.Semaphore(self.thread):
-            async with self.limiter:
-                completed_tasks = await asyncio.gather(*task)
-                for i, _ in enumerate(completed_tasks):
-                    print(f"PICTURE Progress: {i + 1}/{total} files processed.")
-                return completed_tasks
+
+        async def limited_img2file_v1(img):
+            async with self.concurrency:
+                async with self.limiter:
+                    return await img2file_v1(
+                        apikey=self.apikey,
+                        img_path=img,
+                        output_path=output_path,
+                        output_format=output_format,
+                        formula=equation,
+                        img_correction=img_correction,
+                        maxretry=self.maxretry,
+                        rpm=self.rpm,
+                        convert=convert,
+                    )
+
+        task = [limited_img2file_v1(img) for img in image_file]
+        completed_tasks = await asyncio.gather(*task)
+        for i, _ in enumerate(completed_tasks):
+            print(f"PICTURE Progress: {i + 1}/{total} files processed.")
+        return completed_tasks
 
     def pic2file(
         self,
@@ -250,26 +253,27 @@ class Doc2X:
         input refers to `pdf2file` function
         """
         total = len(pdf_file)
-        tasks = [
-            pdf2file_v1(
-                apikey=self.apikey,
-                pdf_path=pdf,
-                output_path=output_path,
-                output_format=output_format,
-                ocr=ocr,
-                maxretry=self.maxretry,
-                rpm=self.rmp,
-                convert=convert,
-                translate=translate,
-            )
-            for pdf in pdf_file
-        ]
-        async with asyncio.Semaphore(self.thread):
-            async with self.limiter:
-                completed_tasks = await asyncio.gather(*tasks)
-                for i, _ in enumerate(completed_tasks):
-                    print(f"PDF Progress: {i + 1}/{total} files processed.")
-                return completed_tasks
+
+        async def limited_pdf2file_v1(pdf):
+            async with self.concurrency:
+                async with self.limiter:
+                    return await pdf2file_v1(
+                        apikey=self.apikey,
+                        pdf_path=pdf,
+                        output_path=output_path,
+                        output_format=output_format,
+                        ocr=ocr,
+                        maxretry=self.maxretry,
+                        rpm=self.rpm,
+                        convert=convert,
+                        translate=translate,
+                    )
+
+        tasks = [limited_pdf2file_v1(pdf) for pdf in pdf_file]
+        completed_tasks = await asyncio.gather(*tasks)
+        for i, _ in enumerate(completed_tasks):
+            print(f"PDF Progress: {i + 1}/{total} files processed.")
+        return completed_tasks
 
     def pdf2file(
         self,
@@ -297,7 +301,9 @@ class Doc2X:
                 )
             )[0]
         return asyncio.run(
-            self.pdf2file_back(pdf_file, output_path, output_format, ocr, convert, False)
+            self.pdf2file_back(
+                pdf_file, output_path, output_format, ocr, convert, False
+            )
         )
 
     def get_limit(self) -> int:
@@ -317,7 +323,7 @@ class Doc2X:
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function
         """
-        async with asyncio.Semaphore(self.thread):
+        async with self.concurrency:
             async with self.limiter:
                 texts = await pdf2file_v1(
                     apikey=self.apikey,
@@ -326,7 +332,7 @@ class Doc2X:
                     output_format="texts",
                     ocr=True,
                     maxretry=self.maxretry,
-                    rpm=self.rmp,
+                    rpm=self.rpm,
                     convert=convert,
                     translate=False,
                 )
@@ -410,5 +416,8 @@ def Doc2x(api_key):
     """
     from .doc2x_old import Doc2x
     import warnings
-    warnings.warn("This function is deprecated, please use `from pdfdeal.doc2x import Doc2X` instead")
+
+    warnings.warn(
+        "This function is deprecated, please use `from pdfdeal.doc2x import Doc2X` instead"
+    )
     return Doc2x(api_key)

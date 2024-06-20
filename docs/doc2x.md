@@ -69,13 +69,13 @@ You can also configure global settings when configuring the key:
 
 ```python
 from pdfdeal.doc2x import Doc2X
-Client = Doc2X(api,rpm=4,thread=1,maxretry=3)
+Client = Doc2X(apikey=api,rpm=25,thread=5,maxretry=10)
 ```
 
 And:
-- `rpm` represents the number of requests per minute, default is 4.
+- `rpm` represents the number of requests per minute, default is 3.
 - `thread` represents the number of threads, default is 1.
-- `maxretry` represents the maximum number of retries, default is 3.
+- `maxretry` represents the maximum number of retries, default is 5.
 
 > [!NOTE]
 > For personal use, sugguest not change the default settings.

@@ -69,13 +69,13 @@ Client = Doc2X(apikey="Your API key")
 
 ```python
 from pdfdeal.doc2x import Doc2X
-Client = Doc2X(api,rpm=4,thread=1,maxretry=3)
+Client = Doc2X(apikey=api,rpm=25,thread=5,maxretry=10)
 ```
 
 其中：
-- `rpm`代表每分钟请求数，默认为4。
+- `rpm`代表每分钟请求数，默认为3。
 - `thread`代表最大同时请求数，默认为1。
-- `maxretry`代表遇到rpm限制时的最大重试次数，默认为3。
+- `maxretry`代表遇到rpm限制时的最大重试次数，默认为5。
 
 > [!NOTE]
 > 对于个人使用，不建议修改`rpm`和`thread`，以免触发频率限制。
