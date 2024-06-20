@@ -38,10 +38,14 @@ Client.pdfdeal(filelist)
 
 你也可以**单独使用**Doc2x的支持模块直接将pdf转换为markdown/latex/docx等格式，就像下面这样。详细请参阅[Doc2x支持](./docs/doc2x_cn.md)。
 
+
 ```python
-from pdfdeal.doc2x import Doc2x
-Client = Doc2x(api_key=your_api)
-Client.pdf2file(pdf_file="./ppt/test.pdf", output_path="./output", output_format="md_dollar", ocr=True)
+from pdfdeal.doc2x import Doc2X
+
+Client = Doc2X()
+filelist = gen_folder_list("./test","pdf")
+# This is a built-in function for generating the folder under the path of all the pdf, you can give any list of the form of the path of the pdf
+Client.pdfdeal(filelist)
 ```
 
 ## 使用方法
@@ -147,11 +151,14 @@ print(deal_pdf(input="test.pdf",ocr="pass"))
 
 ### 使用Doc2x
 
+
 ```python
-from pdfdeal.doc2x import Doc2x
-Client = Doc2x(api_key=your_api)
-file_path = "./test.pdf"
-Client.pdfdeal(input=file_path, output="pdf", path="./Output", convert=True)
+from pdfdeal.doc2x import Doc2X
+
+Client = Doc2X()
+filelist = gen_folder_list("./test","pdf")
+# This is a built-in function for generating the folder under the path of all the pdf, you can give any list of the form of the path of the pdf
+Client.pdfdeal(filelist)
 ```
 
 请参阅[Doc2x支持](./docs/doc2x_cn.md)。
