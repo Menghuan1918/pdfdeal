@@ -42,9 +42,12 @@ Added support for Doc2x, which currently has a daily 500-page **free** usage quo
 You can also use Doc2x support module **alone** to convert pdf to markdown/latex/docx directly like below. See [Doc2x Support](./docs/doc2x.md) for more.
 
 ```python
-from pdfdeal.doc2x import Doc2x
-Client = Doc2x(api_key=your_api)
-Client.pdf2file(pdf_file="./ppt/test.pdf", output_path="./output", output_format="md_dollar", ocr=True)
+from pdfdeal.doc2x import Doc2X
+
+Client = Doc2X()
+filelist = gen_folder_list("./test","pdf")
+# This is a built-in function for generating the folder under the path of all the pdf, you can give any list of the form of the path of the pdf
+Client.pdfdeal(filelist)
 ```
 
 ## Usage
@@ -152,10 +155,12 @@ print(deal_pdf(input="test.pdf",ocr="pass"))
 ### Doc2x support
 
 ```python
-from pdfdeal.doc2x import Doc2x
-Client = Doc2x(api_key=your_api)
-file_path = "./test.pdf"
-Client.pdfdeal(input=file_path, output="pdf", path="./Output", convert=True)
+from pdfdeal.doc2x import Doc2X
+
+Client = Doc2X()
+filelist = gen_folder_list("./test","pdf")
+# This is a built-in function for generating the folder under the path of all the pdf, you can give any list of the form of the path of the pdf
+Client.pdfdeal(filelist)
 ```
 
 See [Doc2x Support](./docs/doc2x.md).
