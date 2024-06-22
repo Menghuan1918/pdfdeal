@@ -147,7 +147,7 @@ class Doc2X:
     """
     `apikey`: Your apikey, or get from environment variable `DOC2X_APIKEY`
     `rpm`: Request per minute, default is `3`
-    `thread`: Max thread number, default is `1`
+    `thread`: Max thread number, default is `1`, no used now, will perfer to use `rpm`
     `maxretry`: Max retry times, default is `5`
     """
 
@@ -156,10 +156,7 @@ class Doc2X:
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
         self.limiter = AsyncLimiter(max_rate=rpm - 1, time_period=60)
-        time_period = int(60 // rpm)
-        self.concurrency = AsyncLimiter(max_rate=thread, time_period=time_period)
         self.rpm = rpm
-        self.thread = thread
         self.maxretry = maxretry
 
     async def pic2file_back(
@@ -178,19 +175,18 @@ class Doc2X:
 
         async def limited_img2file_v1(img):
             try:
-                async with self.concurrency:
-                    async with self.limiter:
-                        return await img2file_v1(
-                            apikey=self.apikey,
-                            img_path=img,
-                            output_path=output_path,
-                            output_format=output_format,
-                            formula=equation,
-                            img_correction=img_correction,
-                            maxretry=self.maxretry,
-                            rpm=self.rpm,
-                            convert=convert,
-                        )
+                async with self.limiter:
+                    return await img2file_v1(
+                        apikey=self.apikey,
+                        img_path=img,
+                        output_path=output_path,
+                        output_format=output_format,
+                        formula=equation,
+                        img_correction=img_correction,
+                        maxretry=self.maxretry,
+                        rpm=self.rpm,
+                        convert=convert,
+                    )
             except Exception as e:
                 return f"Error {e}"
 
@@ -282,19 +278,18 @@ class Doc2X:
 
         async def limited_pdf2file_v1(pdf):
             try:
-                async with self.concurrency:
-                    async with self.limiter:
-                        return await pdf2file_v1(
-                            apikey=self.apikey,
-                            pdf_path=pdf,
-                            output_path=output_path,
-                            output_format=output_format,
-                            ocr=ocr,
-                            maxretry=self.maxretry,
-                            rpm=self.rpm,
-                            convert=convert,
-                            translate=translate,
-                        )
+                async with self.limiter:
+                    return await pdf2file_v1(
+                        apikey=self.apikey,
+                        pdf_path=pdf,
+                        output_path=output_path,
+                        output_format=output_format,
+                        ocr=ocr,
+                        maxretry=self.maxretry,
+                        rpm=self.rpm,
+                        convert=convert,
+                        translate=translate,
+                    )
             except Exception as e:
                 return f"Error {e}"
 
@@ -381,28 +376,27 @@ class Doc2X:
         async version function
         """
         try:
-            async with self.concurrency:
-                async with self.limiter:
-                    texts = await pdf2file_v1(
-                        apikey=self.apikey,
-                        pdf_path=input,
-                        output_path=output,
-                        output_format="texts",
-                        ocr=True,
-                        maxretry=self.maxretry,
-                        rpm=self.rpm,
-                        convert=convert,
-                        translate=False,
-                    )
-                    await check_folder(path)
-                    file_name = os.path.basename(input).replace(".pdf", f".{output}")
-                    output_path = os.path.join(path, file_name)
-                    if output == "pdf":
-                        strore_pdf(output_path, texts)
-                    else:
-                        with open(output_path, "w", encoding="utf-8") as f:
-                            f.write(texts)
-                    return output_path, "", True
+            async with self.limiter:
+                texts = await pdf2file_v1(
+                    apikey=self.apikey,
+                    pdf_path=input,
+                    output_path=output,
+                    output_format="texts",
+                    ocr=True,
+                    maxretry=self.maxretry,
+                    rpm=self.rpm,
+                    convert=convert,
+                    translate=False,
+                )
+                await check_folder(path)
+                file_name = os.path.basename(input).replace(".pdf", f".{output}")
+                output_path = os.path.join(path, file_name)
+                if output == "pdf":
+                    strore_pdf(output_path, texts)
+                else:
+                    with open(output_path, "w", encoding="utf-8") as f:
+                        f.write(texts)
+                return output_path, "", True
         except Exception as e:
             return input, e, False
 

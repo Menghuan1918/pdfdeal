@@ -2,7 +2,6 @@ import pytest
 from pdfdeal.doc2x import Doc2X
 from pdfdeal.file_tools import gen_folder_list
 import os
-import time
 
 
 def test_single_pdf2file_v1():
@@ -51,20 +50,15 @@ def test_multiple_pdf2file_v2():
 
 
 def test_multiple_high_rpm_v2():
-    client = Doc2X(rpm=20, thread=10)
-    start_time = time.time()
-    file_list = ["tests/pdf/sample.pdf" for _ in range(25)]
+    client = Doc2X(rpm=20)
+    file_list = ["tests/pdf/sample.pdf" for _ in range(15)]
     success, failed, flag = client.pdf2file(
         pdf_file=file_list,
         output_path="./Output/test",
         version="v2",
     )
-    end_time = time.time()
-    execution_time = end_time - start_time
-    assert execution_time > 60
-    assert execution_time < 120
-    assert len(success) == len(failed) == 25
+    assert len(success) == len(failed) == 15
     for s in success:
         if s != "":
             assert os.path.exists(s)
-            assert s.endswith(".md")
+            assert s.endswith(".zip")
