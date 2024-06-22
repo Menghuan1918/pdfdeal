@@ -4,6 +4,7 @@ import os
 from .Doc2X.Exception import RateLimit
 from .get_file import strore_pdf
 from typing import Tuple
+from .file_tools import list_rename
 
 from .Doc2X.Convert import (
     refresh_key,
@@ -13,6 +14,7 @@ from .Doc2X.Convert import (
     upload_img,
     uuid_status,
     check_folder,
+    process_status,
 )
 
 
@@ -145,7 +147,7 @@ class Doc2X:
     """
     `apikey`: Your apikey, or get from environment variable `DOC2X_APIKEY`
     `rpm`: Request per minute, default is `3`
-    `thread`: Max thread number, default is `1`
+    `thread`: Max thread number, default is `1`, no used now, will perfer to use `rpm`
     `maxretry`: Max retry times, default is `5`
     """
 
@@ -154,10 +156,7 @@ class Doc2X:
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
         self.limiter = AsyncLimiter(max_rate=rpm - 1, time_period=60)
-        time_period = int(60 // rpm)
-        self.concurrency = AsyncLimiter(max_rate=thread, time_period=time_period)
         self.rpm = rpm
-        self.thread = thread
         self.maxretry = maxretry
 
     async def pic2file_back(
@@ -173,10 +172,9 @@ class Doc2X:
         Convert image file to specified file, with rate/thread limit
         input refers to `pic2file` function
         """
-        total = len(image_file)
 
         async def limited_img2file_v1(img):
-            async with self.concurrency:
+            try:
                 async with self.limiter:
                     return await img2file_v1(
                         apikey=self.apikey,
@@ -189,46 +187,54 @@ class Doc2X:
                         rpm=self.rpm,
                         convert=convert,
                     )
+            except Exception as e:
+                return f"Error {e}"
 
         task = [limited_img2file_v1(img) for img in image_file]
         completed_tasks = await asyncio.gather(*task)
-        for i, _ in enumerate(completed_tasks):
-            print(f"PICTURE Progress: {i + 1}/{total} files processed.")
-        return completed_tasks
+        return await process_status(image_file, completed_tasks)
 
     def pic2file(
         self,
         image_file,
         output_path: str = "./Output",
+        output_names: list = None,
         output_format: str = "md_dollar",
         img_correction: bool = True,
         equation=False,
         convert: bool = False,
+        version: str = "v1",
     ) -> str:
         """
         Convert image file to specified file
-        `image_file`: image file path or a list of image file path
-        `output_path`: output folder path, default is "./Output"
-        `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
-        `img_correction`: whether to correct the image, default is `True`
-        `equation`: whether the image is an equation, default is `False`
-        `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
 
-        return: output file path
+        Args:
+            `image_file`: image file path or a list of image file path
+            `output_path`: output folder path, default is "./Output"
+            `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
+            `img_correction`: whether to correct the image, default is `True`
+            `equation`: whether the image is an equation, default is `False`
+            `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
+            `version`: If version is `v2`, will return more information, default is `v1`
+
+        Return:
+            `list`: output file path
+
+            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+                `list1`: list of successful files path, if some files are failed, its path will be empty string
+                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
+                `bool`: True means that at least one file process failed
         """
         if isinstance(image_file, str):
             image_file = [image_file]
-            return asyncio.run(
-                self.pic2file_back(
-                    image_file,
-                    output_path,
-                    output_format,
-                    img_correction,
-                    equation,
-                    convert,
+
+        if output_names is not None:
+            if len(image_file) != len(output_names):
+                raise ValueError(
+                    "The length of files and output_names should be the same."
                 )
-            )[0]
-        return asyncio.run(
+
+        success, failed, flag = asyncio.run(
             self.pic2file_back(
                 image_file,
                 output_path,
@@ -238,6 +244,23 @@ class Doc2X:
                 convert,
             )
         )
+
+        print(
+            f"IMG Progress: {sum(1 for s in success if s != '')}/{len(image_file)} files successfully processed."
+        )
+        if flag:
+            for failed_file in failed:
+                if failed_file["error"] != "":
+                    print(
+                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
+                    )
+
+        if output_names is not None:
+            success = list_rename(success, output_names)
+
+        if version == "v2":
+            return success, failed, flag
+        return success
 
     async def pdf2file_back(
         self,
@@ -252,10 +275,9 @@ class Doc2X:
         Convert pdf file to specified file, with rate/thread limit, async version
         input refers to `pdf2file` function
         """
-        total = len(pdf_file)
 
         async def limited_pdf2file_v1(pdf):
-            async with self.concurrency:
+            try:
                 async with self.limiter:
                     return await pdf2file_v1(
                         apikey=self.apikey,
@@ -268,43 +290,73 @@ class Doc2X:
                         convert=convert,
                         translate=translate,
                     )
+            except Exception as e:
+                return f"Error {e}"
 
         tasks = [limited_pdf2file_v1(pdf) for pdf in pdf_file]
         completed_tasks = await asyncio.gather(*tasks)
-        for i, _ in enumerate(completed_tasks):
-            print(f"PDF Progress: {i + 1}/{total} files processed.")
-        return completed_tasks
+        return await process_status(pdf_file, completed_tasks)
 
     def pdf2file(
         self,
         pdf_file,
         output_path: str = "./Output",
+        output_names: list = None,
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-    ) -> str:
+        version: str = "v1",
+    ):
         """
         Convert pdf file to specified file
-        `pdf_file`: pdf file path, or a list of pdf file path
-        `output_path`: output folder path, default is "./Output"
-        `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
-        `ocr`: whether to use OCR, default is True
-        `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
 
-        return: output file path
+        Args:
+            `pdf_file`: pdf file path, or a list of pdf file path
+            `output_path`: output folder path, default is "./Output"
+            `output_names`: Custom Output File Names, must be the same length as `pdf_file`, default is `None`(file name will be its uuid)
+            `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
+            `ocr`: whether to use OCR, default is True
+            `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
+            `version`: If version is `v2`, will return more information, default is `v1`
+
+        Return:
+            `list`: output file path
+
+            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+                `list1`: list of successful files path, if some files are failed, its path will be empty string
+                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
+                `bool`: True means that at least one file process failed
         """
         if isinstance(pdf_file, str):
-            input = [pdf_file]
-            return asyncio.run(
-                self.pdf2file_back(
-                    input, output_path, output_format, ocr, convert, False
+            pdf_file = [pdf_file]
+
+        if output_names is not None:
+            if len(pdf_file) != len(output_names):
+                raise ValueError(
+                    "The length of files and output_names should be the same."
                 )
-            )[0]
-        return asyncio.run(
+
+        success, failed, flag = asyncio.run(
             self.pdf2file_back(
                 pdf_file, output_path, output_format, ocr, convert, False
             )
         )
+        print(
+            f"PDF Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
+        )
+        if flag:
+            for failed_file in failed:
+                if failed_file["error"] != "":
+                    print(
+                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
+                    )
+
+        if output_names is not None:
+            success = list_rename(success, output_names)
+
+        if version == "v2":
+            return success, failed, flag
+        return success
 
     def get_limit(self) -> int:
         """
@@ -318,12 +370,12 @@ class Doc2X:
         output: str,
         path: str,
         convert: bool,
-    ) -> str:
+    ):
         """
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function
         """
-        async with self.concurrency:
+        try:
             async with self.limiter:
                 texts = await pdf2file_v1(
                     apikey=self.apikey,
@@ -344,7 +396,9 @@ class Doc2X:
                 else:
                     with open(output_path, "w", encoding="utf-8") as f:
                         f.write(texts)
-                return output_path
+                return output_path, "", True
+        except Exception as e:
+            return input, e, False
 
     async def pdfdeals(
         self,
@@ -357,15 +411,26 @@ class Doc2X:
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function, input refers to `pdfdeal` function
         """
-        total = len(pdf_files)
         tasks = [
             self.pdfdeal_back(pdf_file, output_format, output_path, convert)
             for pdf_file in pdf_files
         ]
         completed_tasks = await asyncio.gather(*tasks)
-        for i, _ in enumerate(completed_tasks):
-            print(f"PDFDEAL Progress: {i + 1}/{total} files processed.")
-        return completed_tasks
+        success_file = []
+        error_file = []
+        error_flag = False
+        for temp in completed_tasks:
+            path = temp[0]
+            error = temp[1]
+            flag = temp[2]
+            if flag:
+                success_file.append(path)
+                error_file.append({"error": "", "path": ""})
+            else:
+                success_file.append("")
+                error_file.append({"error": error, "path": path})
+                error_flag = True
+        return success_file, error_file, error_flag
 
     def pdfdeal(
         self,
@@ -373,41 +438,89 @@ class Doc2X:
         output: str = "pdf",
         path: str = "./Output",
         convert: bool = True,
-    ) -> str:
+        version: str = "v1",
+    ):
         """
-        `input`: input file path
-        `output`: output format, default is 'pdf', accept 'pdf', 'md'
-        `path`: output path, default is './Output'
-        `convert`: whether to convert "[" to "$" and "[[" to "$$", default is True
+        Deal with pdf file, convert it to specified format for RAG system
+
+        Args:
+            `input`: input file path
+            `output`: output format, default is 'pdf', accept 'pdf', 'md'
+            `path`: output path, default is './Output'
+            `convert`: whether to convert "[" to "$" and "[[" to "$$", default is True
+            `version`: If version is `v2`, will return more information, default is `v1`
+
+        Return:
+            `list`: output file path
+
+            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+                `list1`: list of successful files path, if some files are failed, its path will be empty string
+                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
+                `bool`: True means that at least one file process failed
         """
         if isinstance(input, str):
             input = [input]
-            return asyncio.run(self.pdfdeals(input, path, output, convert))[0]
-        return asyncio.run(self.pdfdeals(input, path, output, convert))
+
+        success, failed, flag = asyncio.run(self.pdfdeals(input, path, output, convert))
+        print(
+            f"PDFDEAL Progress: {sum(1 for s in success if s != '')}/{len(input)} files successfully processed."
+        )
+        if flag:
+            for failed_file in failed:
+                if failed_file["error"] != "":
+                    print(
+                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
+                    )
+        if version == "v2":
+            return success, failed, flag
+        return success
 
     def pdf_translate(
         self,
         pdf_file,
         output_path: str = "./Output",
         convert: bool = False,
+        version: str = "v1",
     ) -> Tuple[list, list]:
         """
         Translate pdf file to specified file
-        `pdf_file`: pdf file path, or a list of pdf file path
-        `output_path`: output folder path, default is "./Output"
-        `ocr`: whether to use OCR, default is True
-        `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
 
-        return: list of translated texts and list of translated texts location
+        Args:
+            `pdf_file`: pdf file path, or a list of pdf file path
+            `output_path`: output folder path, default is "./Output"
+            `ocr`: whether to use OCR, default is True
+            `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
+            `version`: If version is `v2`, will return more information, default is `v1`
+
+        return:
+            `list`: list of translated texts and list of translated texts location
+
+            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+                `list1`: list of translated texts and list of translated texts location, if some files are failed, its place will be empty string
+                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
+                `bool`: True means that at least one file process failed
         """
+        if self.apikey.startswith("sk-"):
+            raise RuntimeError(
+                "Your secret key does not have access to the translation function! Please use your personal key."
+            )
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
-            return asyncio.run(
-                self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
-            )
-        return asyncio.run(
+        success, failed, flag = asyncio.run(
             self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
         )
+        print(
+            f"TRANSLATE Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
+        )
+        if flag:
+            for failed_file in failed:
+                if failed_file["error"] != "":
+                    print(
+                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
+                    )
+        if version == "v2":
+            return success, failed, flag
+        return success
 
 
 def Doc2x(api_key):

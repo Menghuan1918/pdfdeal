@@ -3,11 +3,12 @@ import json
 import os
 import re
 from typing import Tuple, Literal
-from .Exception import RateLimit
+from .Exception import RateLimit, FileError, async_retry
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
 
+@async_retry()
 async def refresh_key(key: str) -> str:
     """
     Get new key by refresh key
@@ -38,6 +39,7 @@ async def check_folder(path: str) -> bool:
     return True
 
 
+@async_retry()
 async def uuid2file(
     apikey: str,
     uuid: str,
@@ -78,15 +80,14 @@ async def uuid2file(
             )
 
 
+@async_retry()
 async def get_limit(apikey: str) -> int:
     """
-    获取剩余可用的次数
-
-    输入：
+    Get the limit of the key
+    Input:
     `apikey`: key
-
-    返回：
-    `int`：剩余次数
+    Return:
+    `int`, remain limit
     """
     if apikey.startswith("sk-"):
         url = f"{Base_URL}/v1/limit"
@@ -100,6 +101,7 @@ async def get_limit(apikey: str) -> int:
         raise RuntimeError(f"Get limit error! {get_res.status_code}:{get_res.text}")
 
 
+@async_retry()
 async def upload_pdf(
     apikey: str,
     pdffile: str,
@@ -107,16 +109,16 @@ async def upload_pdf(
     translate: bool = False,
 ) -> str:
     """
-    上传pdf文件到服务器，返回文件的uuid
+    Upload pdf file to server and return the uuid of the file
 
-    输入：
+    Input:
     `apikey`: key
-    `pdffile`: pdf文件路径
-    `ocr`: 是否使用ocr，默认为True
-    `translate`: 是否翻译，默认为False
+    `pdffile`: pdf file path
+    `ocr`: whether to use ocr, default is True
+    `translate`: whether to translate, default is False
 
-    返回：
-    `str`：文件的uuid
+    Return:
+    `str`: file uuid
     """
     if apikey.startswith("sk-"):
         url = f"{Base_URL}/v1/async/pdf"
@@ -125,7 +127,7 @@ async def upload_pdf(
     try:
         file = {"file": open(pdffile, "rb")}
     except Exception as e:
-        raise Exception(f"Open file error! {e}")
+        raise FileError(f"Open file error! {e}")
     ocr = 1 if ocr else 0
     translate = 2 if translate else 1
     timeout = httpx.Timeout(120)
@@ -144,6 +146,7 @@ async def upload_pdf(
         raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
 
 
+@async_retry()
 async def upload_img(
     apikey: str,
     imgfile: str,
@@ -151,15 +154,15 @@ async def upload_img(
     img_correction: bool = False,
 ) -> str:
     """
-    上传图片文件到服务器，返回文件的uuid
-    输入：
+    Upload image file to server and return the uuid of the file
+    Input:
     `apikey`: key
-    `imgfile`: 图片文件路径
-    `formula`: 是否返回纯公式，默认为False
-    `img_correction`: 是否进行图片校正，默认为False
+    `imgfile`: image file path
+    `formula`: whether to return pure formula, default is False
+    `img_correction`: whether to correct image, default is False
 
-    返回：
-    `str`：文件的uuid
+    Return:
+    `str`: file uuid
     """
     if apikey.startswith("sk-"):
         url = f"{Base_URL}/v1/async/img"
@@ -170,7 +173,7 @@ async def upload_img(
     try:
         file = {"file": open(imgfile, "rb")}
     except Exception as e:
-        raise Exception(f"Open file error! {e}")
+        raise FileError(f"Open file error! {e}")
     timeout = httpx.Timeout(120)
     async with httpx.AsyncClient(timeout=timeout) as client:
         post_res = await client.post(
@@ -189,7 +192,7 @@ async def upload_img(
 
 async def decode_data(datas: json, convert: bool) -> Tuple[list, list]:
     """
-    用于解码基本数据
+    Used to decode basic data
     """
     texts = []
     locations = []
@@ -223,7 +226,7 @@ async def decode_data(datas: json, convert: bool) -> Tuple[list, list]:
 
 async def decode_translate(datas: json, convert: bool) -> Tuple[list, list]:
     """
-    用于解码翻译数据
+    Used to decode translate data
     """
     texts = []
     locations = []
@@ -252,6 +255,7 @@ async def decode_translate(datas: json, convert: bool) -> Tuple[list, list]:
     return texts, locations
 
 
+@async_retry()
 async def uuid_status(
     apikey: str,
     uuid: str,
@@ -259,16 +263,15 @@ async def uuid_status(
     translate: bool = False,
 ) -> Tuple[int, str, list]:
     """
-    获取文件的状态和转换后的uuid
-
-    输入：
+    Get the status of the file and the converted uuid
+    Input:
     `apikey`: key
-    `uuid`: 文件uuid
-    `convert`: 是否转换"["和"[["到"$""$$"，默认为False
-    `translate`: 是否翻译，默认为False
+    `uuid`: file uuid
+    `convert`: whether to convert "[" and "[[" to "$" and "$$", default is False
+    `translate`: whether to translate, default is False
 
-    返回：
-    `Tuple[int, str, list, list]`: 转换进度，当前状态，转换后的文本列表，文本坐标列表
+    Return:
+    `Tuple[int, str, list]`: progress, status, converted text
     """
     if apikey.startswith("sk-"):
         url = f"{Base_URL}/v1/async/status?uuid={uuid}"
@@ -305,3 +308,39 @@ async def uuid_status(
             raise RuntimeError(f"Unknown status! {datas['status']}")
 
     raise Exception(f"Get status error! {get_res.status_code}:{get_res.text}")
+
+
+async def process_status(original_file: list, output_file: list):
+    """
+    Check the status of the file and return the success and error file
+
+    Input:
+    `original_file`: original file
+    `output_file`: output file
+
+    Return:
+    `Tuple[list, list, bool]`: success file, error file, has error flag
+    """
+    success_file = []
+    error_file = []
+
+    for orig, out in zip(original_file, output_file):
+        # if the output type is texts or in translate mode, the output is a list
+        if isinstance(out, list):
+            success_file.append(out)
+            error_file.append({"error": "", "path": ""})
+        elif isinstance(out, dict):
+            success_file.append(out)
+            error_file.append({"error": "", "path": ""})
+        elif out.startswith("Error"):
+            success_file.append("")
+            error_file.append({"error": out, "path": orig})
+        else:
+            success_file.append(out)
+            error_file.append({"error": "", "path": ""})
+    try:
+        has_error_flag = any(file.startswith("Error") for file in output_file)
+    except AttributeError:
+        has_error_flag = False
+
+    return success_file, error_file, has_error_flag

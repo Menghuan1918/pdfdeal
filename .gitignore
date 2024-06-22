@@ -1,7 +1,5 @@
 Output
-test.pdf
-test.png
-test.py
+self_use.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

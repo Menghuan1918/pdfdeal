@@ -7,6 +7,7 @@ import unicodedata
 import os
 import zipfile
 
+
 def OCR_easyocr(path, language=["ch_sim", "en"], GPU=False):
     try:
         import easyocr
@@ -150,6 +151,7 @@ def gen_folder_list(path: str, mode: str) -> list:
     else:
         raise ValueError("Mode should be 'pdf' or 'img'")
 
+
 def unzip(zip_path: str) -> str:
     """
     Unzip file and return the extract path
@@ -164,6 +166,7 @@ def unzip(zip_path: str) -> str:
         return extract_path
     except Exception as e:
         raise Exception(f"Unzip file error! {e}")
+
 
 def texts_to_file(texts, filepath, output_format="txt"):
     """
@@ -189,3 +192,27 @@ def texts_to_file(texts, filepath, output_format="txt"):
             file.write(text)
             file.write("\n")
     return temp_file
+
+
+def list_rename(files: list, new_name: list) -> list:
+    """
+    Rename files according to the new name list
+
+    Args:
+        `files`: list of files
+        `new_name`: list of new names
+
+    Return:
+        `list`: list of new files
+    """
+    if len(files) != len(new_name):
+        raise ValueError("The length of files and new_name should be the same.")
+    new_files = []
+    for file, name in zip(files, new_name):
+        if file == "":
+            new_files.append("")
+            continue
+        new_file = os.path.join(os.path.dirname(file), name)
+        os.rename(file, new_file)
+        new_files.append(new_file)
+    return new_files
