@@ -26,8 +26,8 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
     - name: Test with pytest
       env:
-        DOC2X_APIKEY: ${{secrets.DOC2X_APIKEY}}
-        DOC2X_APIKEY_PERSONAL: ${{secrets.DOC2X_APIKEY_PERSONAL}}
+        DOC2X_APIKEY: ${{ secrets.DOC2X_APIKEY }}
+        DOC2X_APIKEY_PERSONAL: ${{ secrets.DOC2X_APIKEY_PERSONAL }}
       run: |
         pytest
 
