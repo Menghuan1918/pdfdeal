@@ -210,6 +210,7 @@ def list_rename(files: list, new_name: list) -> list:
     new_files = []
     for file, name in zip(files, new_name):
         if file == "":
+            new_files.append("")
             continue
         new_file = os.path.join(os.path.dirname(file), name)
         os.rename(file, new_file)
