@@ -408,24 +408,43 @@ class Doc2X:
         pdf_file,
         output_path: str = "./Output",
         convert: bool = False,
+        version: str = "v1",
     ) -> Tuple[list, list]:
         """
         Translate pdf file to specified file
-        `pdf_file`: pdf file path, or a list of pdf file path
-        `output_path`: output folder path, default is "./Output"
-        `ocr`: whether to use OCR, default is True
-        `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
 
-        return: list of translated texts and list of translated texts location
+        Args:
+            `pdf_file`: pdf file path, or a list of pdf file path
+            `output_path`: output folder path, default is "./Output"
+            `ocr`: whether to use OCR, default is True
+            `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
+            `version`: If version is `v2`, will return more information, default is `v1`
+
+        return: 
+            `list`: list of translated texts and list of translated texts location
+
+            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+                `list1`: list of translated texts and list of translated texts location, if some files are failed, its place will be empty string
+                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
+                `bool`: whether all files are successfully processed
         """
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
-            return asyncio.run(
+        success, failed, flag = asyncio.run(
                 self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
             )
-        return asyncio.run(
-            self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
+        print (
+            f"TRANSLATE Progress: {len(success)}/{len(pdf_file)} files successfully processed."
         )
+        if flag:
+            for failed_file in failed:
+                if failed_file["error"] != "":
+                    print(
+                        f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
+                    )
+        if version == "v2":
+            return success, failed, flag
+        return success
 
 
 def Doc2x(api_key):
