@@ -180,7 +180,7 @@ async def upload_img(
             url,
             headers={"Authorization": "Bearer " + apikey},
             files=file,
-            data={"option": formula, "img_correction": img_correction},
+            data={"equation": formula, "img_correction": img_correction},
         )
     if post_res.status_code == 200:
         return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]

@@ -1,11 +1,37 @@
+## V0.1.0更新
+
 > [!IMPORTANT]
 > `0.0.X`版本的方法已经弃用，其将会在未来删除，请尽快迁移至新的实现。你可以在[此处](./doc2x_old_cn.md)查看旧版本的文档。
 >
 > 其大部分接口并没变动，你可以尝试直接将`from pdfdeal.doc2x import Doc2x`改为`from pdfdeal.doc2x import Doc2X`。
 
+## V0.1.1更新
+
+> [!IMPORTANT]
+> 返回的参数格式有所变动，请注意修改你的代码以适应新的返回格式。
+>
+> 现在可以通过`version`参数选择返回格式，当为`v2`时会返回：`list：成功处理的文件` `list：处理失败的文件` `bool`。
+>
+> 默认的`v1`返回参数将会仅返回`list：成功处理的文件`。
+
+### ✨ 新特性
+
+- 所有的函数现在支持新的返回格式，通过**可选参数**`version`来选择，当为`v2`时会返回：`list：成功处理的文件` `list：处理失败的文件` `bool`，而默认的`v1`返回参数将会仅返回`list：成功处理的文件`。
+- `pdf2file`和`file2pdf`现在支持`output_names`**可选参数**，用于指定输出文件的名称。
+- 新增请求重试机制，现在在网络请求失败时会自动重试。
+- 新增错误处理机制，现在在处理文件时会自动处理错误，不会因为一个文件出错而导致整个程序中断。
+
+### 🐛 Bug 修复
+
+- 修复了`pdfdeal`函数中文字体异常问题。
+- 修复了某些密匙使用异常的问题。
+- 修复了rpm限制可能不生效的问题。
+
 ## 安装
 
-`pdfdeal`支持python3.9以及更高版本，使用`pip`进行安装：
+[![Python package test](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml)
+
+本项目已支持 python 3.9-3.12 版本，并已在Windows/Linux/MacOS 系统中进行测试，使用`pip`进行安装：
 
 ```bash
 pip install --upgrade pdfdeal
@@ -69,20 +95,33 @@ Client = Doc2X(apikey="Your API key")
 
 ```python
 from pdfdeal.doc2x import Doc2X
-Client = Doc2X(apikey=api,rpm=25,thread=5,maxretry=10)
+Client = Doc2X(apikey=api, rpm=20, maxretry=5)
 ```
 
 其中：
 - `rpm`代表每分钟请求数，默认为3。
-- `thread`代表最大同时请求数，默认为1。
 - `maxretry`代表遇到rpm限制时的最大重试次数，默认为5。
 
 > [!NOTE]
-> 对于个人使用，不建议修改`rpm`和`thread`，以免触发频率限制。
+> 对于个人使用，不建议修改`rpm`，以免触发频率限制。
 
 ## 发起请求
 
 请首先通过上述方法配置好API密匙。
+
+> [!NOTE]
+> 关于`version`参数：
+>
+> 其值为`v2`时会返回三个值：`list1`:成功处理的文件列表、`list2`:处理失败的文件列表和`bool`:处理状态。
+>
+> 其中`list1`和`list2`的长度相同。
+>
+> 对于`list1`中的每个元素，如果处理成功，其值为处理后的文件路径，如果处理失败，其值为空字符串。
+>
+> 对于`list2`中的每个元素，其值为一个字典，包含`error`和`path`两个键，`error`为错误信息，`path`为处理失败的文件路径，当对应的文件处理成功时，两个键的值为空字符串。
+>
+> `bool`为`True`时代表至少有一个文件处理失败，为`False`时代表全部处理成功，详细信息请查看示例。
+
 
 ### 图片处理
 
@@ -93,30 +132,56 @@ Client = Doc2X(apikey=api,rpm=25,thread=5,maxretry=10)
 输入参数：
 - `image_file`：图片文件路径或图片文件路径列表
 - `output_path`：`str`，可选，输出文件夹路径，默认为`"./Output"`
-- `output_format`：`str`，可选，输出格式，接受`texts`、`md`、`md_dollar`、`latex`，默认为`md_dollar`。其中选择`texts`时直接返回文本，并不会保存到文件。
+- `output_names` : `list`，可选，输出文件名列表，长度必须与`image_file`相同，用于指定输出文件的名称
+- `output_format`：`str`，可选，输出格式，接受`texts`、`md`、`md_dollar`、`latex`，默认为`md_dollar`。其中选择`texts`时直接返回文本，并不会保存到文件
 - `img_correction`：`bool`，可选，是否进行图片矫正，默认为`True`
 - `equation`：`bool`，可选，使用纯公式输出模式，默认为`False`
 - `convert`：`bool`，可选，是否将`[`转换为`$`，`[[`转换为`$$`，默认为`False`，仅在`output_format`为`texts`时有效
+- `version`：`str`，可选，返回格式，接受`v1`、`v2`，当为`v2`时会返回更多信息，默认为`v1`
 
-示例：按照rpm限制处理多个图片
+#### 示例：按照rpm限制处理多个图片，以`v2`格式返回
 
 ```python
 from pdfdeal.doc2x import Doc2X
-from pdfdeal.file_tools import gen_folder_list
-Client = Doc2X()
-filelist = gen_folder_list("./test","img")
-# 这是内置的一个函数，用于生成文件夹下所有图片的路径，你可以给定任意list形式的图片路径
-finished_list =  Client.pic2file(filelist,output_format="docx")
-print(*finished_list, sep='\n')
+client = Doc2X()
+file_list = ["tests/image/sample_bad.png", "tests/image/sample.png"]
+# 如果你不需要使用重命名功能，可以使用 from pdfdeal.file_tools import gen_folder_list 函数从文件夹生成文件列表(因为其排序不是固定的)
+# 例如：
+# file_list = gen_folder_list("./tests/image","img")
+success, failed, flag = client.pdf2file(
+    pdf_file=file_list,
+    output_path="./Output/test/multiple/pdf2file",
+    output_names=["sample1.docx", "sample2.docx"],
+    output_format="docx",
+    version="v2",
+)
+print(success)
+print(failed)
+print(flag)
 ```
 
-示例：处理单个图片，获得公式格式为`$公式$`形式的内容
+当第一个文件处理失败，第二个文件处理成功时，其示例输出：
+
+```python
+['', './Output/test/multiple/pdf2file/sample2.docx']
+[{'error': 'Error Upload file error! 500:{"code":"service unavailable","msg":"read file error"}', 'path': 'tests/pdf/sample_bad.pdf'}, {'error': '', 'path': ''}]
+True
+```
+
+#### 示例：处理单个图片，在纯公式模式下，获得公式格式为`$公式$`形式的内容
 
 ```python
 from pdfdeal.doc2x import Doc2X
-Client = Doc2X()
-text = Client.pic2file("./test.png", output_format="texts", convert=True)
-print(*text, sep='\n')
+client = Doc2X()
+text = client.pic2file(
+    "tests/image/sample.png", output_format="texts", equation=True, convert=True
+)
+print(text)
+```
+
+示例输出：
+```python
+[['$$\\text{Test}$$']]
 ```
 
 ### PDF处理
@@ -127,30 +192,59 @@ print(*text, sep='\n')
 输入参数：
 - `pdf_file`：pdf文件路径或pdf文件路径列表
 - `output_path`：`str`，可选，输出文件夹路径，默认为`"./Output"`
+- `output_names` : `list`，可选，输出文件名列表，长度必须与`pdf_file`相同，用于指定输出文件的名称
 - `output_format`：`str`，可选，输出格式，接受`texts`、`md`、`md_dollar`、`latex`、`docx`，默认为`md_dollar`。其中选择`texts`时直接返回文本，并不会保存到文件。
 - `ocr`：`bool`，可选，是否使用OCR，默认为`True`
 - `convert`：`bool`，可选，是否将`[`转换为`$`，`[[`转换为`$$`，默认为`False`，仅在`output_format`为`texts`时有效
+- `version`：`str`，可选，返回格式，接受`v1`、`v2`，当为`v2`时会返回更多信息，默认为`v1`
 
-示例：将单个pdf转换为latex文件
+#### 示例：将单个pdf转换为latex文件并指定输出文件名
 
 ```python
 from pdfdeal.doc2x import Doc2X
-Client = Doc2X()
-filepath = Client.pdf2file("test.pdf",output_format ="latex")
+
+client = Doc2X()
+filepath = client.pdf2file(
+    "tests/pdf/sample.pdf", output_names=["Test.zip"], output_format="latex"
+)
 print(filepath)
-# 返回值为输出文件路径
 ```
 
-示例：将多个pdf转换为docx文件
+当成功时示例输出：
+
+```python
+['./Output/Test.zip']
+```
+
+当处理失败时示例输出：
+
+```python
+['']
+```
+
+#### 示例：将多个pdf转换为docx文件，以`v2`格式返回
 
 ```python
 from pdfdeal.doc2x import Doc2X
 from pdfdeal.file_tools import gen_folder_list
-Client = Doc2X()
-filelist = gen_folder_list("./test","pdf")
-# 这是内置的一个函数，用于生成文件夹下所有pdf的路径，你可以给定任意list形式的pdf路径
-finished_list =  Client.pdf2file(filelist,output_format="docx")
-print(*finished_list, sep='\n')
+client = Doc2X()
+file_list = gen_folder_list("tests/pdf", "pdf")
+success, failed, flag = client.pdfdeal(
+    input=file_list,
+    path="./Output/test/multiple/pdfdeal",
+    version="v2",
+)
+print(success)
+print(failed)
+print(flag)
+```
+
+当第一个文件处理失败，第二个文件处理成功时，其示例输出：
+
+```python
+['', './Output/test/multiple/pdfdeal/sample.pdf']
+[{'error': Exception('Upload file error! 500:{"code":"service unavailable","msg":"read file error"}'), 'path': 'tests/pdf/sample_bad.pdf'}, {'error': '', 'path': ''}]
+True
 ```
 
 ### 获得剩余请求次数
@@ -164,6 +258,12 @@ Client = Doc2X()
 print(f"Pages remaining: {Client.get_limit()}")
 ```
 
+示例输出：
+
+```python
+Pages remaining: 2229
+```
+
 ### 用于RAG知识库预处理
 
 `Client.pdfdeal`
@@ -175,14 +275,30 @@ print(f"Pages remaining: {Client.get_limit()}")
 - `output`：`str`，可选，输出格式，接受`pdf`、`md`，默认为`pdf`
 - `path`：`str`，可选，输出文件夹路径，默认为`"./Output"`
 - `convert`：`bool`，可选，是否将`[`转换为`$`，`[[`转换为`$$`，默认为`True`
+- `version`：`str`，可选，返回格式，接受`v1`、`v2`，当为`v2`时会返回更多信息，默认为`v1`
 
 ```python
 from pdfdeal.doc2x import Doc2X
+from pdfdeal.file_tools import gen_folder_list
 
-Client = Doc2X()
-filelist = gen_folder_list("./test","pdf")
-# 这是内置的一个函数，用于生成文件夹下所有pdf的路径，你可以给定任意list形式的pdf路径
-Client.pdfdeal(filelist)
+client = Doc2X()
+file_list = gen_folder_list("tests/pdf", "pdf")
+success, failed, flag = client.pdfdeal(
+    input=file_list,
+    path="./Output/test/multiple/pdfdeal",
+    version="v2",
+)
+print(success)
+print(failed)
+print(flag)
+```
+
+当第一个文件处理失败，第二个文件处理成功时，其示例输出：
+
+```python
+['', './Output/test/multiple/pdfdeal/sample.pdf']
+[{'error': Exception('Upload file error! 500:{"code":"service unavailable","msg":"read file error"}'), 'path': 'tests/pdf/sample_bad.pdf'}, {'error': '', 'path': ''}]
+True
 ```
 
 ### 翻译pdf文档
@@ -193,7 +309,7 @@ from pdfdeal.doc2x import Doc2X
 
 Client = Doc2X()
 translate = Client.pdf_translate("test.pdf")
-for text in translate:
+for text in translate[0]:
     print(text["texts"])
     print(text["location"])
 ```

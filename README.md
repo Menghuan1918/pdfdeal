@@ -1,12 +1,33 @@
-# pdfdeal
+<div align=center>
+<h1 aligh="center">
+pdfdeal
+</h1>
 
+[![Python package test](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml)
+  
 **For better RAG!**
-
+</div>
 
 🗺️ ENGLISH | [简体中文](README_CN.md)
 
 ## What's new
 
+### V0.1.1
+
+#### ✨ New Features
+
+- All functions now support the new return format, through the **optional parameter** `version` to choose, when it is `v2`, it will return: `list: successful processing files` `list: processing failed files` `bool`, and the default `v1` return parameter will only return `list: successful processing files`.
+- `pdf2file` and `file2pdf` now support the **optional parameter** `output_names` to specify the output file name.
+- Added request retry mechanism, now it will automatically retry when the network request fails.
+- Added error handling mechanism, now it will automatically handle errors when processing files, and will not cause the entire program to interrupt due to a file error.
+
+#### 🐛 Bug Fixes
+
+- Fixed the font exception problem in the `pdfdeal` function.
+- Fixed some abnormal use of keys.
+- Fixed the problem that the rpm limit may not take effect.
+
+### V0.1.0
 > [!IMPORTANT]
 > The Doc2x methods in version `0.0.X` have been deprecated and will be removed in the future, please migrate to the new implementation as soon as possible. You will receive a warning when you still use the old methods.
 >
