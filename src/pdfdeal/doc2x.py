@@ -4,6 +4,7 @@ import os
 from .Doc2X.Exception import RateLimit
 from .get_file import strore_pdf
 from typing import Tuple
+from .file_tools import list_rename
 
 from .Doc2X.Convert import (
     refresh_key,
@@ -231,6 +232,12 @@ class Doc2X:
         if isinstance(image_file, str):
             image_file = [image_file]
 
+        if output_names is not None:
+            if len(image_file) != len(output_names):
+                raise ValueError(
+                    "The length of files and output_names should be the same."
+                )
+
         success, failed, flag = asyncio.run(
             self.pic2file_back(
                 image_file,
@@ -241,6 +248,7 @@ class Doc2X:
                 convert,
             )
         )
+
         print(
             f"IMG Progress: {len(success)}/{len(image_file)} files successfully processed."
         )
@@ -250,6 +258,10 @@ class Doc2X:
                     print(
                         f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
                     )
+
+        if output_names is not None:
+            success = list_rename(success, output_names)
+
         if version == "v2":
             return success, failed, flag
         return success
@@ -322,6 +334,13 @@ class Doc2X:
         """
         if isinstance(pdf_file, str):
             input = [pdf_file]
+
+        if output_names is not None:
+            if len(pdf_file) != len(output_names):
+                raise ValueError(
+                    "The length of files and output_names should be the same."
+                )
+
         success, failed, flag = asyncio.run(
             self.pdf2file_back(input, output_path, output_format, ocr, convert, False)
         )
@@ -334,6 +353,10 @@ class Doc2X:
                     print(
                         f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
                     )
+
+        if output_names is not None:
+            success = list_rename(success, output_names)
+            
         if version == "v2":
             return success, failed, flag
         return success
