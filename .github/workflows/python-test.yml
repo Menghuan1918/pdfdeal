@@ -25,6 +25,8 @@ jobs:
         DOC2X_APIKEY: ${{secrets.DOC2X_APIKEY}}
         DOC2X_APIKEY_PERSONAL: ${{secrets.DOC2X_APIKEY_PERSONAL}}
       run: |
+        export DOC2X_APIKEY=${{secrets.DOC2X_APIKEY}}
+        export DOC2X_APIKEY_PERSONAL=${{secrets.DOC2X_APIKEY_PERSONAL}}
         pytest
 
   test-python-3-10:
