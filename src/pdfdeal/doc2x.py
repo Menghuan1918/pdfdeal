@@ -304,7 +304,7 @@ class Doc2X:
             if `version` is set to `v2`, will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
-                `bool`: whether all files are successfully processed
+                `bool`: True means that at least one file process failed
         """
         if isinstance(pdf_file, str):
             input = [pdf_file]
@@ -341,28 +341,31 @@ class Doc2X:
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function
         """
-        async with self.concurrency:
-            async with self.limiter:
-                texts = await pdf2file_v1(
-                    apikey=self.apikey,
-                    pdf_path=input,
-                    output_path=output,
-                    output_format="texts",
-                    ocr=True,
-                    maxretry=self.maxretry,
-                    rpm=self.rpm,
-                    convert=convert,
-                    translate=False,
-                )
-                await check_folder(path)
-                file_name = os.path.basename(input).replace(".pdf", f".{output}")
-                output_path = os.path.join(path, file_name)
-                if output == "pdf":
-                    strore_pdf(output_path, texts)
-                else:
-                    with open(output_path, "w", encoding="utf-8") as f:
-                        f.write(texts)
-                return output_path
+        try:
+            async with self.concurrency:
+                async with self.limiter:
+                    texts = await pdf2file_v1(
+                        apikey=self.apikey,
+                        pdf_path=input,
+                        output_path=output,
+                        output_format="texts",
+                        ocr=True,
+                        maxretry=self.maxretry,
+                        rpm=self.rpm,
+                        convert=convert,
+                        translate=False,
+                    )
+                    await check_folder(path)
+                    file_name = os.path.basename(input).replace(".pdf", f".{output}")
+                    output_path = os.path.join(path, file_name)
+                    if output == "pdf":
+                        strore_pdf(output_path, texts)
+                    else:
+                        with open(output_path, "w", encoding="utf-8") as f:
+                            f.write(texts)
+                    return output_path, "", True
+        except Exception as e:
+            return input, e, False
 
     async def pdfdeals(
         self,
@@ -375,15 +378,23 @@ class Doc2X:
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function, input refers to `pdfdeal` function
         """
-        total = len(pdf_files)
         tasks = [
             self.pdfdeal_back(pdf_file, output_format, output_path, convert)
             for pdf_file in pdf_files
         ]
-        completed_tasks = await asyncio.gather(*tasks)
-        for i, _ in enumerate(completed_tasks):
-            print(f"PDFDEAL Progress: {i + 1}/{total} files processed.")
-        return completed_tasks
+        paths, errorlogs, flags = await asyncio.gather(*tasks)
+        success_file = []
+        error_file = []
+        error_flag = False
+        for path, error, flag in zip(paths, errorlogs, flags):
+            if flag:
+                success_file.append(path)
+                error_file.append({"error": "", "path": ""})
+            else:
+                success_file.append("")
+                error_file.append({"error": error, "path": path})
+                error_file = True
+        return success_file, error_file, error_flag
 
     def pdfdeal(
         self,
@@ -391,17 +402,42 @@ class Doc2X:
         output: str = "pdf",
         path: str = "./Output",
         convert: bool = True,
-    ) -> str:
+        version: str = "v1",
+    ):
         """
-        `input`: input file path
-        `output`: output format, default is 'pdf', accept 'pdf', 'md'
-        `path`: output path, default is './Output'
-        `convert`: whether to convert "[" to "$" and "[[" to "$$", default is True
+        Deal with pdf file, convert it to specified format for RAG system
+
+        Args:
+            `input`: input file path
+            `output`: output format, default is 'pdf', accept 'pdf', 'md'
+            `path`: output path, default is './Output'
+            `convert`: whether to convert "[" to "$" and "[[" to "$$", default is True
+            `version`: If version is `v2`, will return more information, default is `v1`
+
+        Return:
+            `list`: output file path
+
+            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+                `list1`: list of successful files path, if some files are failed, its path will be empty string
+                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
+                `bool`: True means that at least one file process failed
         """
         if isinstance(input, str):
             input = [input]
-            return asyncio.run(self.pdfdeals(input, path, output, convert))[0]
-        return asyncio.run(self.pdfdeals(input, path, output, convert))
+
+        success, failed, flag = asyncio.run(self.pdfdeals(input, path, output, convert))
+        print(
+            f"PDFDEAL Progress: {len(success)}/{len(input)} files successfully processed."
+        )
+        if flag:
+            for failed_file in failed:
+                if failed_file["error"] != "":
+                    print(
+                        f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
+                    )
+        if version == "v2":
+            return success, failed, flag
+        return success
 
     def pdf_translate(
         self,
@@ -420,20 +456,20 @@ class Doc2X:
             `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
             `version`: If version is `v2`, will return more information, default is `v1`
 
-        return: 
+        return:
             `list`: list of translated texts and list of translated texts location
 
             if `version` is set to `v2`, will return `list1`,`list2`,`bool`
                 `list1`: list of translated texts and list of translated texts location, if some files are failed, its place will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
-                `bool`: whether all files are successfully processed
+                `bool`: True means that at least one file process failed
         """
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
         success, failed, flag = asyncio.run(
-                self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
-            )
-        print (
+            self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
+        )
+        print(
             f"TRANSLATE Progress: {len(success)}/{len(pdf_file)} files successfully processed."
         )
         if flag:
