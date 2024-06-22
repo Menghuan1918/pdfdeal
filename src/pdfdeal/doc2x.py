@@ -370,7 +370,7 @@ class Doc2X:
         output: str,
         path: str,
         convert: bool,
-    ) -> str:
+    ):
         """
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function
@@ -415,18 +415,21 @@ class Doc2X:
             self.pdfdeal_back(pdf_file, output_format, output_path, convert)
             for pdf_file in pdf_files
         ]
-        paths, errorlogs, flags = await asyncio.gather(*tasks)
+        completed_tasks = await asyncio.gather(*tasks)
         success_file = []
         error_file = []
         error_flag = False
-        for path, error, flag in zip(paths, errorlogs, flags):
+        for temp in completed_tasks:
+            path = temp[0]
+            error = temp[1]
+            flag = temp[2]
             if flag:
                 success_file.append(path)
                 error_file.append({"error": "", "path": ""})
             else:
                 success_file.append("")
                 error_file.append({"error": error, "path": path})
-                error_file = True
+                error_flag = True
         return success_file, error_file, error_flag
 
     def pdfdeal(

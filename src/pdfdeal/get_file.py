@@ -42,6 +42,7 @@ def strore_pdf(pdf_path, Text):
     for text in Text:
         lines = text.split("\n")
         for i, line in enumerate(lines):
+            c.setFont("STSong-Light", 12)
             c.drawString(100, 750 - i * 13, line)
         c.showPage()
     c.save()
