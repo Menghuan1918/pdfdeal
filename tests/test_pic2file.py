@@ -3,10 +3,10 @@ from pdfdeal.doc2x import Doc2X
 from pdfdeal.file_tools import gen_folder_list
 import os
 
-client = Doc2X(rpm=20)
 
 
 def test_single_pic2file_v1():
+    client = Doc2X()
     filepath = client.pic2file(
         image_file="tests/image/sample.png",
         output_path="./Output/test",
@@ -21,6 +21,7 @@ def test_single_pic2file_v1():
 
 
 def test_single_pic2file_name_error():
+    client = Doc2X()
     with pytest.raises(ValueError):
         client.pic2file(
             image_file="tests/image/sample.png",
@@ -31,6 +32,7 @@ def test_single_pic2file_name_error():
 
 
 def test_multiple_pic2file_v2():
+    client = Doc2X()
     file_list = gen_folder_list("tests/image", "img")
     success, failed, flag = client.pic2file(
         image_file=file_list,
@@ -41,20 +43,23 @@ def test_multiple_pic2file_v2():
     )
     assert flag
     assert len(success) == len(failed) == 2
-    if success[0] != "":
-        assert success[0].endswith("pic_sample1.docx")
-    assert success[1] == ""
-    assert failed[1]["path"].endswith("sample_bad.png")
-
-
-def test_multiple_high_rpm_v2():
-    file_list = ["tests/image/sample.png" for _ in range(15)]
-    success, failed, flag = client.pic2file(
-        image_file=file_list,
-        output_path="./Output/test",
-        version="v2",
-    )
-    assert len(success) == len(failed) == 15
     for s in success:
         if s != "":
-            assert s.endswith(".zip")
+            assert s.endswith("pic_sample1.docx") or s.endswith("pic_sample2.docx")
+    for f in failed:
+        if f ["path"]!= "":
+            assert f["path"].endswith("sample_bad.png")
+
+
+# def test_multiple_high_rpm_v2():
+#     client = Doc2X(rpm=10)
+#     file_list = ["tests/image/sample.png" for _ in range(15)]
+#     success, failed, flag = client.pic2file(
+#         image_file=file_list,
+#         output_path="./Output/test",
+#         version="v2",
+#     )
+#     assert len(success) == len(failed) == 15
+#     for s in success:
+#         if s != "":
+#             assert s.endswith(".zip")

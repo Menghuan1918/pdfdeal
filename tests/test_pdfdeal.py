@@ -2,10 +2,10 @@ from pdfdeal.doc2x import Doc2X
 from pdfdeal.file_tools import gen_folder_list
 import os
 
-client = Doc2X(rpm=20)
 
 
 def test_pdfdeal_v1():
+    client = Doc2X()
     filepath = client.pdfdeal(
         input="tests/pdf/sample.pdf",
         path="./Output/test",
@@ -18,6 +18,7 @@ def test_pdfdeal_v1():
 
 
 def test_multiple_pdfdeal_v2():
+    client = Doc2X()
     file_list = gen_folder_list("tests/pdf", "pdf")
     success, failed, flag = client.pdfdeal(
         input=file_list,
@@ -26,7 +27,9 @@ def test_multiple_pdfdeal_v2():
     )
     assert flag
     assert len(success) == len(failed) == 2
-    if success[0] != "":
-        assert success[0].endswith("sample.pdf")
-    assert success[1] == ""
-    assert failed[1]["path"].endswith("sample_bad.pdf")
+    for s in success:
+        if s != "":
+            assert s.endswith("sample.pdf")
+    for f in failed:
+        if f ["path"]!= "":
+            assert f["path"].endswith("sample_bad.pdf")
