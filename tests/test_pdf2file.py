@@ -9,7 +9,7 @@ def test_single_pdf2file_v1():
     client = Doc2X()
     filepath = client.pdf2file(
         pdf_file="tests/pdf/sample.pdf",
-        output_path="./Output/test",
+        output_path="./Output/test/single/pdf2file",
         output_names=["sample1.docx"],
         output_format="docx",
     )
@@ -25,7 +25,7 @@ def test_single_pdf2file_name_error():
     with pytest.raises(ValueError):
         client.pdf2file(
             pdf_file="tests/pdf/sample.pdf",
-            output_path="./Output/test",
+            output_path="./Output/test/single/pdf2file",
             output_names=["sample1", "sample2"],
             output_format="docx",
         )
@@ -36,7 +36,7 @@ def test_multiple_pdf2file_v2():
     file_list = gen_folder_list("tests/pdf", "pdf")
     success, failed, flag = client.pdf2file(
         pdf_file=file_list,
-        output_path="./Output/test",
+        output_path="./Output/test/multiple/pdf2file",
         output_names=["sample1.docx", "sample2.docx"],
         output_format="docx",
         version="v2",

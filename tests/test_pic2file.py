@@ -9,7 +9,7 @@ def test_single_pic2file_v1():
     client = Doc2X()
     filepath = client.pic2file(
         image_file="tests/image/sample.png",
-        output_path="./Output/test",
+        output_path="./Output/test/single/pic2file",
         output_names=["pic_sample1.docx"],
         output_format="docx",
     )
@@ -25,7 +25,7 @@ def test_single_pic2file_name_error():
     with pytest.raises(ValueError):
         client.pic2file(
             image_file="tests/image/sample.png",
-            output_path="./Output/test",
+            output_path="./Output/test/single/pic2file",
             output_names=["pic_sample1", "pic_sample2"],
             output_format="docx",
         )
@@ -36,7 +36,7 @@ def test_multiple_pic2file_v2():
     file_list = gen_folder_list("tests/image", "img")
     success, failed, flag = client.pic2file(
         image_file=file_list,
-        output_path="./Output/test",
+        output_path="./Output/test/multiple/pic2file",
         output_names=["pic_sample1.docx", "pic_sample2.docx"],
         output_format="docx",
         version="v2",

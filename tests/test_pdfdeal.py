@@ -8,7 +8,7 @@ def test_pdfdeal_v1():
     client = Doc2X()
     filepath = client.pdfdeal(
         input="tests/pdf/sample.pdf",
-        path="./Output/test",
+        path="./Output/test/pdfdeal",
     )
     if filepath[0] != "":
         assert os.path.exists(filepath[0])
@@ -22,7 +22,7 @@ def test_multiple_pdfdeal_v2():
     file_list = gen_folder_list("tests/pdf", "pdf")
     success, failed, flag = client.pdfdeal(
         input=file_list,
-        path="./Output/test",
+        path="./Output/test/multiple/pdfdeal",
         version="v2",
     )
     assert flag
