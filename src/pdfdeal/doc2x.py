@@ -497,6 +497,10 @@ class Doc2X:
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
         """
+        if self.apikey.startswith("sk-"):
+            raise RuntimeError(
+                "Your secret key does not have access to the translation function! Please use your personal key."
+            )
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
         success, failed, flag = asyncio.run(

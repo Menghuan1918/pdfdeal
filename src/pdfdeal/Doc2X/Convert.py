@@ -329,13 +329,18 @@ async def process_status(original_file: list, output_file: list):
         if isinstance(out, list):
             success_file.append(out)
             error_file.append({"error": "", "path": ""})
+        elif isinstance(out, dict):
+            success_file.append(out)
+            error_file.append({"error": "", "path": ""})
         elif out.startswith("Error"):
             success_file.append("")
             error_file.append({"error": out, "path": orig})
         else:
             success_file.append(out)
             error_file.append({"error": "", "path": ""})
-
-    has_error_flag = any(file.startswith("Error") for file in output_file)
+    try:
+        has_error_flag = any(file.startswith("Error") for file in output_file)
+    except AttributeError:
+        has_error_flag = False
 
     return success_file, error_file, has_error_flag
