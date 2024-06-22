@@ -9,6 +9,12 @@ class RateLimit(Exception):
 
     pass
 
+class FileError(Exception):
+    """
+    Error when file is not found or cannot be opened or othes.
+    """
+
+    pass
 
 def async_retry(max_retries=3, backoff_factor=2):
     """
@@ -24,13 +30,19 @@ def async_retry(max_retries=3, backoff_factor=2):
             while retries < max_retries:
                 try:
                     return await func(*args, **kwargs)
+                except RateLimit:
+                    raise RateLimit
+                except FileError as e:
+                    raise e
                 except Exception as e:
-                    if retries == max_retries - 1:
-                        raise e
+                    last_exception = e
                     wait_time = backoff_factor**retries
-                    print(f"Failed to connect to the server. Retrying in {wait_time} seconds.")
+                    print(
+                        f"Failed to connect to the server. Retrying in {wait_time} seconds."
+                    )
                     await asyncio.sleep(wait_time)
                     retries += 1
+            raise last_exception
 
         return wrapper
 

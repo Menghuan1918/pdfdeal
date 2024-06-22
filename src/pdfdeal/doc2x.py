@@ -196,7 +196,7 @@ class Doc2X:
 
         task = [limited_img2file_v1(img) for img in image_file]
         completed_tasks = await asyncio.gather(*task)
-        return process_status(image_file, completed_tasks)
+        return await process_status(image_file, completed_tasks)
 
     def pic2file(
         self,
@@ -250,13 +250,13 @@ class Doc2X:
         )
 
         print(
-            f"IMG Progress: {len(success)}/{len(image_file)} files successfully processed."
+            f"IMG Progress: {sum(1 for s in success if s != '')}/{len(image_file)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
                 if failed_file["error"] != "":
                     print(
-                        f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
+                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
 
         if output_names is not None:
@@ -300,7 +300,7 @@ class Doc2X:
 
         tasks = [limited_pdf2file_v1(pdf) for pdf in pdf_file]
         completed_tasks = await asyncio.gather(*tasks)
-        return process_status(pdf_file, completed_tasks)
+        return await process_status(pdf_file, completed_tasks)
 
     def pdf2file(
         self,
@@ -333,7 +333,7 @@ class Doc2X:
                 `bool`: True means that at least one file process failed
         """
         if isinstance(pdf_file, str):
-            input = [pdf_file]
+            pdf_file = [pdf_file]
 
         if output_names is not None:
             if len(pdf_file) != len(output_names):
@@ -342,21 +342,23 @@ class Doc2X:
                 )
 
         success, failed, flag = asyncio.run(
-            self.pdf2file_back(input, output_path, output_format, ocr, convert, False)
+            self.pdf2file_back(
+                pdf_file, output_path, output_format, ocr, convert, False
+            )
         )
         print(
-            f"PDF Progress: {len(success)}/{len(pdf_file)} files successfully processed."
+            f"PDF Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
                 if failed_file["error"] != "":
                     print(
-                        f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
+                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
 
         if output_names is not None:
             success = list_rename(success, output_names)
-            
+
         if version == "v2":
             return success, failed, flag
         return success
@@ -464,13 +466,13 @@ class Doc2X:
 
         success, failed, flag = asyncio.run(self.pdfdeals(input, path, output, convert))
         print(
-            f"PDFDEAL Progress: {len(success)}/{len(input)} files successfully processed."
+            f"PDFDEAL Progress: {sum(1 for s in success if s != '')}/{len(input)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
                 if failed_file["error"] != "":
                     print(
-                        f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
+                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
         if version == "v2":
             return success, failed, flag
@@ -507,13 +509,13 @@ class Doc2X:
             self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
         )
         print(
-            f"TRANSLATE Progress: {len(success)}/{len(pdf_file)} files successfully processed."
+            f"TRANSLATE Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
                 if failed_file["error"] != "":
                     print(
-                        f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
+                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
         if version == "v2":
             return success, failed, flag

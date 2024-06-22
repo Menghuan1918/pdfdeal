@@ -3,7 +3,7 @@ import json
 import os
 import re
 from typing import Tuple, Literal
-from .Exception import RateLimit, async_retry
+from .Exception import RateLimit, FileError, async_retry
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
@@ -127,7 +127,7 @@ async def upload_pdf(
     try:
         file = {"file": open(pdffile, "rb")}
     except Exception as e:
-        raise Exception(f"Open file error! {e}")
+        raise FileError(f"Open file error! {e}")
     ocr = 1 if ocr else 0
     translate = 2 if translate else 1
     timeout = httpx.Timeout(120)
@@ -173,7 +173,7 @@ async def upload_img(
     try:
         file = {"file": open(imgfile, "rb")}
     except Exception as e:
-        raise Exception(f"Open file error! {e}")
+        raise FileError(f"Open file error! {e}")
     timeout = httpx.Timeout(120)
     async with httpx.AsyncClient(timeout=timeout) as client:
         post_res = await client.post(
@@ -329,13 +329,13 @@ async def process_status(original_file: list, output_file: list):
         if isinstance(out, list):
             success_file.append(out)
             error_file.append({"error": "", "path": ""})
-        elif orig.startswith("Error"):
+        elif out.startswith("Error"):
             success_file.append("")
             error_file.append({"error": out, "path": orig})
         else:
             success_file.append(out)
             error_file.append({"error": "", "path": ""})
 
-    has_error_flag = any(file.startswith("Error") for file in original_file)
+    has_error_flag = any(file.startswith("Error") for file in output_file)
 
     return success_file, error_file, has_error_flag
