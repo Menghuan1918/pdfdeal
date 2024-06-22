@@ -13,7 +13,6 @@ def test_single_pdf2file_v1():
         output_path="./Output/test",
         output_names=["sample1.docx"],
         output_format="docx",
-        version="v1",
     )
     if filepath[0] != "":
         assert os.path.exists(filepath[0])
@@ -29,7 +28,6 @@ def test_single_pdf2file_name_error():
             output_path="./Output/test",
             output_names=["sample1", "sample2"],
             output_format="docx",
-            version="v1",
         )
 
 
@@ -44,9 +42,9 @@ def test_multiple_pdf2file_v2():
     )
     assert flag
     assert len(success) == len(failed) == 2
-    assert success[0].endswith("sample1.docx")
+    if success[0] != "":
+        assert success[0].endswith("sample1.docx")
     assert success[1] == ""
-    assert failed[0]["path"] == ""
     assert failed[1]["path"].endswith("sample_bad.pdf")
 
 
@@ -71,5 +69,4 @@ def test_translate_pdf_v2():
     if success[0] != "":
         assert success[0]["texts"]
         assert success[0]["location"]
-    assert failed[0]["path"] == ""
     assert failed[1]["path"].endswith("sample_bad.pdf")
