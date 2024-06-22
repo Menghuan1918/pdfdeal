@@ -13,6 +13,7 @@ from .Doc2X.Convert import (
     upload_img,
     uuid_status,
     check_folder,
+    process_status,
 )
 
 
@@ -252,59 +253,76 @@ class Doc2X:
         Convert pdf file to specified file, with rate/thread limit, async version
         input refers to `pdf2file` function
         """
-        total = len(pdf_file)
 
         async def limited_pdf2file_v1(pdf):
-            async with self.concurrency:
-                async with self.limiter:
-                    return await pdf2file_v1(
-                        apikey=self.apikey,
-                        pdf_path=pdf,
-                        output_path=output_path,
-                        output_format=output_format,
-                        ocr=ocr,
-                        maxretry=self.maxretry,
-                        rpm=self.rpm,
-                        convert=convert,
-                        translate=translate,
-                    )
+            try:
+                async with self.concurrency:
+                    async with self.limiter:
+                        return await pdf2file_v1(
+                            apikey=self.apikey,
+                            pdf_path=pdf,
+                            output_path=output_path,
+                            output_format=output_format,
+                            ocr=ocr,
+                            maxretry=self.maxretry,
+                            rpm=self.rpm,
+                            convert=convert,
+                            translate=translate,
+                        )
+            except Exception as e:
+                return f"Error {e}"
 
         tasks = [limited_pdf2file_v1(pdf) for pdf in pdf_file]
         completed_tasks = await asyncio.gather(*tasks)
-        for i, _ in enumerate(completed_tasks):
-            print(f"PDF Progress: {i + 1}/{total} files processed.")
-        return completed_tasks
+        return process_status(pdf_file, completed_tasks)
 
     def pdf2file(
         self,
         pdf_file,
         output_path: str = "./Output",
+        output_names: list = None,
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-    ) -> str:
+        version: str = "v1",
+    ):
         """
         Convert pdf file to specified file
-        `pdf_file`: pdf file path, or a list of pdf file path
-        `output_path`: output folder path, default is "./Output"
-        `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
-        `ocr`: whether to use OCR, default is True
-        `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
 
-        return: output file path
+        Args:
+            `pdf_file`: pdf file path, or a list of pdf file path
+            `output_path`: output folder path, default is "./Output"
+            `output_names`: Custom Output File Names, must be the same length as `pdf_file`, default is `None`(file name will be its uuid)
+            `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
+            `ocr`: whether to use OCR, default is True
+            `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
+            `version`: If version is `v2`, will return more information, default is `v1`
+
+        Return:
+            `list`: output file path
+
+            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+                `list1`: list of successful files path, if some files are failed, its path will be empty string
+                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
+                `bool`: whether all files are successfully processed
         """
         if isinstance(pdf_file, str):
             input = [pdf_file]
-            return asyncio.run(
-                self.pdf2file_back(
-                    input, output_path, output_format, ocr, convert, False
-                )
-            )[0]
-        return asyncio.run(
-            self.pdf2file_back(
-                pdf_file, output_path, output_format, ocr, convert, False
-            )
+        success, failed, flag = asyncio.run(
+            self.pdf2file_back(input, output_path, output_format, ocr, convert, False)
         )
+        print(
+            f"PDF Progress: {len(success)}/{len(pdf_file)} files successfully processed."
+        )
+        if flag:
+            for failed_file in failed:
+                if failed_file["error"] != "":
+                    print(
+                        f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
+                    )
+        if version == "v2":
+            return success, failed, flag
+        return success
 
     def get_limit(self) -> int:
         """

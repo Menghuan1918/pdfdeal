@@ -7,6 +7,7 @@ from .Exception import RateLimit, async_retry
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
+
 @async_retry()
 async def refresh_key(key: str) -> str:
     """
@@ -36,6 +37,7 @@ async def check_folder(path: str) -> bool:
     except Exception as e:
         raise Exception(f"Create folder error! {e}")
     return True
+
 
 @async_retry()
 async def uuid2file(
@@ -77,6 +79,7 @@ async def uuid2file(
                 f"Download file error! {get_res.status_code}:{get_res.text}"
             )
 
+
 @async_retry()
 async def get_limit(apikey: str) -> int:
     """
@@ -96,6 +99,7 @@ async def get_limit(apikey: str) -> int:
         return int(get_res.json()["data"]["remain"])
     else:
         raise RuntimeError(f"Get limit error! {get_res.status_code}:{get_res.text}")
+
 
 @async_retry()
 async def upload_pdf(
@@ -140,6 +144,7 @@ async def upload_pdf(
         raise RateLimit()
     else:
         raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
+
 
 @async_retry()
 async def upload_img(
@@ -249,6 +254,7 @@ async def decode_translate(datas: json, convert: bool) -> Tuple[list, list]:
             continue
     return texts, locations
 
+
 @async_retry()
 async def uuid_status(
     apikey: str,
@@ -302,3 +308,34 @@ async def uuid_status(
             raise RuntimeError(f"Unknown status! {datas['status']}")
 
     raise Exception(f"Get status error! {get_res.status_code}:{get_res.text}")
+
+
+async def process_status(original_file: list, output_file: list):
+    """
+    Check the status of the file and return the success and error file
+
+    Input:
+    `original_file`: original file
+    `output_file`: output file
+
+    Return:
+    `Tuple[list, list, bool]`: success file, error file, has error flag
+    """
+    success_file = []
+    error_file = []
+
+    for orig, out in zip(original_file, output_file):
+        # if the output type is texts or in translate mode, the output is a list
+        if isinstance(out, list):
+            success_file.append(out)
+            error_file.append({"error": "", "path": ""})
+        elif orig.startswith("Error"):
+            success_file.append("")
+            error_file.append({"error": out, "path": orig})
+        else:
+            success_file.append(out)
+            error_file.append({"error": "", "path": ""})
+
+    has_error_flag = any(file.startswith("Error") for file in original_file)
+
+    return success_file, error_file, has_error_flag
