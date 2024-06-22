@@ -174,62 +174,64 @@ class Doc2X:
         Convert image file to specified file, with rate/thread limit
         input refers to `pic2file` function
         """
-        total = len(image_file)
 
         async def limited_img2file_v1(img):
-            async with self.concurrency:
-                async with self.limiter:
-                    return await img2file_v1(
-                        apikey=self.apikey,
-                        img_path=img,
-                        output_path=output_path,
-                        output_format=output_format,
-                        formula=equation,
-                        img_correction=img_correction,
-                        maxretry=self.maxretry,
-                        rpm=self.rpm,
-                        convert=convert,
-                    )
+            try:
+                async with self.concurrency:
+                    async with self.limiter:
+                        return await img2file_v1(
+                            apikey=self.apikey,
+                            img_path=img,
+                            output_path=output_path,
+                            output_format=output_format,
+                            formula=equation,
+                            img_correction=img_correction,
+                            maxretry=self.maxretry,
+                            rpm=self.rpm,
+                            convert=convert,
+                        )
+            except Exception as e:
+                return f"Error {e}"
 
         task = [limited_img2file_v1(img) for img in image_file]
         completed_tasks = await asyncio.gather(*task)
-        for i, _ in enumerate(completed_tasks):
-            print(f"PICTURE Progress: {i + 1}/{total} files processed.")
-        return completed_tasks
+        return process_status(image_file, completed_tasks)
 
     def pic2file(
         self,
         image_file,
         output_path: str = "./Output",
+        output_names: list = None,
         output_format: str = "md_dollar",
         img_correction: bool = True,
         equation=False,
         convert: bool = False,
+        version: str = "v1",
     ) -> str:
         """
         Convert image file to specified file
-        `image_file`: image file path or a list of image file path
-        `output_path`: output folder path, default is "./Output"
-        `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
-        `img_correction`: whether to correct the image, default is `True`
-        `equation`: whether the image is an equation, default is `False`
-        `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
 
-        return: output file path
+        Args:
+            `image_file`: image file path or a list of image file path
+            `output_path`: output folder path, default is "./Output"
+            `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
+            `img_correction`: whether to correct the image, default is `True`
+            `equation`: whether the image is an equation, default is `False`
+            `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
+            `version`: If version is `v2`, will return more information, default is `v1`
+
+        Return:
+            `list`: output file path
+
+            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+                `list1`: list of successful files path, if some files are failed, its path will be empty string
+                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
+                `bool`: True means that at least one file process failed
         """
         if isinstance(image_file, str):
             image_file = [image_file]
-            return asyncio.run(
-                self.pic2file_back(
-                    image_file,
-                    output_path,
-                    output_format,
-                    img_correction,
-                    equation,
-                    convert,
-                )
-            )[0]
-        return asyncio.run(
+
+        success, failed, flag = asyncio.run(
             self.pic2file_back(
                 image_file,
                 output_path,
@@ -239,6 +241,18 @@ class Doc2X:
                 convert,
             )
         )
+        print(
+            f"IMG Progress: {len(success)}/{len(image_file)} files successfully processed."
+        )
+        if flag:
+            for failed_file in failed:
+                if failed_file["error"] != "":
+                    print(
+                        f"Failed deal with {failed_file["path"]} with error {failed_file["error"]}"
+                    )
+        if version == "v2":
+            return success, failed, flag
+        return success
 
     async def pdf2file_back(
         self,
