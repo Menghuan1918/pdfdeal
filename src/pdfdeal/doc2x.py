@@ -134,27 +134,17 @@ async def img2file_v1(
 class Doc2X:
     """
     `apikey`: Your apikey, or get from environment variable `DOC2X_APIKEY`
-    `rpm`: Request per minute, will automatically adjust the rate limit according to the apikey
-    `thread`: deprecated
-    `maxretry`: deprecated
+    `rpm`: Request per minute, default is `3`
+    `thread`: Max thread number, default is `1`, no used now, will perfer to use `rpm`
+    `maxretry`: Max retry times, default is `8`
     """
 
     def __init__(
-        self,
-        apikey: str = None,
-        rpm: int = None,
-        thread: int = None,
-        maxretry: int = None,
+        self, apikey: str = None, rpm: int = 3, thread: int = 1, maxretry: int = 8
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
-        if rpm is not None:
-            self.rpm = rpm
-        else:
-            if self.apikey.startswith("sk-"):
-                self.rpm = 10
-            else:
-                self.rpm = 4
-        self.limiter = RateLimiter(self.rpm)
+        self.limiter = AsyncLimiter(max_rate=rpm // 3, time_period=20)
+        self.rpm = rpm
         self.maxretry = maxretry
 
     async def pic2file_back(

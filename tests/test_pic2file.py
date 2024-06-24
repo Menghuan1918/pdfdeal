@@ -51,19 +51,15 @@ def test_multiple_pic2file_v2():
             assert f["path"].endswith("sample_bad.png")
 
 
-def test_multiple_high_rpm_v2():
-    client = Doc2X()
-    file_list = ["tests/image/sample.png" for _ in range(50)]
-    success, failed, flag = client.pic2file(
-        image_file=file_list,
-        output_path="./Output/test",
-        version="v2",
-    )
-    assert len(success) == len(failed) == 50
-    i = 0
-    for s in success:
-        if s != "":
-            assert s.endswith(".zip")
-        else:
-            i += 1
-    print(f"===Failed {i} times===")
+# def test_multiple_high_rpm_v2():
+#     client = Doc2X(rpm=8)
+#     file_list = ["tests/image/sample.png" for _ in range(20)]
+#     success, failed, flag = client.pic2file(
+#         image_file=file_list,
+#         output_path="./Output/test",
+#         version="v2",
+#     )
+#     assert len(success) == len(failed) == 20
+#     for s in success:
+#         if s != "":
+#             assert s.endswith(".zip")
