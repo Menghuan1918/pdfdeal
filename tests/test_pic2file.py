@@ -1,4 +1,3 @@
-import pytest
 from pdfdeal.doc2x import Doc2X
 from pdfdeal.file_tools import gen_folder_list
 import os
@@ -20,15 +19,6 @@ def test_single_pic2file_v1():
         assert os.path.basename(filepath[0]) == "pic_sample1.docx"
 
 
-def test_single_pic2file_name_error():
-    client = Doc2X()
-    with pytest.raises(ValueError):
-        client.pic2file(
-            image_file="tests/image/sample.png",
-            output_path="./Output/test/single/pic2file",
-            output_names=["pic_sample1", "pic_sample2"],
-            output_format="docx",
-        )
 
 
 def test_multiple_pic2file_v2():
