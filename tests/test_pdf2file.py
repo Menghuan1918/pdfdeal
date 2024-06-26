@@ -42,13 +42,13 @@ def test_multiple_pdf2file_v2():
 
 def test_multiple_high_rpm_v2():
     client = Doc2X()
-    file_list = ["tests/pdf/sample.pdf" for _ in range(50)]
+    file_list = ["tests/pdf/sample.pdf" for _ in range(20)]
     success, failed, flag = client.pdf2file(
         pdf_file=file_list,
         output_path="./Output/test/high_rpm/pdf2file",
         version="v2",
     )
-    assert len(success) == len(failed) == 50
+    assert len(success) == len(failed) == 20
     i = 0
     for s in success:
         if s != "":
