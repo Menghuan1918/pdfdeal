@@ -1,6 +1,6 @@
 import asyncio
 import os
-from .Doc2X.Exception import RateLimit, RateLimter
+from .Doc2X.Exception import RateLimit, RateLimiter
 from .get_file import strore_pdf
 from typing import Tuple
 from .file_tools import list_rename
@@ -140,17 +140,21 @@ class Doc2X:
     """
 
     def __init__(
-        self, apikey: str = None, rpm: int = None, thread: int = None, maxretry: int = None
+        self,
+        apikey: str = None,
+        rpm: int = None,
+        thread: int = None,
+        maxretry: int = None,
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
-        if self.rpm is not None:
+        if rpm is not None:
             self.rpm = rpm
         else:
             if self.apikey.startswith("sk-"):
                 self.rpm = 10
             else:
                 self.rpm = 4
-        self.limiter = RateLimter(rpm)
+        self.limiter = RateLimiter(self.rpm)
         self.maxretry = maxretry
 
     async def pic2file_back(
@@ -184,7 +188,7 @@ class Doc2X:
             except Exception as e:
                 return f"Error {e}"
             finally:
-                self.limiter.release()
+                await self.limiter.release()
 
         task = [limited_img2file_v1(img) for img in image_file]
         completed_tasks = await asyncio.gather(*task)
@@ -289,7 +293,7 @@ class Doc2X:
             except Exception as e:
                 return f"Error {e}"
             finally:
-                self.limiter.release()
+                await self.limiter.release()
 
         tasks = [limited_pdf2file_v1(pdf) for pdf in pdf_file]
         completed_tasks = await asyncio.gather(*tasks)
@@ -398,7 +402,7 @@ class Doc2X:
         except Exception as e:
             return input, e, False
         finally:
-            self.limiter.release()
+            await self.limiter.release()
 
     async def pdfdeals(
         self,
