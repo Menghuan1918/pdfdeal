@@ -56,8 +56,9 @@ def async_retry(max_retries=3, backoff_factor=2):
 class RateLimiter:
     def __init__(self, rpm):
         self.rpm = rpm
-        self.loop = asyncio.get_event_loop()
-        if self.loop is None:
+        try:
+            self.loop = asyncio.get_event_loop()
+        except RuntimeError:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
         self.semaphore = asyncio.Semaphore(rpm)
