@@ -1,6 +1,6 @@
 import asyncio
 from functools import wraps
-
+import time
 
 class RateLimit(Exception):
     """
@@ -47,3 +47,23 @@ def async_retry(max_retries=3, backoff_factor=2):
         return wrapper
 
     return decorator
+
+class RateLimter:
+    def __init__(self,rpm):
+        self.rpm = rpm
+        self.semaphore = asyncio.Semaphore(rpm)
+        self.last_call_times = []
+
+    async def require(self):
+        await self.semaphore.acquire()
+        now = time.time()
+        if len(self.last_call_times) >= self.rpm:
+            elapsed_time = now - self.last_call_times[0]
+            if elapsed_time < 60:
+                wait_time = 60 - elapsed_time
+                await asyncio.sleep(wait_time)
+            self.last_call_times.pop(0)
+        self.last_call_times.append(now)
+
+    def release(self):
+        self.semaphore.release()
