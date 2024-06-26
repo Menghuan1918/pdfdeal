@@ -33,3 +33,21 @@ def test_multiple_pdfdeal_v2():
     for f in failed:
         if f ["path"]!= "":
             assert f["path"].endswith("sample_bad.pdf")
+
+def test_multiple_high_rpm_v2():
+    client = Doc2X()
+    file_list = ["tests/pdf/sample.pdf" for _ in range(50)]
+    success, failed, flag = client.pdfdeal(
+        input=file_list,
+        path="./Output/test/high_rpm/pdfdeal",
+        version="v2",
+    )
+    assert len(success) == len(failed) == 50
+    i = 0
+    for s in success:
+        if s != "":
+            assert os.path.exists(s)
+            assert s.endswith(".pdf")
+        else:
+            i += 1
+    print(f"===Failed {i} times===")

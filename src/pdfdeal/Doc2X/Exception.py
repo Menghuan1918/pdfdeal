@@ -1,5 +1,7 @@
 import asyncio
 from functools import wraps
+import time
+from collections import deque
 
 
 class RateLimit(Exception):
@@ -9,12 +11,14 @@ class RateLimit(Exception):
 
     pass
 
+
 class FileError(Exception):
     """
     Error when file is not found or cannot be opened or othes.
     """
 
     pass
+
 
 def async_retry(max_retries=3, backoff_factor=2):
     """
@@ -47,3 +51,25 @@ def async_retry(max_retries=3, backoff_factor=2):
         return wrapper
 
     return decorator
+
+
+class RateLimiter:
+    def __init__(self, rpm):
+        self.rpm = rpm
+        self.semaphore = asyncio.Semaphore(rpm)
+        self.last_call_times = deque(maxlen=rpm)
+        self.lock = asyncio.Lock()
+
+    async def require(self):
+        async with self.semaphore:
+            async with self.lock:
+                now = time.time()
+                if len(self.last_call_times) >= self.rpm:
+                    elapsed_time = now - self.last_call_times[-1]
+                    if elapsed_time < 60:
+                        wait_time = 60 - elapsed_time + 5
+                        await asyncio.sleep(wait_time)
+                self.last_call_times.append(now)
+
+    async def release(self):
+        self.semaphore.release()

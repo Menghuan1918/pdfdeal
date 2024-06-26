@@ -1,7 +1,6 @@
 import asyncio
-from aiolimiter import AsyncLimiter
 import os
-from .Doc2X.Exception import RateLimit
+from .Doc2X.Exception import RateLimit, RateLimiter
 from .get_file import strore_pdf
 from typing import Tuple
 from .file_tools import list_rename
@@ -51,18 +50,12 @@ async def pdf2file_v1(
             apikey=apikey, pdffile=pdf_path, ocr=ocr, translate=translate
         )
     except RateLimit:
-        # Retry according to maxretry and current rpm
-        for i in range(maxretry):
+        while True:
             print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
             await asyncio.sleep(60 // rpm + 15)
             try:
-                print(f"Retrying {i+1} / {maxretry} times")
                 uuid = await upload_pdf(apikey=apikey, pdffile=pdf_path, ocr=ocr)
             except RateLimit:
-                if i == maxretry - 1:
-                    raise RuntimeError(
-                        "Reach the max retry times, but still get rate limit"
-                    )
                 continue
     # Wait for the process to finish
     while True:
@@ -109,11 +102,10 @@ async def img2file_v1(
         )
     except RateLimit:
         # Retry according to maxretry and current rpm
-        for i in range(maxretry):
+        while True:
             print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
             await asyncio.sleep(60 // rpm + 15)
             try:
-                print(f"Retrying {i+1} / {maxretry} times")
                 uuid = await upload_img(
                     apikey=apikey,
                     imgfile=img_path,
@@ -121,10 +113,6 @@ async def img2file_v1(
                     img_correction=img_correction,
                 )
             except RateLimit:
-                if i == maxretry - 1:
-                    raise RuntimeError(
-                        "Reach the max retry times, but still get rate limit"
-                    )
                 continue
     # Wait for the process to finish
     while True:
@@ -146,17 +134,27 @@ async def img2file_v1(
 class Doc2X:
     """
     `apikey`: Your apikey, or get from environment variable `DOC2X_APIKEY`
-    `rpm`: Request per minute, default is `3`
-    `thread`: Max thread number, default is `1`, no used now, will perfer to use `rpm`
-    `maxretry`: Max retry times, default is `5`
+    `rpm`: Request per minute, will automatically adjust the rate limit according to the apikey
+    `thread`: deprecated
+    `maxretry`: deprecated
     """
 
     def __init__(
-        self, apikey: str = None, rpm: int = 3, thread: int = 1, maxretry: int = 5
+        self,
+        apikey: str = None,
+        rpm: int = None,
+        thread: int = None,
+        maxretry: int = None,
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
-        self.limiter = AsyncLimiter(max_rate=rpm - 1, time_period=60)
-        self.rpm = rpm
+        if rpm is not None:
+            self.rpm = rpm
+        else:
+            if self.apikey.startswith("sk-"):
+                self.rpm = 10
+            else:
+                self.rpm = 4
+        self.limiter = RateLimiter(self.rpm)
         self.maxretry = maxretry
 
     async def pic2file_back(
@@ -175,20 +173,22 @@ class Doc2X:
 
         async def limited_img2file_v1(img):
             try:
-                async with self.limiter:
-                    return await img2file_v1(
-                        apikey=self.apikey,
-                        img_path=img,
-                        output_path=output_path,
-                        output_format=output_format,
-                        formula=equation,
-                        img_correction=img_correction,
-                        maxretry=self.maxretry,
-                        rpm=self.rpm,
-                        convert=convert,
-                    )
+                await self.limiter.require()
+                return await img2file_v1(
+                    apikey=self.apikey,
+                    img_path=img,
+                    output_path=output_path,
+                    output_format=output_format,
+                    formula=equation,
+                    img_correction=img_correction,
+                    maxretry=self.maxretry,
+                    rpm=self.rpm,
+                    convert=convert,
+                )
             except Exception as e:
                 return f"Error {e}"
+            finally:
+                await self.limiter.release()
 
         task = [limited_img2file_v1(img) for img in image_file]
         completed_tasks = await asyncio.gather(*task)
@@ -278,20 +278,22 @@ class Doc2X:
 
         async def limited_pdf2file_v1(pdf):
             try:
-                async with self.limiter:
-                    return await pdf2file_v1(
-                        apikey=self.apikey,
-                        pdf_path=pdf,
-                        output_path=output_path,
-                        output_format=output_format,
-                        ocr=ocr,
-                        maxretry=self.maxretry,
-                        rpm=self.rpm,
-                        convert=convert,
-                        translate=translate,
-                    )
+                await self.limiter.require()
+                return await pdf2file_v1(
+                    apikey=self.apikey,
+                    pdf_path=pdf,
+                    output_path=output_path,
+                    output_format=output_format,
+                    ocr=ocr,
+                    maxretry=self.maxretry,
+                    rpm=self.rpm,
+                    convert=convert,
+                    translate=translate,
+                )
             except Exception as e:
                 return f"Error {e}"
+            finally:
+                await self.limiter.release()
 
         tasks = [limited_pdf2file_v1(pdf) for pdf in pdf_file]
         completed_tasks = await asyncio.gather(*tasks)
@@ -376,29 +378,31 @@ class Doc2X:
         async version function
         """
         try:
-            async with self.limiter:
-                texts = await pdf2file_v1(
-                    apikey=self.apikey,
-                    pdf_path=input,
-                    output_path=output,
-                    output_format="texts",
-                    ocr=True,
-                    maxretry=self.maxretry,
-                    rpm=self.rpm,
-                    convert=convert,
-                    translate=False,
-                )
-                await check_folder(path)
-                file_name = os.path.basename(input).replace(".pdf", f".{output}")
-                output_path = os.path.join(path, file_name)
-                if output == "pdf":
-                    strore_pdf(output_path, texts)
-                else:
-                    with open(output_path, "w", encoding="utf-8") as f:
-                        f.write(texts)
-                return output_path, "", True
+            await self.limiter.require()
+            texts = await pdf2file_v1(
+                apikey=self.apikey,
+                pdf_path=input,
+                output_path=output,
+                output_format="texts",
+                ocr=True,
+                maxretry=self.maxretry,
+                rpm=self.rpm,
+                convert=convert,
+                translate=False,
+            )
+            await check_folder(path)
+            file_name = os.path.basename(input).replace(".pdf", f".{output}")
+            output_path = os.path.join(path, file_name)
+            if output == "pdf":
+                strore_pdf(output_path, texts)
+            else:
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(texts)
+            return output_path, "", True
         except Exception as e:
             return input, e, False
+        finally:
+            await self.limiter.release()
 
     async def pdfdeals(
         self,
