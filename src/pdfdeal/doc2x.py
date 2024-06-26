@@ -1,6 +1,7 @@
 import asyncio
+from aiolimiter import AsyncLimiter
 import os
-from .Doc2X.Exception import RateLimit, RateLimiter
+from .Doc2X.Exception import RateLimit
 from .get_file import strore_pdf
 from typing import Tuple
 from .file_tools import list_rename
@@ -50,12 +51,18 @@ async def pdf2file_v1(
             apikey=apikey, pdffile=pdf_path, ocr=ocr, translate=translate
         )
     except RateLimit:
-        while True:
+        # Retry according to maxretry and current rpm
+        for i in range(maxretry):
             print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
             await asyncio.sleep(60 // rpm + 15)
             try:
+                print(f"Retrying {i+1} / {maxretry} times")
                 uuid = await upload_pdf(apikey=apikey, pdffile=pdf_path, ocr=ocr)
             except RateLimit:
+                if i == maxretry - 1:
+                    raise RuntimeError(
+                        "Reach the max retry times, but still get rate limit"
+                    )
                 continue
     # Wait for the process to finish
     while True:
@@ -102,10 +109,11 @@ async def img2file_v1(
         )
     except RateLimit:
         # Retry according to maxretry and current rpm
-        while True:
+        for i in range(maxretry):
             print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
             await asyncio.sleep(60 // rpm + 15)
             try:
+                print(f"Retrying {i+1} / {maxretry} times")
                 uuid = await upload_img(
                     apikey=apikey,
                     imgfile=img_path,
@@ -113,6 +121,10 @@ async def img2file_v1(
                     img_correction=img_correction,
                 )
             except RateLimit:
+                if i == maxretry - 1:
+                    raise RuntimeError(
+                        "Reach the max retry times, but still get rate limit"
+                    )
                 continue
     # Wait for the process to finish
     while True:
