@@ -3,7 +3,6 @@ from functools import wraps
 import time
 from collections import deque
 
-
 class RateLimit(Exception):
     """
     Error when rate limit is reached.
