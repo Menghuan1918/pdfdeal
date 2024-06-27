@@ -25,7 +25,7 @@ jobs:
         DOC2X_APIKEY: ${{ secrets.DOC2X_APIKEY }}
         DOC2X_APIKEY_PERSONAL: ${{ secrets.DOC2X_APIKEY_PERSONAL }}
       run: |
-        pytest
+        pytest -s
 
   test-python-3-10:
     needs: test-python-3-9
@@ -97,4 +97,4 @@ jobs:
         DOC2X_APIKEY: ${{ secrets.DOC2X_APIKEY }}
         DOC2X_APIKEY_PERSONAL: ${{ secrets.DOC2X_APIKEY_PERSONAL }}
       run: |
-        pytest -
+        pytest -s
