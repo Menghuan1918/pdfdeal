@@ -1,7 +1,5 @@
 import asyncio
 from functools import wraps
-import time
-from collections import deque
 
 
 class RateLimit(Exception):
@@ -51,7 +49,6 @@ def async_retry(max_retries=3, backoff_factor=2):
         return wrapper
 
     return decorator
-
 
 class RateLimiter:
     def __init__(self, rpm):

@@ -1,6 +1,7 @@
 import asyncio
+from aiolimiter import AsyncLimiter
 import os
-from .Doc2X.Exception import RateLimit, RateLimiter
+from .Doc2X.Exception import RateLimit
 from .get_file import strore_pdf
 from typing import Tuple
 from .file_tools import list_rename
@@ -50,13 +51,19 @@ async def pdf2file_v1(
             apikey=apikey, pdffile=pdf_path, ocr=ocr, translate=translate
         )
     except RateLimit:
-        while True:
+        # Retry according to maxretry and current rpm
+        for i in range(maxretry):
             print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
             await asyncio.sleep(60 // rpm + 15)
             try:
+                print(f"Retrying {i+1} / {maxretry} times")
                 uuid = await upload_pdf(apikey=apikey, pdffile=pdf_path, ocr=ocr)
                 break
             except RateLimit:
+                if i == maxretry - 1:
+                    raise RuntimeError(
+                        "Reach the max retry times, but still get rate limit"
+                    )
                 continue
     # Wait for the process to finish
     while True:
@@ -104,10 +111,11 @@ async def img2file_v1(
         )
     except RateLimit:
         # Retry according to maxretry and current rpm
-        while True:
+        for i in range(maxretry):
             print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
             await asyncio.sleep(60 // rpm + 15)
             try:
+                print(f"Retrying {i+1} / {maxretry} times")
                 uuid = await upload_img(
                     apikey=apikey,
                     imgfile=img_path,
@@ -116,6 +124,10 @@ async def img2file_v1(
                 )
                 break
             except RateLimit:
+                if i == maxretry - 1:
+                    raise RuntimeError(
+                        "Reach the max retry times, but still get rate limit"
+                    )
                 continue
     # Wait for the process to finish
     while True:
@@ -138,27 +150,17 @@ async def img2file_v1(
 class Doc2X:
     """
     `apikey`: Your apikey, or get from environment variable `DOC2X_APIKEY`
-    `rpm`: Request per minute, will automatically adjust the rate limit according to the apikey
-    `thread`: deprecated
-    `maxretry`: deprecated
+    `rpm`: Request per minute, default is `3`
+    `thread`: Max thread number, default is `1`, no used now, will perfer to use `rpm`
+    `maxretry`: Max retry times, default is `8`
     """
 
     def __init__(
-        self,
-        apikey: str = None,
-        rpm: int = None,
-        thread: int = None,
-        maxretry: int = None,
+        self, apikey: str = None, rpm: int = 3, thread: int = 1, maxretry: int = 8
     ) -> None:
         self.apikey = asyncio.run(get_key(apikey))
-        if rpm is not None:
-            self.rpm = rpm
-        else:
-            if self.apikey.startswith("sk-"):
-                self.rpm = 10
-            else:
-                self.rpm = 4
-        self.limiter = RateLimiter(self.rpm)
+        self.limiter = AsyncLimiter(max_rate=rpm // 3, time_period=20)
+        self.rpm = rpm
         self.maxretry = maxretry
 
     async def pic2file_back(
