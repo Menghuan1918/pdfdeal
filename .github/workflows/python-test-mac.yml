@@ -1,4 +1,4 @@
-name: Package tests on Ubuntu
+name: Package tests on MacOS
 
 on:
   workflow_dispatch:
