@@ -170,10 +170,12 @@ class Doc2X:
         Convert image file to specified file, with rate/thread limit
         input refers to `pic2file` function
         """
-
+        limit = asyncio.Semaphore(self.rpm)
+        lock = asyncio.Lock()
         async def limited_img2file_v1(img):
             try:
-                await self.limiter.require()
+                await limit.acquire()
+                await self.limiter.require(lock)
                 return await img2file_v1(
                     apikey=self.apikey,
                     img_path=img,
@@ -188,8 +190,7 @@ class Doc2X:
             except Exception as e:
                 return f"Error {e}"
             finally:
-                await self.limiter.release()
-
+                limit.release()
         task = [limited_img2file_v1(img) for img in image_file]
         completed_tasks = await asyncio.gather(*task)
         return await process_status(image_file, completed_tasks)
@@ -275,10 +276,12 @@ class Doc2X:
         Convert pdf file to specified file, with rate/thread limit, async version
         input refers to `pdf2file` function
         """
-
+        limit = asyncio.Semaphore(self.rpm)
+        lock = asyncio.Lock()
         async def limited_pdf2file_v1(pdf):
             try:
-                await self.limiter.require()
+                await limit.acquire()
+                await self.limiter.require(lock)
                 return await pdf2file_v1(
                     apikey=self.apikey,
                     pdf_path=pdf,
@@ -293,7 +296,7 @@ class Doc2X:
             except Exception as e:
                 return f"Error {e}"
             finally:
-                await self.limiter.release()
+                limit.release()
 
         tasks = [limited_pdf2file_v1(pdf) for pdf in pdf_file]
         completed_tasks = await asyncio.gather(*tasks)
@@ -377,8 +380,11 @@ class Doc2X:
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function
         """
+        limit = asyncio.Semaphore(self.rpm)
+        lock = asyncio.Lock()
         try:
-            await self.limiter.require()
+            await limit.acquire()
+            await self.limiter.require(lock)
             texts = await pdf2file_v1(
                 apikey=self.apikey,
                 pdf_path=input,
@@ -402,7 +408,7 @@ class Doc2X:
         except Exception as e:
             return input, e, False
         finally:
-            await self.limiter.release()
+            limit.release()
 
     async def pdfdeals(
         self,
