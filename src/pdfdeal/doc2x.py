@@ -55,6 +55,7 @@ async def pdf2file_v1(
             await asyncio.sleep(60 // rpm + 15)
             try:
                 uuid = await upload_pdf(apikey=apikey, pdffile=pdf_path, ocr=ocr)
+                break
             except RateLimit:
                 continue
     # Wait for the process to finish
@@ -66,6 +67,7 @@ async def pdf2file_v1(
             # If output_format is texts, return texts directly
             if output_format == "texts":
                 return texts
+            print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
             break
         # If translate is True, return texts and other(texts location inside)
         elif status_process == 100 and status_str == "Translate success":
@@ -112,6 +114,7 @@ async def img2file_v1(
                     formula=formula,
                     img_correction=img_correction,
                 )
+                break
             except RateLimit:
                 continue
     # Wait for the process to finish
@@ -123,6 +126,7 @@ async def img2file_v1(
             # If output_format is texts, return texts directly
             if output_format == "texts":
                 return texts
+            print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
             break
         print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
         await asyncio.sleep(1)
