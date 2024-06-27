@@ -2,55 +2,55 @@
 <h1 aligh="center">
 pdfdeal
 </h1>
-
-[![Python package test](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml)
   
 **For better RAG!**
-</div>
+
+<br>
+
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml/badge.svg?branch=main" alt="Package tests on Ubuntu">
+</a>
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml/badge.svg?branch=main" alt="Package tests on Windows">
+</a>
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml/badge.svg?branch=main" alt="Package tests on MacOS">
+</a>
+
+<br>
 
 🗺️ ENGLISH | [简体中文](README_CN.md)
 
+</div>
+
+
 ## What's new
 
-### V0.1.1
+### V0.1.2
 
 #### ✨ New Features
 
-- All functions now support the new return format, through the **optional parameter** `version` to choose, when it is `v2`, it will return: `list: successful processing files` `list: processing failed files` `bool`, and the default `v1` return parameter will only return `list: successful processing files`.
-- `pdf2file` and `file2pdf` now support the **optional parameter** `output_names` to specify the output file name.
-- Added request retry mechanism, now it will automatically retry when the network request fails.
-- Added error handling mechanism, now it will automatically handle errors when processing files, and will not cause the entire program to interrupt due to a file error.
+- Refactored RPM limiter to enhance batch file processing stability.
+- New unit tests for handling large number of files, all unit tests will be automatically completed by GitHub Actions.
+- Backward compatible with python 3.8.
 
 #### 🐛 Bug Fixes
 
-- Fixed the font exception problem in the `pdfdeal` function.
-- Fixed some abnormal use of keys.
-- Fixed the problem that the rpm limit may not take effect.
-
-### V0.1.0
-> [!IMPORTANT]
-> The Doc2x methods in version `0.0.X` have been deprecated and will be removed in the future, please migrate to the new implementation as soon as possible. You will receive a warning when you still use the old methods.
->
-> Most of its interface has not changed, you can try to change `from pdfdeal.doc2x import Doc2x` to `from pdfdeal.doc2x import Doc2X` directly.
-
-Refactored Doc2X support using concurrency to speed up processing. Quick start:
-
-```python
-from pdfdeal.doc2x import Doc2X
-
-Client = Doc2X()
-filelist = gen_folder_list("./test","pdf")
-# This is a built-in function for generating the folder under the path of all the pdf, you can give any list of the form of the path of the pdf
-Client.pdfdeal(filelist)
-```
+- Improve the stability of batch file processing
+- Discard unnecessary parameters
 
 See [Doc2x Support](./docs/doc2x.md).
+
+### V0.1.1 and V0.1.0
+
+Please see [0.1.1 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1) and [0.1.0 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
+
 
 ## Summary
 
 Easier to deal with PDF, extract readable text and OCR to recognise image text and clean the format. Make it more suitable for knowledge base construction.
 
-Its going to use [easyocr](https://github.com/JaidedAI/EasyOCR) to recognise the image and add it to the original text. If the output format uses pdf format, this ensures that the text is on the same number of pages in the new PDF as the original. You can use knowledge base applications (such as [Dify](https://github.com/langgenius/dify),[FastGPT](https://github.com/labring/FastGPT)) after the PDF processing, so that theoretically can reach a better recognition rate.
+Its going to use [easyocr](https://github.com/JaidedAI/EasyOCR) or [Doc2x](./docs/doc2x.md) to recognise the image and add it to the original text. If the output format uses pdf format, this ensures that the text is on the same number of pages in the new PDF as the original. You can use knowledge base applications (such as [Dify](https://github.com/langgenius/dify),[FastGPT](https://github.com/labring/FastGPT)) after the PDF processing, so that theoretically can reach a better recognition rate.
 
 ![111](https://github.com/Menghuan1918/pdfdeal/assets/122662527/58155389-f846-41fd-9314-1cd86282e66a)
 

@@ -1,37 +1,42 @@
-## Update for V0.1.0
+## Update for V0.1.0 and V0.1.1
 
-> [!IMPORTANT]
-> The `0.0.X` version of the method is deprecated and will be removed in the future, please migrate to the new implementation as soon as possible. You can find it [here](./doc2x_old.md) to see the documentation for older versions.
->
-> Most of its interfaces haven't changed, you can try changing `from pdfdeal.doc2x import Doc2x` to `from pdfdeal.doc2x import Doc2X` directly.
+Please see [0.1.1 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1) and [0.1.0 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
 
-## Update for V0.1.1
-
-> [!IMPORTANT]
-> The return format has changed, please pay attention to modify your code to adapt to the new return format.
->
-> Now you can choose the return format by the `version` parameter, when it is `v2`, it will return: `list: successful processing files` `list: processing failed files` `bool`.
->
-> The default `v1` return parameter will only return `list: successful processing files`.
-
-### ✨ New Features
+🔨 Interface changes in these two versions:
 
 - All functions now support the new return format, through the **optional parameter** `version` to choose, when it is `v2`, it will return: `list: successful processing files` `list: processing failed files` `bool`, and the default `v1` return parameter will only return `list: successful processing files`.
 - `pdf2file` and `file2pdf` now support the **optional parameter** `output_names` to specify the output file name.
-- Added request retry mechanism, now it will automatically retry when the network request fails.
-- Added error handling mechanism, now it will automatically handle errors when processing files, and will not cause the entire program to interrupt due to a file error.
+
+## Update for V0.1.2
+
+✅ No interface changes for seamless upgrades.
+
+#### ✨ New Features
+
+- Refactored RPM limiter to enhance batch file processing stability.
+- New unit tests for handling large number of files, all unit tests will be automatically completed by GitHub Actions.
+- Backward compatible with python 3.8.
 
 ### 🐛 Bug Fixes
 
-- Fixed the font exception problem in the `pdfdeal` function.
-- Fixed some abnormal use of keys.
-- Fixed the problem that the rpm limit may not take effect.
+- Improve the stability of batch file processing
+- Discard unnecessary parameters
 
 ## Installation
 
-[![Python package test](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml)
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml/badge.svg?branch=main" alt="Package tests on Ubuntu">
+</a>
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml/badge.svg?branch=main" alt="Package tests on Windows">
+</a>
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml/badge.svg?branch=main" alt="Package tests on MacOS">
+</a>
 
-This project supports python 3.9-3.12 and has been tested on Windows/Linux/MacOS systems. Use `pip` to install:
+<br>
+
+This project supports python 3.8-3.12 and has been tested on Windows/Linux/MacOS systems through Github Action. Use `pip` to install:
 
 ```bash
 pip install --upgrade pdfdeal
@@ -95,15 +100,14 @@ You can also configure global settings when configuring the key:
 
 ```python
 from pdfdeal.doc2x import Doc2X
-Client = Doc2X(apikey=api, rpm=20, maxretry=10)
+Client = Doc2X(apikey=api)
 ```
 
 And:
-- `rpm` represents the number of requests per minute, default is 3.
-- `maxretry` represents the maximum number of retries, default is 5.
+- `rpm` represents the number of requests per minute, it will be auto set.
 
 > [!NOTE]
-> For personal use, sugguest not change the default settings.
+> Do not modify `rpm` unless you are sure you need to modify the request frequency.
 
 ## Usage
 

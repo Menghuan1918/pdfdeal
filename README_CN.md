@@ -3,10 +3,20 @@
 pdfdeal
 </h1>
 
-[![Python package test](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml)
-<br>
-<br>
 **更好的RAG效果！**
+
+<br>
+
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml/badge.svg?branch=main" alt="Package tests on Ubuntu">
+</a>
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml/badge.svg?branch=main" alt="Package tests on Windows">
+</a>
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml/badge.svg?branch=main" alt="Package tests on MacOS">
+</a>
+
 </div>
 
 
@@ -14,45 +24,28 @@ pdfdeal
 
 ## 最近更新
 
-### V0.1.1
+### V0.1.2
 
 #### ✨ 新特性
 
-- 所有的函数现在支持新的返回格式，通过**可选参数**`version`来选择，当为`v2`时会返回：`list：成功处理的文件` `list：处理失败的文件` `bool`，而默认的`v1`返回参数将会仅返回`list：成功处理的文件`。
-- `pdf2file`和`file2pdf`现在支持`output_names`**可选参数**，用于指定输出文件的名称。
-- 新增请求重试机制，现在在网络请求失败时会自动重试。
-- 新增错误处理机制，现在在处理文件时会自动处理错误，不会因为一个文件出错而导致整个程序中断。
+- 重构的RPM限制器，增强批量处理文件稳定性
+- 新增处理大量文件的单元测试，所有单元测试将会通过GitHub Actions自动完成
+- 向下兼容至python3.8
 
 详细请参阅[Doc2x支持](./docs/doc2x_cn.md)
 
 #### 🐛 Bug 修复
 
-- 修复了`pdfdeal`函数中文字体异常问题。
-- 修复了某些密匙使用异常的问题。
+- 提升批量处理文件的稳定性
+- 废弃不必要的参数
 
-### V0.1.0
+### V0.1.1以及V0.1.0
 
-> [!IMPORTANT]
-> `0.0.X`版本的Doc2x方法已经弃用，其将会在未来删除，请尽快迁移至新的实现。当你依然使用旧方法时会收到一个警告。
->
-> 其大部分接口并没变动，你可以尝试直接将`from pdfdeal.doc2x import Doc2x`改为`from pdfdeal.doc2x import Doc2X`。
-
-重构的Doc2X支持，使用协程加速处理速度。快速开始：
-
-```python
-from pdfdeal.doc2x import Doc2X
-
-Client = Doc2X()
-filelist = gen_folder_list("./test","pdf")
-# 这是内置的一个函数，用于生成文件夹下所有pdf的路径，你可以给定任意list形式的pdf路径
-Client.pdfdeal(filelist)
-```
-
-详细请参阅[Doc2x支持](./docs/doc2x_cn.md)
+请参阅[0.1.1更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1)以及[0.1.0更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
 
 ## 简介
 
-使用 [easyocr](https://github.com/JaidedAI/EasyOCR) 来识别图像并将其添加到原始文本中。可以设置输出格式使用 pdf 格式，这将确保文本在新 PDF 中的页数与原始文本相同。对 PDF 进行处理后与知识库应用程序（如[Dify](https://github.com/langgenius/dify)、[FastGPT](https://github.com/labring/FastGPT)），理论上可以达到更好的识别率。
+使用 [easyocr](https://github.com/JaidedAI/EasyOCR) 或 [Doc2x](./docs/doc2x_cn.md)来识别图像并将其添加到原始文本中。可以设置输出格式使用 pdf 格式，这将确保文本在新 PDF 中的页数与原始文本相同。对 PDF 进行处理后与知识库应用程序（如[Dify](https://github.com/langgenius/dify)、[FastGPT](https://github.com/labring/FastGPT)），理论上可以达到更好的识别率。
 
 ![111](https://github.com/Menghuan1918/pdfdeal/assets/122662527/58155389-f846-41fd-9314-1cd86282e66a)
 

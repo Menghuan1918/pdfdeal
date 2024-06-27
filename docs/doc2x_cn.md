@@ -1,37 +1,43 @@
-## V0.1.0更新
+### V0.1.1以及V0.1.0
 
-> [!IMPORTANT]
-> `0.0.X`版本的方法已经弃用，其将会在未来删除，请尽快迁移至新的实现。你可以在[此处](./doc2x_old_cn.md)查看旧版本的文档。
->
-> 其大部分接口并没变动，你可以尝试直接将`from pdfdeal.doc2x import Doc2x`改为`from pdfdeal.doc2x import Doc2X`。
+请参阅[0.1.1更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1)以及[0.1.0更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
 
-## V0.1.1更新
-
-> [!IMPORTANT]
-> 返回的参数格式有所变动，请注意修改你的代码以适应新的返回格式。
->
-> 现在可以通过`version`参数选择返回格式，当为`v2`时会返回：`list：成功处理的文件` `list：处理失败的文件` `bool`。
->
-> 默认的`v1`返回参数将会仅返回`list：成功处理的文件`。
-
-### ✨ 新特性
+🔨 这两个版本中的接口更变：
 
 - 所有的函数现在支持新的返回格式，通过**可选参数**`version`来选择，当为`v2`时会返回：`list：成功处理的文件` `list：处理失败的文件` `bool`，而默认的`v1`返回参数将会仅返回`list：成功处理的文件`。
 - `pdf2file`和`file2pdf`现在支持`output_names`**可选参数**，用于指定输出文件的名称。
-- 新增请求重试机制，现在在网络请求失败时会自动重试。
-- 新增错误处理机制，现在在处理文件时会自动处理错误，不会因为一个文件出错而导致整个程序中断。
+
+
+## V0.1.2更新
+
+✅ 没有接口更改，可以无缝升级。
+
+### ✨ 新特性
+
+- 重构的RPM限制器，增强批量处理文件稳定性
+- 新增批量处理大量文件的单元测试，所有单元测试将会通过GitHub Actions自动完成
+- 向下兼容至python3.8
 
 ### 🐛 Bug 修复
 
-- 修复了`pdfdeal`函数中文字体异常问题。
-- 修复了某些密匙使用异常的问题。
-- 修复了rpm限制可能不生效的问题。
+- 修复批量处理文件的不稳定性
+- 废弃不必要的参数
 
 ## 安装
 
-[![Python package test](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml/badge.svg)](https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml)
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml/badge.svg?branch=main" alt="Package tests on Ubuntu">
+</a>
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml/badge.svg?branch=main" alt="Package tests on Windows">
+</a>
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml/badge.svg?branch=main" alt="Package tests on MacOS">
+</a>
 
-本项目已支持 python 3.9-3.12 版本，并已在Windows/Linux/MacOS 系统中进行测试，使用`pip`进行安装：
+<br>
+
+本项目支持 python 3.8-3.12 版本，并已使用GitHub Action在Windows/Linux/MacOS 系统中进行测试，使用`pip`进行安装：
 
 ```bash
 pip install --upgrade pdfdeal
@@ -95,15 +101,14 @@ Client = Doc2X(apikey="Your API key")
 
 ```python
 from pdfdeal.doc2x import Doc2X
-Client = Doc2X(apikey=api, rpm=20, maxretry=5)
+Client = Doc2X(apikey=api)
 ```
 
 其中：
-- `rpm`代表每分钟请求数，默认为3。
-- `maxretry`代表遇到rpm限制时的最大重试次数，默认为5。
+- `rpm`代表每分钟请求数，会自动进行设置
 
 > [!NOTE]
-> 对于个人使用，不建议修改`rpm`，以免触发频率限制。
+> 除非你确信你需要修改请求频率，请不要修改`rpm`
 
 ## 发起请求
 
@@ -239,7 +244,7 @@ print(failed)
 print(flag)
 ```
 
-当第一个文件处理失败，第二个文件处理成功时，其示例输出：
+当第一个文件处理**失败**，第二个文件处理**成功**时，其示例输出：
 
 ```python
 ['', './Output/test/multiple/pdfdeal/sample.pdf']
@@ -261,7 +266,7 @@ print(f"Pages remaining: {Client.get_limit()}")
 示例输出：
 
 ```python
-Pages remaining: 2229
+Pages remaining: 123
 ```
 
 ### 用于RAG知识库预处理
@@ -293,7 +298,7 @@ print(failed)
 print(flag)
 ```
 
-当第一个文件处理失败，第二个文件处理成功时，其示例输出：
+当第一个文件处理**失败**，第二个文件处理**成功**时，其示例输出：
 
 ```python
 ['', './Output/test/multiple/pdfdeal/sample.pdf']
