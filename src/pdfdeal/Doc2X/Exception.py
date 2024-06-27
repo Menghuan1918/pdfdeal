@@ -64,7 +64,7 @@ class RateLimiter:
             if len(self.last_call_times) >= self.rpm:
                 elapsed_time = now - self.last_call_times[-1]
                 if elapsed_time < 60//self.rpm:
-                    wait_time = 60//self.rpm - elapsed_time + 5
+                    wait_time = 60//self.rpm - elapsed_time + 10
                     print(f"Find Rate limit reached. Waiting for {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
             self.last_call_times.append(now)
