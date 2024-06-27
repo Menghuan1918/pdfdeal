@@ -1,0 +1,113 @@
+name: Package tests on Ubuntu
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-python-3-9:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-13]
+        # macos-14 not supporte python 3.9
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.9"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest
+        python -m pip install .
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Test with pytest
+      env:
+        DOC2X_APIKEY: ${{ secrets.DOC2X_APIKEY }}
+        DOC2X_APIKEY_PERSONAL: ${{ secrets.DOC2X_APIKEY_PERSONAL }}
+      run: |
+        pytest
+
+  test-python-3-10:
+    needs: test-python-3-9
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest
+        python -m pip install .
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Test with pytest
+      env:
+        DOC2X_APIKEY: ${{ secrets.DOC2X_APIKEY }}
+        DOC2X_APIKEY_PERSONAL: ${{ secrets.DOC2X_APIKEY_PERSONAL }}
+      run: |
+        pytest -s
+
+  test-python-3-11:
+    needs: test-python-3-10
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.11"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest
+        python -m pip install .
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Test with pytest
+      env:
+        DOC2X_APIKEY: ${{ secrets.DOC2X_APIKEY }}
+        DOC2X_APIKEY_PERSONAL: ${{ secrets.DOC2X_APIKEY_PERSONAL }}
+      run: |
+        pytest -s
+
+  test-python-3-12:
+    needs: test-python-3-11
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest
+        python -m pip install .
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    - name: Test with pytest
+      env:
+        DOC2X_APIKEY: ${{ secrets.DOC2X_APIKEY }}
+        DOC2X_APIKEY_PERSONAL: ${{ secrets.DOC2X_APIKEY_PERSONAL }}
+      run: |
+        pytest -
