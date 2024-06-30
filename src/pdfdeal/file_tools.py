@@ -9,6 +9,9 @@ import zipfile
 
 
 def OCR_easyocr(path, language=["ch_sim", "en"], GPU=False):
+    """
+    OCR with easyocr
+    """
     try:
         import easyocr
     except ImportError:
@@ -29,6 +32,9 @@ def OCR_easyocr(path, language=["ch_sim", "en"], GPU=False):
 
 
 def OCR_pytesseract(path, language=["eng"], GPU=False):
+    """
+    OCR with pytesseract
+    """
     try:
         import pytesseract
     except ImportError:
@@ -49,10 +55,16 @@ def OCR_pytesseract(path, language=["eng"], GPU=False):
 
 
 def OCR_pass(path, language=["ch_sim", "en"], GPU=False):
+    """
+    Pass the OCR process
+    """
     return ""
 
 
 def clean_text(text):
+    """
+    Clean the text
+    """
     # remove extra whitespaces
     text = re.sub(r"\n\s*\n", "\n\n", text)
 
@@ -62,7 +74,7 @@ def clean_text(text):
     def is_valid_unicode(char):
         # Check if a character is a valid unicode character
         try:
-            char_name = unicodedata.name(char)
+            unicodedata.name(char)
             return True
         except ValueError:
             return False
@@ -82,6 +94,9 @@ def clean_text(text):
 
 
 def clear_cache():
+    """
+    Clear the cache folder
+    """
     temp_image_folder = os.path.join(
         os.path.expanduser("~"), ".cache", "pdfdeal", "pictures"
     )
@@ -94,6 +109,9 @@ def clear_cache():
 def extract_text_and_images(
     pdf_path, ocr=OCR_easyocr, language=["ch_sim", "en"], GPU=False
 ):
+    """
+    Extract text and images from a PDF file
+    """
     Text = []
 
     # Open the PDF file
