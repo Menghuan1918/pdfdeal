@@ -1,6 +1,7 @@
 import asyncio
 import os
 from .Doc2X.Exception import RateLimit, RateLimiter
+from .Doc2X.Types import OutputFormat
 from .get_file import strore_pdf
 from typing import Tuple
 from .file_tools import list_rename
@@ -206,7 +207,7 @@ class Doc2X:
         image_file,
         output_path: str = "./Output",
         output_names: list = None,
-        output_format: str = "md_dollar",
+        output_format: OutputFormat = OutputFormat.MD_DOLLAR,
         img_correction: bool = True,
         equation=False,
         convert: bool = False,
