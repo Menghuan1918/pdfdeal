@@ -176,6 +176,7 @@ class Doc2X:
         """
         limit = asyncio.Semaphore(self.rpm)
         lock = asyncio.Lock()
+
         async def limited_img2file_v1(img):
             try:
                 await limit.acquire()
@@ -195,6 +196,7 @@ class Doc2X:
                 return f"Error {e}"
             finally:
                 limit.release()
+
         task = [limited_img2file_v1(img) for img in image_file]
         completed_tasks = await asyncio.gather(*task)
         return await process_status(image_file, completed_tasks)
@@ -282,6 +284,7 @@ class Doc2X:
         """
         limit = asyncio.Semaphore(self.rpm)
         lock = asyncio.Lock()
+
         async def limited_pdf2file_v1(pdf):
             try:
                 await limit.acquire()
@@ -541,10 +544,6 @@ def Doc2x(api_key):
     """
     Deprecated function, use `from pdfdeal.doc2x import Doc2X` instead
     """
-    from .doc2x_old import Doc2x
-    import warnings
-
-    warnings.warn(
-        "This function is deprecated, please use `from pdfdeal.doc2x import Doc2X` instead"
+    raise DeprecationWarning(
+        "Deprecated function, use `from pdfdeal.doc2x import Doc2X` instead, please visit https://github.com/Menghuan1918/pdfdeal/blob/main/docs/doc2x.md for more information."
     )
-    return Doc2x(api_key)
