@@ -10,3 +10,7 @@ class OutputFormat(str, Enum):
 class OutputVersion(str, Enum):
     V1 = "v1"
     V2 = "v2"
+
+class RAG_OutputType(str, Enum):
+    PDF = "pdf"
+    MD = "md"

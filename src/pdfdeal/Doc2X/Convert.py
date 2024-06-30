@@ -20,7 +20,7 @@ async def refresh_key(key: str) -> str:
     if get_res.status_code == 200:
         return json.loads(get_res.content.decode("utf-8"))["data"]["token"]
     else:
-        raise Exception(f"Refresh key error! {get_res.status_code}:{get_res.text}")
+        raise Exception(f"Failed to verify key: {get_res.status_code}:{get_res.text}")
 
 
 async def check_folder(path: str) -> bool:

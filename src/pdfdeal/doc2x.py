@@ -1,7 +1,7 @@
 import asyncio
 import os
 from .Doc2X.Exception import RateLimit, RateLimiter
-from .Doc2X.Types import OutputFormat
+from .Doc2X.Types import OutputFormat, OutputVersion, RAG_OutputType
 from .get_file import strore_pdf
 from typing import Tuple
 from .file_tools import list_rename
@@ -209,9 +209,9 @@ class Doc2X:
         output_names: list = None,
         output_format: OutputFormat = OutputFormat.MD_DOLLAR,
         img_correction: bool = True,
-        equation=False,
+        equation: bool = False,
         convert: bool = False,
-        version: str = "v1",
+        version: OutputVersion = OutputVersion.V1,
     ) -> str:
         """
         Convert image file to specified file
@@ -233,6 +233,9 @@ class Doc2X:
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
         """
+        output_format = OutputFormat(output_format)
+        version = OutputVersion(version)
+
         if isinstance(image_file, str):
             image_file = [image_file]
 
@@ -315,10 +318,10 @@ class Doc2X:
         pdf_file,
         output_path: str = "./Output",
         output_names: list = None,
-        output_format: str = "md_dollar",
+        output_format: OutputFormat = OutputFormat.MD_DOLLAR,
         ocr: bool = True,
         convert: bool = False,
-        version: str = "v1",
+        version: str = OutputVersion.V1,
     ):
         """
         Convert pdf file to specified file
@@ -340,6 +343,9 @@ class Doc2X:
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
         """
+        output_format = OutputFormat(output_format)
+        version = OutputVersion(version)
+
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
 
@@ -453,10 +459,10 @@ class Doc2X:
     def pdfdeal(
         self,
         input,
-        output: str = "pdf",
+        output: str = RAG_OutputType.PDF,
         path: str = "./Output",
         convert: bool = True,
-        version: str = "v1",
+        version: str = OutputVersion.V1,
     ):
         """
         Deal with pdf file, convert it to specified format for RAG system
@@ -476,6 +482,9 @@ class Doc2X:
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
         """
+        output = RAG_OutputType(output)
+        version = OutputVersion(version)
+
         if isinstance(input, str):
             input = [input]
 
@@ -498,7 +507,7 @@ class Doc2X:
         pdf_file,
         output_path: str = "./Output",
         convert: bool = False,
-        version: str = "v1",
+        version: str = OutputVersion.V1,
     ) -> Tuple[list, list]:
         """
         Translate pdf file to specified file
@@ -518,6 +527,7 @@ class Doc2X:
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
         """
+        version = OutputVersion(version)
         if self.apikey.startswith("sk-"):
             raise RuntimeError(
                 "Your secret key does not have access to the translation function! Please use your personal key."
