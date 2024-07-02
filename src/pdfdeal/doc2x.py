@@ -234,7 +234,11 @@ class Doc2X:
                 `bool`: True means that at least one file process failed
         """
         output_format = OutputFormat(output_format)
+        if isinstance(output_format, OutputFormat):
+            output_format = output_format.value
         version = OutputVersion(version)
+        if isinstance(version, OutputVersion):
+            version = version.value
 
         if isinstance(image_file, str):
             image_file = [image_file]
@@ -344,7 +348,11 @@ class Doc2X:
                 `bool`: True means that at least one file process failed
         """
         output_format = OutputFormat(output_format)
+        if isinstance(output_format, OutputFormat):
+            output_format = output_format.value
         version = OutputVersion(version)
+        if isinstance(version, OutputVersion):
+            version = version.value
 
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
@@ -483,7 +491,11 @@ class Doc2X:
                 `bool`: True means that at least one file process failed
         """
         output = RAG_OutputType(output)
+        if isinstance(output, RAG_OutputType):
+            output = output.value
         version = OutputVersion(version)
+        if isinstance(version, OutputVersion):
+            version = version.value
 
         if isinstance(input, str):
             input = [input]
@@ -528,6 +540,8 @@ class Doc2X:
                 `bool`: True means that at least one file process failed
         """
         version = OutputVersion(version)
+        if isinstance(version, OutputVersion):
+            version = version.value
         if self.apikey.startswith("sk-"):
             raise RuntimeError(
                 "Your secret key does not have access to the translation function! Please use your personal key."
