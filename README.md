@@ -135,11 +135,12 @@ Import the function by`from pdfdeal import deal_pdf`. Explanation of the paramet
   - Example: `"/path/to/save/output"`
 
 ### Replace all remote images in Markdown files with local ones
+
 Args:
-    `mdfile`: `str`, the markdown file path.
-    `replace`: `str`, only "local" accepted now, will add "R2", "S3", "OSS" in the future.
-    `outputpath`: `str`, the output path to save the images.
-    `relative`: `bool`, whether to save the images with relative path. Default is `False`.
+- `mdfile`: `str`, the markdown file path.
+- `replace`: `str`, only "local" accepted now, will add "R2", "S3", "OSS" in the future.
+- `outputpath`: `str`, the output path to save the images.
+- `relative`: `bool`, whether to save the images with relative path. Default is `False`.
     
 ```python
 from pdfdeal import md_replace_imgs
