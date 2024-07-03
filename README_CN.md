@@ -26,26 +26,28 @@ pdfdeal
 
 ## 最近更新
 
-你可以[在此处](https://github.com/users/Menghuan1918/projects/3)查看正在开发的新功能！
+你可以[在此处](https://github.com/users/Menghuan1918/projects/3)查看正在开发的新功能！如果直接使用Doc2X进行转换请参阅[Doc2x支持](./docs/doc2x_cn.md)。
 
-### V0.1.2
+### V0.1.3
 
 #### ✨ 新特性
 
-- 重构的RPM限制器，增强批量处理文件稳定性
-- 新增处理大量文件的单元测试，所有单元测试将会通过GitHub Actions自动完成
-- 向下兼容至python3.8
-
-详细请参阅[Doc2x支持](./docs/doc2x_cn.md)
+- 新增功能：将 Markdown 文件中的所有远程图片替换为本地图片
+- 重构的`pdfdeal`函数，现在支持批量输入文件了
 
 #### 🐛 Bug 修复
 
-- 提升批量处理文件的稳定性
-- 废弃不必要的参数
+- 重整本地OCR文件处理函数的输出格式
+- `pdfdeal`某些情况下无法输出md文件的问题
+- 删除版本0.0.x中使用的`Doc2x`
 
-### V0.1.1以及V0.1.0
+#### 🚀 其他
 
-请参阅[0.1.1更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1)以及[0.1.0更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
+- 文档将会在下个版本重制
+
+### V0.1.x版本
+
+请参阅[0.1.2更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.2)，[0.1.1更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1)以及[0.1.0更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
 
 ## 简介
 
@@ -102,13 +104,12 @@ pip install 'pdfdeal[all] @ git+https://github.com/Menghuan1918/pdfdeal.git'
 ### 参数
 通过 `from pdfdeal import deal_pdf` 导入函数。以下是该函数接受的参数说明：
 
-- **input**: `str`
-  - 描述：要处理的 PDF 文件的 URL 或本地路径。
-  - 示例：`"https://example.com/sample.pdf"` 或 `"/path/to/local/sample.pdf"`
+- **input**: `str`或`list`
+  - 描述：要处理的 PDF 文件的本地路径。
+  - 示例： `["1.pdf","2.pdf"]`
 
-- **output**: `str`, 可选，默认值：`"text"`
+- **output**: `str`, 可选，默认值：`"texts"`
   - 描述：指定所需的输出类型。选项包括：
-    - `"text"`：提取的文本作为单个字符串。
     - `"texts"`：提取的文本作为字符串列表，每页一个字符串。
     - `"md"`：Markdown 格式的文本。
     - `"pdf"`：包含提取文本的新 PDF 文件。
@@ -116,7 +117,7 @@ pip install 'pdfdeal[all] @ git+https://github.com/Menghuan1918/pdfdeal.git'
 
 - **ocr**: `function`, 可选，默认值：`None`
   - 描述：自定义 OCR（光学字符识别）函数。如果未提供，将使用默认的 OCR 函数。使用字符串 "pytesseract" 以使用 pytesseract，使用字符串 "pass" 以跳过 OCR。
-  - 示例自定义 OCR 函数：`custom_ocr_function`，输入为：`(path, language=["ch_sim", "en"], GPU=False)`，返回一个 `string`
+  - 示例自定义 OCR 函数：`custom_ocr_function`，输入为：`(path, language=["ch_sim", "en"], GPU=False)`，返回一个 `string`,`bool`
 
 - **language**: `list`, 可选，默认值：`["ch_sim", "en"]`
   - 描述：OCR 使用的语言列表。默认语言是简体中文（`"ch_sim"`）和英语（`"en"`）。pytesseract 使用 `["eng"]`。
@@ -156,14 +157,17 @@ for text in Text:
 ### 使用pytesseract进行OCR识别
 
 ```python
+from pdfdeal import deal_pdf, gen_folder_list
+files = gen_folder_list("tests/pdf", "pdf")
 output_path = deal_pdf(
-    input="test.pdf",
+    input=files,
     output="md",
     ocr="pytesseract",
     language=["eng"],
-    path="markdown"
+    path="Output",
 )
-print(f"Save processed file to {output_path}")
+for f in output_path:
+    print(f"Save processed file to {f}")
 ```
 
 ### 跳过OCR环节

@@ -212,7 +212,7 @@ class Doc2X:
         equation: bool = False,
         convert: bool = False,
         version: OutputVersion = OutputVersion.V1,
-    ) -> str:
+    ):
         """
         Convert image file to specified file
 
