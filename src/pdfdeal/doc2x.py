@@ -424,8 +424,9 @@ class Doc2X:
             if output == "pdf":
                 strore_pdf(output_path, texts)
             else:
+                md_text = '\n'.join(texts) + '\n'
                 with open(output_path, "w", encoding="utf-8") as f:
-                    f.write(texts)
+                    f.write(md_text)
             return output_path, "", True
         except Exception as e:
             return input, e, False

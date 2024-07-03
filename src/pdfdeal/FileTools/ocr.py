@@ -1,6 +1,5 @@
 import os
 from PIL import Image
-from ..doc2x import Doc2X
 
 
 def doc2x_judgements(image_file):
@@ -91,7 +90,7 @@ def OCR_pass(path, language=["ch_sim", "en"], GPU=False):
     return ""
 
 
-def Doc2X_OCR(Client: Doc2X):
+def Doc2X_OCR(Client):
     """
     OCR with Doc2X
     """
