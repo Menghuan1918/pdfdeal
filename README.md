@@ -26,6 +26,8 @@ pdfdeal
 
 ## What's new
 
+Check out the [task list](https://github.com/users/Menghuan1918/projects/3) to see what new features are in the works!
+
 ### V0.1.2
 
 #### ✨ New Features
