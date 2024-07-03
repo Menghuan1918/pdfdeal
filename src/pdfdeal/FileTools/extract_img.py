@@ -73,9 +73,10 @@ def md_replace_imgs(
             download_img_from_url(imgurl, savepath)
             if relative:
                 savepath = os.path.relpath(savepath, os.path.dirname(mdfile))
+                content = content.replace(imglist[i], f"![{imgurl}]({savepath})\n")
             else:
                 savepath = os.path.abspath(savepath)
-            content = content.replace(imglist[i], f"![{imgurl}]({savepath})")
+                content = content.replace(imglist[i], f"<img src=\"{savepath}\" alt=\"{imgurl}\">\n")
         except Exception as e:
             Fail_flag = False
             print(f"Error to download the image: {imgurl}, {e}")
