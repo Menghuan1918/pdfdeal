@@ -1,9 +1,9 @@
 import requests
 import os
 from .file_tools import extract_text_and_images
-from .file_tools import OCR_easyocr
-from .file_tools import OCR_pytesseract
-from .file_tools import OCR_pass
+from .ocr import OCR_easyocr
+from .ocr import OCR_pytesseract
+from .ocr import OCR_pass
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
