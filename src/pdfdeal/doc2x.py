@@ -2,9 +2,9 @@ import asyncio
 import os
 from .Doc2X.Exception import RateLimit, RateLimiter
 from .Doc2X.Types import OutputFormat, OutputVersion, RAG_OutputType
-from .dealpdfs import strore_pdf
+from .FileTools.dealpdfs import strore_pdf
 from typing import Tuple
-from .file_tools import list_rename
+from .FileTools.file_tools import list_rename
 
 from .Doc2X.Convert import (
     refresh_key,
