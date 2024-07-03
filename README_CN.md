@@ -26,6 +26,8 @@ pdfdeal
 
 ## 最近更新
 
+你可以[在此处](https://github.com/users/Menghuan1918/projects/3)查看正在开发的新功能！
+
 ### V0.1.2
 
 #### ✨ 新特性
