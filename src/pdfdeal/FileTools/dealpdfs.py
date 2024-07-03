@@ -110,7 +110,7 @@ def deal_pdf(
         if not input.endswith(".pdf"):
             RuntimeError("The input must be path to a PDF file")
         input = [input]
-        
+
     success_file = []
     failed_file = []
     error_flag = False
@@ -130,6 +130,7 @@ def deal_pdf(
             else:
                 failed_file.append({"error": "", "file": ""})
         except Exception as e:
+            All_Done = True # * As this flag is use to determine if the OCR is done, we set it to True here
             success_file.append("")
             failed_file.append({"error": str(e), "file": pdf_path})
             error_flag = True
@@ -140,6 +141,10 @@ def deal_pdf(
         print(
             "Some pictures are failed to OCR, but the text and reset pictures is extracted"
         )
+    if error_flag:
+        for f in failed_file:
+            if f["error"] != "":
+                print(f"-----\nFailed to process file: {f['file']} with error: {f['error']}\n-----")
     if version == "v2":
         return success_file, failed_file, error_flag
     return success_file
