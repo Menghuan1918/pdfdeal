@@ -131,6 +131,24 @@ pip install 'pdfdeal[all] @ git+https://github.com/Menghuan1918/pdfdeal.git'
   - 描述：输出文件保存的目录路径。仅在 `output` 类型为 `"md"` 或 `"pdf"` 时使用此参数。
   - 示例：`"/path/to/save/output"`
 
+### 替换 Markdown 文件中所有远程图片为本地
+
+参数:
+- `mdfile`: `str`, md文件名字
+- `replace`: `str`, 目前仅接受 "local" ，未来将会支持 "R2", "S3", "OSS"。
+- `outputpath`: `str`, 保存图片的位置。
+- `relative`: `bool`, 是否使用相对位置保存图片，默认为关 `False`.
+    
+```python
+from pdfdeal import md_replace_imgs
+
+md_replace_imgs(
+    mdfile="Output/sample.md",
+    replace="local",
+    outputpath="./Output/test/md_replace_imgs",
+)
+```
+
 ### 将文件夹中的所有文件进行处理并放置在`Output`文件夹中
 
 ```python
