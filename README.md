@@ -41,7 +41,7 @@ Check out the [task list](https://github.com/users/Menghuan1918/projects/3) to s
 - `pdfdeal` can't output md files under some circumstances.
 - Remove `Doc2x` used in version 0.0.x.
 
-#### 🚀Other
+#### 🚀 Other
 
 - Documentation will be refactored for the next release
 
@@ -133,6 +133,23 @@ Import the function by`from pdfdeal import deal_pdf`. Explanation of the paramet
 - **path**: `str`, optional, default: `None`
   - Description: The directory path where the output file will be saved. This parameter is only used when the `output` type is `"md"` or `"pdf"`.
   - Example: `"/path/to/save/output"`
+
+### Replace all remote images in Markdown files with local ones
+Args:
+    `mdfile`: `str`, the markdown file path.
+    `replace`: `str`, only "local" accepted now, will add "R2", "S3", "OSS" in the future.
+    `outputpath`: `str`, the output path to save the images.
+    `relative`: `bool`, whether to save the images with relative path. Default is `False`.
+    
+```python
+from pdfdeal import md_replace_imgs
+
+md_replace_imgs(
+    mdfile="Output/sample.md",
+    replace="local",
+    outputpath="./Output/test/md_replace_imgs",
+)
+```
 
 ### Processes all the files in a file and saves them in the Output folder
 
