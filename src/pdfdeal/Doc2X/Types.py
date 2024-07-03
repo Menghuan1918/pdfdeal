@@ -35,6 +35,7 @@ class OutputVersion(str, Enum):
 class RAG_OutputType(str, Enum):
     PDF = "pdf"
     MD = "md"
+    TEXTS = "texts"
 
     @classmethod
     def _missing_(cls, value):

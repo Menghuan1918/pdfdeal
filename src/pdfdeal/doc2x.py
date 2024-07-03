@@ -423,6 +423,8 @@ class Doc2X:
             output_path = os.path.join(path, file_name)
             if output == "pdf":
                 strore_pdf(output_path, texts)
+            elif output == "texts":
+                return texts, "", True
             else:
                 md_text = '\n'.join(texts) + '\n'
                 with open(output_path, "w", encoding="utf-8") as f:
@@ -478,7 +480,7 @@ class Doc2X:
 
         Args:
             `input`: input file path
-            `output`: output format, default is 'pdf', accept 'pdf', 'md'
+            `output`: output format, default is 'pdf', accept 'pdf', 'md' or 'texts'
             `path`: output path, default is './Output'
             `convert`: whether to convert "[" to "$" and "[[" to "$$", default is True
             `version`: If version is `v2`, will return more information, default is `v1`
