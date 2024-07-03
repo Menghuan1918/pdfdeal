@@ -8,6 +8,7 @@ import os
 import zipfile
 from .ocr import OCR_easyocr
 
+
 def clean_text(text):
     """
     Clean the text
@@ -90,11 +91,11 @@ def extract_text_and_images(
                 pil_image.save(temp_image_path)
 
             # Use ocr to extract text from images
-            ocr_text = ocr(temp_image_folder, language, GPU)
+            ocr_text, All_Done = ocr(temp_image_folder, language, GPU)
             text += f"\n{ocr_text}"
             Text.append(clean_text(text))
         clear_cache()
-    return Text
+    return Text, All_Done
 
 
 def gen_folder_list(path: str, mode: str) -> list:
