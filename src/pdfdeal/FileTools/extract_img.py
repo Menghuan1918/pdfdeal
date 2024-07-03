@@ -1,26 +1,38 @@
 import re
 from typing import Tuple
 import httpx
+import os
+from ..Doc2X.Exception import nomal_retry
 
 
 def get_imgcdnlink_list(text: str) -> Tuple[list, list]:
     """
     Extract the image links from the text.
-    return the image links list and the image path list.
+    Return the image links list and the image path list.
     """
-    # <img src="image_path" alt="alt text">
-    pattern = r'<img\s+src="([^"]+)"\s+alt="([^"]*)">'
-    matches = re.findall(pattern, text)
+    patterns = [
+        (r'<img\s+src="([^"]+)"\s+alt="([^"]*)">', lambda m: (m.group(0), m.group(1))),
+        (
+            r'<img\s+style="[^"]*"\s+src="([^"]+)"\s*/>',
+            lambda m: (m.group(0), m.group(1)),
+        ),
+        (r'<img\s+src="([^"]+)"\s*/>', lambda m: (m.group(0), m.group(1))),
+        (r"!\[[^\]]*\]\(([^)]+)\)", lambda m: (m.group(0), m.group(1))),
+    ]
 
     origin_text_list = []
     imgpath_list = []
-    for match in matches:
-        origin_text_list.append(f'<img src="{match[0]}" alt="{match[1]}">')
-        imgpath_list.append(match[0])
+
+    for pattern, extract in patterns:
+        for match in re.finditer(pattern, text):
+            origin_text, src = extract(match)
+            origin_text_list.append(origin_text)
+            imgpath_list.append(src)
 
     return origin_text_list, imgpath_list
 
 
+@nomal_retry()
 def download_img_from_url(url: str, savepath: str) -> None:
     """
     Download the image from the url to the savepath.
@@ -35,6 +47,7 @@ def md_replace_imgs(
     mdfile: str,
     replace: str,
     outputpath: str,
+    relative: bool = False,
 ) -> bool:
     """
     Replace the image links in the markdown file with the cdn links.
@@ -42,6 +55,7 @@ def md_replace_imgs(
         `mdfile`: `str`, the markdown file path.
         `replace`: `str`, only "local" accepted now, will add "R2", "S3", "OSS" in the future.
         `outputpath`: `str`, the output path to save the images.
+        `relative`: `bool`, whether to save the images with relative path. Default is `False`.
     """
     with open(mdfile, "r", encoding="utf-8") as file:
         content = file.read()
@@ -51,24 +65,27 @@ def md_replace_imgs(
         print("No image links found in the markdown file.")
         return True
 
+    os.makedirs(outputpath, exist_ok=True)
     Fail_flag = True
     for i, imgurl in enumerate(imgpath):
         try:
             savepath = f"{outputpath}/img{i}.png"
             download_img_from_url(imgurl, savepath)
-            content = content.replace(
-                imglist[i], f'<img src="{savepath}" alt="img{i}">'
-            )
+            if relative:
+                savepath = os.path.relpath(savepath, os.path.dirname(mdfile))
+            else:
+                savepath = os.path.abspath(savepath)
+            content = content.replace(imglist[i], f"![{imgurl}]({savepath})")
         except Exception as e:
             Fail_flag = False
-            print(f"Erorr to download the image: {imgurl}, {e}")
+            print(f"Error to download the image: {imgurl}, {e}")
             print("Continue to download the next image.")
             continue
 
     with open(mdfile, "w", encoding="utf-8") as file:
         file.write(content)
 
-    if Fail_flag:
+    if Fail_flag is False:
         print("Some images download failed.")
         return False
 
