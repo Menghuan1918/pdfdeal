@@ -28,24 +28,26 @@ pdfdeal
 
 Check out the [task list](https://github.com/users/Menghuan1918/projects/3) to see what new features are in the works!
 
-### V0.1.2
+### V0.1.3
 
 #### ✨ New Features
 
-- Refactored RPM limiter to enhance batch file processing stability.
-- New unit tests for handling large number of files, all unit tests will be automatically completed by GitHub Actions.
-- Backward compatible with python 3.8.
+- New feature: replace all remote images in Markdown files with local ones.
+- Refactored `pdfdeal` function, now supports batch input of files.
 
 #### 🐛 Bug Fixes
 
-- Improve the stability of batch file processing
-- Discard unnecessary parameters
+- Reformatting the output of native OCR file processing functions.
+- `pdfdeal` can't output md files under some circumstances.
+- Remove `Doc2x` used in version 0.0.x.
 
-See [Doc2x Support](./docs/doc2x.md).
+#### 🚀Other
 
-### V0.1.1 and V0.1.0
+- Documentation will be refactored for the next release
 
-Please see [0.1.1 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1) and [0.1.0 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
+### V0.1.x
+
+Please see  [0.1.2 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.2), [0.1.1 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1) and [0.1.0 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
 
 
 ## Summary
@@ -104,13 +106,12 @@ pip install 'pdfdeal[all] @ git+https://github.com/Menghuan1918/pdfdeal.git'
 ### Parameters
 Import the function by`from pdfdeal import deal_pdf`. Explanation of the parameters accepted by the function:
 
-- **input**: `str`
-  - Description: The URL or local path to the PDF file that you want to process.
-  - Example: `"https://example.com/sample.pdf"` or `"/path/to/local/sample.pdf"`
+- **input**: `str` or `list`
+  - Description: The local path to the PDF file that you want to process.
+  - Example:  `["1.pdf","2.pdf"]`
 
-- **output**: `str`, optional, default: `"text"`
+- **output**: `str`, optional, default: `"texts"`
   - Description: Specifies the type of output you want. The options are:
-    - `"text"`: Extracted text from the PDF as a single string.
     - `"texts"`: Extracted text from the PDF as a list of strings, one per page.
     - `"md"`: Markdown formatted text.
     - `"pdf"`: A new PDF file with the extracted text.
@@ -118,7 +119,7 @@ Import the function by`from pdfdeal import deal_pdf`. Explanation of the paramet
 
 - **ocr**: `function`, optional, default: `None`
   - Description: A custom OCR (Optical Character Recognition) function. If not provided, the default OCR function will be used. Use string "pytesseract" to use pytesseract, string "pass" to skip OCR
-  - Example custom OCR function: `custom_ocr_function`, input is :`(path, language=["ch_sim", "en"], GPU=False)`, return a `string`
+  - Example custom OCR function: `custom_ocr_function`, input is :`(path, language=["ch_sim", "en"], GPU=False)`, return a `string`,`bool`
 
 
 - **language**: `list`, optional, default: `["ch_sim", "en"]`
@@ -159,14 +160,17 @@ for text in Text:
 ### Using pytesseract to do OCR
 
 ```python
+from pdfdeal import deal_pdf, gen_folder_list
+files = gen_folder_list("tests/pdf", "pdf")
 output_path = deal_pdf(
-    input="test.pdf",
+    input=files,
     output="md",
     ocr="pytesseract",
     language=["eng"],
-    path="markdown"
+    path="Output",
 )
-print(f"Save processed file to {output_path}")
+for f in output_path:
+    print(f"Save processed file to {f}")
 ```
 
 ### Skip OCR
