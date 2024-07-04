@@ -74,27 +74,28 @@ def deal_pdf_back(
 
 def deal_pdf(
     input,
-    output: RAG_OutputType = RAG_OutputType.PDF,
+    output: str = "pdf",
     ocr=None,
     language: list = ["ch_sim", "en"],
     GPU: bool = False,
     path: str = "./Output",
-    version: OutputVersion = OutputVersion.V1,
+    version: str = "v1",
 ):
-    """
-    Args:
-        `input`: input file path, str or list
-        `output`: `str`, the type of output, "texts" "md" or "pdf", default is "pdf"
-        `ocr`:  `function`, custom ocr function, not define will use easyocr.
-        Or use `string`: `pytesseract` to use pytesseract, string `pass` to skip OCR
-        `language`: list, the language used in OCR, default is ["ch_sim", "en"] for easyocr, ["eng"] for pytesseract
-        `GPU`: `bool`, whether to use GPU in OCR, default is False, not working for pytesseract
-        `path`: `str`, the path of folder to save the output, default is "./Output", only used when output is "md" or "pdf"
-        `version`: `str`,If version is `v2`, will return more information, default is `v1`
-    Returns:
-        `list`: output file path
+    """Deal with PDF files with OCR, make PDF more readable for RAG
 
-        if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+    Args:
+        input (str or list): input file path, str or list
+        output (str, optional): the type of output, "texts" "md" or "pdf", default is "pdf". Defaults to "pdf".
+        ocr (function, optional): custom ocr function, not define will use easyocr. Or use `string`: `pytesseract` to use pytesseract, string `pass` to skip OCR. Defaults to None.
+        language (list, optional): the language used in OCR, default is ["ch_sim", "en"] for easyocr, ["eng"] for pytesseract. Defaults to ["ch_sim", "en"].
+        GPU (bool, optional): whether to use GPU in OCR, default is False, not working for pytesseract. Defaults to False.
+        path (str, optional): the path of folder to save the output, default is "./Output", only used when output is "md" or "pdf". Defaults to "./Output".
+        version (str, optional): If version is `v2`, will return more information, default is `v1`. Defaults to "v1".
+
+    Returns:
+        tuple[list,list,str]:
+        ⚠️️if `version` is set to `v1` will return `list`: output file path.
+        ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
             `list1`: list of successful files path, if some files are failed, its path will be empty string
             `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
             `bool`: True means that at least one file process failed
@@ -130,7 +131,7 @@ def deal_pdf(
             else:
                 failed_file.append({"error": "", "file": ""})
         except Exception as e:
-            All_Done = True # * As this flag is use to determine if the OCR is done, we set it to True here
+            All_Done = True  # * As this flag is use to determine if the OCR is done, we set it to True here
             success_file.append("")
             failed_file.append({"error": str(e), "file": pdf_path})
             error_flag = True
@@ -144,7 +145,9 @@ def deal_pdf(
     if error_flag:
         for f in failed_file:
             if f["error"] != "":
-                print(f"-----\nFailed to process file: {f['file']} with error: {f['error']}\n-----")
+                print(
+                    f"-----\nFailed to process file: {f['file']} with error: {f['error']}\n-----"
+                )
     if version == "v2":
         return success_file, failed_file, error_flag
     return success_file

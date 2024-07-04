@@ -28,6 +28,12 @@ pdfdeal
 
 Check out the [task list](https://github.com/users/Menghuan1918/projects/3) to see what new features are in the works!
 
+### V0.1.4
+
+#### 🚀 Other
+
+- Updating docstring to follow Google Styleguide
+
 ### V0.1.3
 
 #### ✨ New Features
