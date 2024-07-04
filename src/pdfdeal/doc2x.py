@@ -19,8 +19,16 @@ from .Doc2X.Convert import (
 
 
 async def get_key(apikey: str) -> str:
-    """
-    Get apikey from environment variable or input
+    """Get apikey from environment variable or input
+
+    Args:
+        apikey (str): The apikey, or get from environment variable `DOC2X_APIKEY`
+
+    Raises:
+        ValueError: If no apikey found
+
+    Returns:
+        str: Your real apikey
     """
     if apikey is None:
         apikey = os.environ.get("DOC2X_APIKEY", "")
@@ -43,7 +51,7 @@ async def pdf2file_v1(
     translate: bool = False,
 ):
     """
-    Convert pdf file to specified file
+    Convert pdf file to specified file,
     """
     # Upload the file and get uuid
     try:
@@ -94,7 +102,7 @@ async def img2file_v1(
     convert: bool,
 ) -> str:
     """
-    Convert image file to specified file, async version
+    Convert image file to specified file
     """
     try:
         uuid = await upload_img(
@@ -137,12 +145,7 @@ async def img2file_v1(
 
 
 class Doc2X:
-    """
-    `apikey`: Your apikey, or get from environment variable `DOC2X_APIKEY`
-    `rpm`: Request per minute, will automatically adjust the rate limit according to the apikey
-    `thread`: deprecated
-    `maxretry`: deprecated
-    """
+    """Init the Doc2X class"""
 
     def __init__(
         self,
@@ -151,6 +154,14 @@ class Doc2X:
         thread: int = None,
         maxretry: int = None,
     ) -> None:
+        """Init the Doc2X class
+
+        Args:
+            apikey (str, optional): Your doc2x apikey. Defaults to read from environment variable `DOC2X_APIKEY`.
+            rpm (int, optional): The rate limit per minume. Defaults will be auto set according to the apikey.
+            thread (int, optional): Have no use now. Defaults to None.
+            maxretry (int, optional): Have no use now. Defaults to None.
+        """
         self.apikey = asyncio.run(get_key(apikey))
         if rpm is not None:
             self.rpm = rpm
@@ -207,28 +218,31 @@ class Doc2X:
         image_file,
         output_path: str = "./Output",
         output_names: list = None,
-        output_format: OutputFormat = OutputFormat.MD_DOLLAR,
+        output_format: str = "md_dollar",
         img_correction: bool = True,
         equation: bool = False,
         convert: bool = False,
         version: OutputVersion = OutputVersion.V1,
     ):
-        """
-        Convert image file to specified file
+        """Convert image file to specified file
 
         Args:
-            `image_file`: image file path or a list of image file path
-            `output_path`: output folder path, default is "./Output"
-            `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
-            `img_correction`: whether to correct the image, default is `True`
-            `equation`: whether the image is an equation, default is `False`
-            `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
-            `version`: If version is `v2`, will return more information, default is `v1`
+            image_file (str or list): Image file path, or a list of image file path
+            output_path (str, optional): Output folder path. Defaults to "./Output".
+            output_names (list, optional): Custom Output File Names, must be the same length as `image_file`. Defaults to None.
+            output_format (str, optional): Output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`. Defaults to `md_dollar`.
+            img_correction (bool, optional): The image correction. Defaults to True.
+            equation (bool, optional): Whether the image is an equation. Defaults to False.
+            convert (bool, optional): Whether to convert `[` to `$` and `[[` to `$$`. Defaults to False.
+            version (str, optional): If version is `v2`, will return more information. Defaults to `v1`.
 
-        Return:
-            `list`: output file path
+        Raises:
+            ValueError: The length of files and output_names should be the same.
 
-            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+        Returns:
+            tuple[list,list,str]:
+            ⚠️️if `version` is set to `v1` will return `list`: output file path.
+            ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
@@ -322,27 +336,29 @@ class Doc2X:
         pdf_file,
         output_path: str = "./Output",
         output_names: list = None,
-        output_format: OutputFormat = OutputFormat.MD_DOLLAR,
+        output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
         version: str = OutputVersion.V1,
     ):
-        """
-        Convert pdf file to specified file
+        """Convert pdf file to specified file
 
         Args:
-            `pdf_file`: pdf file path, or a list of pdf file path
-            `output_path`: output folder path, default is "./Output"
-            `output_names`: Custom Output File Names, must be the same length as `pdf_file`, default is `None`(file name will be its uuid)
-            `output_format`: output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`, deafult is `md_dollar`
-            `ocr`: whether to use OCR, default is True
-            `convert`: whether to convert `[` to `$` and `[[` to `$$`, default is False
-            `version`: If version is `v2`, will return more information, default is `v1`
+            pdf_file (str or list): pdf file path, or a list of pdf file path
+            output_path (str, optional): output folder path. Defaults to "./Output".
+            output_names (list, optional): Custom Output File Names, must be the same length as `pdf_file`. Defaults to None.
+            output_format (str, optional): output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`. Defaults to `md_dollar`.
+            ocr (bool, optional): whether to use OCR. Defaults to True.
+            convert (bool, optional): whether to convert `[` to `$` and `[[` to `$$`. Defaults to False.
+            version (str, optional): If version is `v2`, will return more information. Defaults to `v1`.
 
-        Return:
-            `list`: output file path
+        Raises:
+            ValueError: The length of files and output_names should be the same.
 
-            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+        Returns:
+            tuple[list,list,str]:
+            ⚠️️if `version` is set to `v1` will return `list`: output file path.
+            ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
@@ -426,7 +442,7 @@ class Doc2X:
             elif output == "texts":
                 return texts, "", True
             else:
-                md_text = '\n'.join(texts) + '\n'
+                md_text = "\n".join(texts) + "\n"
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(md_text)
             return output_path, "", True
@@ -470,25 +486,24 @@ class Doc2X:
     def pdfdeal(
         self,
         input,
-        output: str = RAG_OutputType.PDF,
+        output: str = "pdf",
         path: str = "./Output",
         convert: bool = True,
         version: str = OutputVersion.V1,
     ):
-        """
-        Deal with pdf file, convert it to specified format for RAG system
+        """Deal with pdf file, convert it to specified format for RAG system
 
         Args:
-            `input`: input file path
-            `output`: output format, default is 'pdf', accept 'pdf', 'md' or 'texts'
-            `path`: output path, default is './Output'
-            `convert`: whether to convert "[" to "$" and "[[" to "$$", default is True
-            `version`: If version is `v2`, will return more information, default is `v1`
+            input (str or list): input file path, or a list of input file path
+            output (str, optional): output format, accept 'pdf', 'md' or 'texts'. Defaults to "pdf".
+            path (str, optional): output path. Defaults to "./Output".
+            convert (bool, optional): Whether to convert "[" to "$" and "[[" to "$$". Defaults to True.
+            version (str, optional): If version is `v2`, will return more information. Defaults to `v1`.
 
-        Return:
-            `list`: output file path
-
-            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+        Returns:
+            tuple[list,list,str]:
+            ⚠️️if `version` is set to `v1` will return `list`: output file path.
+            ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
@@ -528,16 +543,16 @@ class Doc2X:
         Translate pdf file to specified file
 
         Args:
-            `pdf_file`: pdf file path, or a list of pdf file path
-            `output_path`: output folder path, default is "./Output"
-            `ocr`: whether to use OCR, default is True
-            `convert`: whether to convert "[" to "$" and "[[" to "$$", default is False
-            `version`: If version is `v2`, will return more information, default is `v1`
+            pdf_file: pdf file path, or a list of pdf file path
+            output_path: output folder path, default is "./Output"
+            ocr: whether to use OCR, default is True
+            convert: whether to convert "[" to "$" and "[[" to "$$", default is False
+            version: If version is `v2`, will return more information, default is `v1`
 
-        return:
-            `list`: list of translated texts and list of translated texts location
+        Returns:
+            ⚠️`list`: list of translated texts and list of translated texts location
 
-            if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+            ⚠️if `version` is set to `v2`, will return `list1`,`list2`,`bool`
                 `list1`: list of translated texts and list of translated texts location, if some files are failed, its place will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
