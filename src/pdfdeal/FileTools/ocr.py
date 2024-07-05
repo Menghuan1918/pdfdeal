@@ -2,8 +2,18 @@
 
 from typing import Tuple
 
-BUILD_IN_OCR = ["doc2x", "easyocr", "pytesseract"]
+BUILD_IN_OCR = ["doc2x_ocr", "easyocr", "pytesseract"]
 
+def load_build_in_ocr(ocr: str):
+    """
+    Load the build-in OCR engine
+    """
+    ocr_mapping = {
+        "doc2x_ocr": OCR_pass,
+        "easyocr": OCR_easyocr,
+        "pytesseract": OCR_pytesseract
+    }
+    return ocr_mapping.get(ocr, OCR_pass)
 
 def OCR_easyocr(path, language=["ch_sim", "en"], GPU=False) -> Tuple[str, bool]:
     """
