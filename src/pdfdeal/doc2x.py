@@ -489,7 +489,7 @@ class Doc2X:
         output: str = "pdf",
         path: str = "./Output",
         convert: bool = True,
-        version: str = OutputVersion.V1,
+        version: str = "v1",
     ):
         """Deal with pdf file, convert it to specified format for RAG system
 
@@ -503,6 +503,7 @@ class Doc2X:
         Returns:
             tuple[list,list,str]:
             ⚠️️if `version` is set to `v1` will return `list`: output file path.
+            
             ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string

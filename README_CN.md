@@ -28,7 +28,11 @@ pdfdeal
 
 你可以[在此处](https://github.com/users/Menghuan1918/projects/3)查看正在开发的新功能！如果直接使用Doc2X进行转换请参阅[Doc2x支持](./docs/doc2x_cn.md)。
 
-### V0.1.4
+### V0.1.4/V0.1.5
+
+#### 🐛 Bug 修复
+
+- 修复某些情况下自定义输出文件夹时会出现错误：`os.rename错误-系统无法将文件移动到其他磁盘`
 
 #### 🚀 其他
 
