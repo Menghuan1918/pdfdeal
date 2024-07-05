@@ -28,7 +28,11 @@ pdfdeal
 
 Check out the [task list](https://github.com/users/Menghuan1918/projects/3) to see what new features are in the works!
 
-### V0.1.4
+### V0.1.4/V0.1.5
+
+#### 🐛 Bug Fixes
+
+- Fix error when customizing output folders in some cases: `os.rename error - system cannot move files to other disks`
 
 #### 🚀 Other
 
