@@ -7,6 +7,7 @@ import unicodedata
 import os
 import zipfile
 from .ocr import OCR_easyocr
+import shutil
 
 
 def clean_text(text):
@@ -179,6 +180,6 @@ def list_rename(files: list, new_name: list) -> list:
             new_files.append("")
             continue
         new_file = os.path.join(os.path.dirname(file), name)
-        os.rename(file, new_file)
+        shutil.move(file, new_file)
         new_files.append(new_file)
     return new_files
