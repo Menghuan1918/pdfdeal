@@ -126,6 +126,8 @@ async def upload_pdf(
         url = f"{Base_URL}/platform/async/pdf"
     try:
         file = {"file": open(pdffile, "rb")}
+        if os.path.getsize(pdffile) > 100 * 1024 * 1024:
+            raise FileError("PDF dile size should be less than 100MB!")
     except Exception as e:
         raise FileError(f"Open file error! {e}")
     ocr = 1 if ocr else 0
@@ -172,6 +174,8 @@ async def upload_img(
     img_correction = 1 if img_correction else 0
     try:
         file = {"file": open(imgfile, "rb")}
+        if os.path.getsize(imgfile) > 10 * 1024 * 1024:
+            raise FileError("Image file size should be less than 10MB!")
     except Exception as e:
         raise FileError(f"Open file error! {e}")
     timeout = httpx.Timeout(120)
