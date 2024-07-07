@@ -3,7 +3,7 @@ import curses
 
 from ..FileTools.ocr import BUILD_IN_OCR
 from ..FileTools.tool import BUILD_IN_TOOL
-from .words import LANGUAGES, WORDS
+from .i18n import LANGUAGES, WORDS
 
 
 def init_config():
