@@ -134,7 +134,7 @@ def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
     Args:
         path (str): The path of the folder to be processed
         mode (str): Which type of file to process, 'pdf' or 'img'
-        out (str): Which type of file want to output, 'pdf' or 'img'
+        out (str): Which type of file want to output, `md`, `md_dollar`, `latex` or `docx`
 
     Returns:
         Tuple[list, list]: The list of full paths and relative paths, use in (like)`input` and `output_format`
@@ -145,7 +145,7 @@ def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
     out = OutputFormat(out)
     if isinstance(out, OutputFormat):
         out = out.value
-
+    out = out if out == "docx" else "zip"
     full_paths = []
     relative_paths = []
 

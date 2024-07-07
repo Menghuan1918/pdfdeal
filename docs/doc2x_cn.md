@@ -1,27 +1,6 @@
-### V0.1.1以及V0.1.0
+### 最近更新以及是否有接口变动
 
-请参阅[0.1.1更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1)以及[0.1.0更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
-
-🔨 这两个版本中的接口更变：
-
-- 所有的函数现在支持新的返回格式，通过**可选参数**`version`来选择，当为`v2`时会返回：`list：成功处理的文件` `list：处理失败的文件` `bool`，而默认的`v1`返回参数将会仅返回`list：成功处理的文件`。
-- `pdf2file`和`file2pdf`现在支持`output_names`**可选参数**，用于指定输出文件的名称。
-
-
-## V0.1.2更新
-
-✅ 没有接口更改，可以无缝升级。
-
-### ✨ 新特性
-
-- 重构的RPM限制器，增强批量处理文件稳定性
-- 新增批量处理大量文件的单元测试，所有单元测试将会通过GitHub Actions自动完成
-- 向下兼容至python3.8
-
-### 🐛 Bug 修复
-
-- 修复批量处理文件的不稳定性
-- 废弃不必要的参数
+请参阅[更新](https://github.com/Menghuan1918/pdfdeal/releases)
 
 ## 安装
 
@@ -227,16 +206,20 @@ print(filepath)
 ['']
 ```
 
-#### 示例：将多个pdf转换为docx文件，以`v2`格式返回
+#### 示例：将一个文件夹中的pdf转换为docx文件，并保持原有文件结构
 
 ```python
 from pdfdeal.doc2x import Doc2X
-from pdfdeal.file_tools import gen_folder_list
+from pdfdeal import get_files
 client = Doc2X()
-file_list = gen_folder_list("tests/pdf", "pdf")
-success, failed, flag = client.pdfdeal(
-    input=file_list,
-    path="./Output/test/multiple/pdfdeal",
+file_list, rename_list = get_files(
+    path="./tests/pdf", mode="pdf", out="docx"
+)
+success, failed, flag = client.pdf2file(
+    pdf_file=file_list,
+    output_path="./Output/newfolder",
+    output_names=rename_list,
+    output_format="docx",
     version="v2",
 )
 print(success)
@@ -244,12 +227,37 @@ print(failed)
 print(flag)
 ```
 
-当第一个文件处理**失败**，第二个文件处理**成功**时，其示例输出：
+其中`./tests/pdf`的文件结构为：
+```bash
+pdf
+├── sample_bad.pdf
+├── sample.pdf
+└── test
+    └── sampleB.pdf
+```
+
+> 注意`sample_bad.pdf`是一个用于测试异常处理的损坏的文件，处理失败是正常的。
+
+预期输出：
 
 ```python
-['', './Output/test/multiple/pdfdeal/sample.pdf']
-[{'error': Exception('Upload file error! 500:{"code":"service unavailable","msg":"read file error"}'), 'path': 'tests/pdf/sample_bad.pdf'}, {'error': '', 'path': ''}]
+PDF Progress: 2/3 files successfully processed.
+-----
+Failed deal with ./tests/pdf/sample_bad.pdf with error:
+Error Upload file error! 400:{"code":"invalid request","msg":"bad params"}
+-----
+['./Output/newfolder/sample.docx', '', './Output/newfolder/test/sampleB.docx']
+[{'error': '', 'path': ''}, {'error': 'Error Upload file error! 400:{"code":"invalid request","msg":"bad params"}', 'path': './tests/pdf/sample_bad.pdf'}, {'error': '', 'path': ''}]
 True
+```
+
+以及处理后的文件结构：
+```bash
+Output
+└── newfolder
+    ├── sample.docx
+    └── test
+        └── sampleB.docx
 ```
 
 ### 获得剩余请求次数

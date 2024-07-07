@@ -28,36 +28,19 @@ pdfdeal
 
 你可以[在此处](https://github.com/users/Menghuan1918/projects/3)查看正在开发的新功能！如果直接使用Doc2X进行转换请参阅[Doc2x支持](./docs/doc2x_cn.md)。
 
-### V0.1.4/V0.1.5
-
-#### 🐛 Bug 修复
-
-- 修复某些情况下自定义输出文件夹时会出现错误：`os.rename错误-系统无法将文件移动到其他磁盘`
-
-#### 🚀 其他
-
-- 更新函数的注释(docstring)以遵循Google Styleguide
-
-### V0.1.3
+### V0.1.6
 
 #### ✨ 新特性
 
-- 新增功能：将 Markdown 文件中的所有远程图片替换为本地图片
-- 重构的`pdfdeal`函数，现在支持批量输入文件了
+- 添加一个新的函数`get_files`，使用其快速生成文件夹中的所有文件，并保持处理前后文件结构一致
 
 #### 🐛 Bug 修复
 
-- 重整本地OCR文件处理函数的输出格式
-- `pdfdeal`某些情况下无法输出md文件的问题
-- 删除版本0.0.x中使用的`Doc2x`
-
-#### 🚀 其他
-
-- 文档将会在下个版本重制
+- Doc2X API上传文件超过100MB(API限制)时不会返回明显报错
 
 ### V0.1.x版本
 
-请参阅[0.1.2更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.2)，[0.1.1更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1)以及[0.1.0更新](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
+请参阅[更新](https://github.com/Menghuan1918/pdfdeal/releases)
 
 ## 简介
 
