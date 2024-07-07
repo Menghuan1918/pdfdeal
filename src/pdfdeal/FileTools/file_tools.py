@@ -180,7 +180,10 @@ def list_rename(files: list, new_name: list) -> list:
             new_files.append("")
             continue
         new_file = os.path.join(os.path.dirname(file), name)
-        os.makedirs(new_file, exist_ok=True)
-        shutil.move(file, new_file)
+        new_file_folder = os.path.dirname(new_file)
+        os.makedirs(new_file_folder, exist_ok=True)
+        if os.path.dirname(file) != new_file_folder:
+            shutil.move(file, new_file_folder)
+        os.rename(os.path.join(new_file_folder, os.path.basename(file)), new_file)
         new_files.append(new_file)
     return new_files
