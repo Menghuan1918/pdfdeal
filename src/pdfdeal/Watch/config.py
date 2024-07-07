@@ -4,7 +4,6 @@ import curses
 from ..FileTools.ocr import BUILD_IN_OCR
 from ..FileTools.tool import BUILD_IN_TOOL
 from .i18n import LANGUAGES, WORDS
-global
 
 def init_config():
     """This function is used to initialize the configuration of the program."""
@@ -44,7 +43,7 @@ def curses_select(selects: list, show: str) -> int:
             stdscr.addstr(0, 0, show)
             for idx, item in enumerate(selects):
                 x = w // 4 - len(item) // 2
-                y = 1 + idx
+                y = 4 + idx
                 if idx == current_row:
                     stdscr.attron(curses.A_REVERSE)
                     stdscr.addstr(y, x, item)
@@ -58,6 +57,10 @@ def curses_select(selects: list, show: str) -> int:
                 current_row += 1
             elif key == curses.KEY_ENTER or key in [10, 13]:
                 return current_row
+            elif key == curses.KEY_UP and current_row == 0:
+                current_row = len(selects) - 1
+            elif key == curses.KEY_DOWN and current_row == len(selects) - 1:
+                current_row = 0
     finally:
         curses.nocbreak()
         stdscr.keypad(False)
