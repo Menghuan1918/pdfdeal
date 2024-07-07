@@ -45,3 +45,17 @@ class RAG_OutputType(str, Enum):
         raise ValueError(
             f"{value} is not a valid {cls.__name__}, must be one of {', '.join([m.value for m in cls])}"
         )
+
+
+class Support_File_Type(str, Enum):
+    PDF = "pdf"
+    IMG = "img"
+
+    @classmethod
+    def _missing_(cls, value):
+        for member in cls:
+            if member.value.lower() == value.lower():
+                return member
+        raise ValueError(
+            f"{value} is not a valid {cls.__name__}, must be one of {', '.join([m.value for m in cls])}"
+        )

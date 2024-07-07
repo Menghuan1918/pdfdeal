@@ -8,6 +8,8 @@ import os
 import zipfile
 from .ocr import OCR_easyocr
 import shutil
+from typing import Tuple
+from ..Doc2X.Types import Support_File_Type, OutputFormat
 
 
 def clean_text(text):
@@ -100,12 +102,17 @@ def extract_text_and_images(
 
 
 def gen_folder_list(path: str, mode: str) -> list:
-    """
-    Generate a list of files in the folder
-    `path`: folder path
-    `mode`: 'pdf' or 'img'
+    """Generate a list of all files in the folder
 
-    return: list of files
+    Args:
+        path (str): The path of the folder to be processed
+        mode (str): The type of file to find, 'pdf', 'img' or 'md'
+
+    Raises:
+        ValueError: If the mode is not 'pdf', 'img' or 'md'
+
+    Returns:
+        list: The list of full paths of the files
     """
     if mode == "pdf":
         return [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")]
@@ -115,8 +122,49 @@ def gen_folder_list(path: str, mode: str) -> list:
             for f in os.listdir(path)
             if f.endswith(".png") or f.endswith(".jpg") or f.endswith(".jpeg")
         ]
+    elif mode == "md":
+        return [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".md")]
     else:
-        raise ValueError("Mode should be 'pdf' or 'img'")
+        raise ValueError("Mode should be 'pdf','img' or 'md'")
+
+
+def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
+    """Generate a list of files in the folder, keeps the structure of the file the same before and after processing
+
+    Args:
+        path (str): The path of the folder to be processed
+        mode (str): Which type of file to process, 'pdf' or 'img'
+        out (str): Which type of file want to output, `md`, `md_dollar`, `latex` or `docx`
+
+    Returns:
+        Tuple[list, list]: The list of full paths and relative paths, use in (like)`input` and `output_format`
+    """
+    mode = Support_File_Type(mode)
+    if isinstance(mode, Support_File_Type):
+        mode = mode.value
+    out = OutputFormat(out)
+    if isinstance(out, OutputFormat):
+        out = out.value
+    out = out if out == "docx" else "zip"
+    full_paths = []
+    relative_paths = []
+
+    if mode == "pdf":
+        extensions = [".pdf"]
+    elif mode == "img":
+        extensions = [".jpg", ".jpeg", ".png"]
+
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if any(file.lower().endswith(ext) for ext in extensions):
+                full_path = os.path.join(root, file)
+                full_paths.append(full_path)
+
+                rel_path = os.path.relpath(full_path, path)
+                rel_path_out = os.path.splitext(rel_path)[0] + "." + out
+                relative_paths.append(rel_path_out)
+
+    return full_paths, relative_paths
 
 
 def unzip(zip_path: str) -> str:
@@ -180,7 +228,10 @@ def list_rename(files: list, new_name: list) -> list:
             new_files.append("")
             continue
         new_file = os.path.join(os.path.dirname(file), name)
-        os.makedirs(new_file, exist_ok=True)
-        shutil.move(file, new_file)
+        new_file_folder = os.path.dirname(new_file)
+        os.makedirs(new_file_folder, exist_ok=True)
+        if os.path.dirname(file) != new_file_folder:
+            shutil.move(file, new_file_folder)
+        os.rename(os.path.join(new_file_folder, os.path.basename(file)), new_file)
         new_files.append(new_file)
     return new_files

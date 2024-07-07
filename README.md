@@ -28,36 +28,19 @@ pdfdeal
 
 Check out the [task list](https://github.com/users/Menghuan1918/projects/3) to see what new features are in the works!
 
-### V0.1.4/V0.1.5
-
-#### 🐛 Bug Fixes
-
-- Fix error when customizing output folders in some cases: `os.rename error - system cannot move files to other disks`
-
-#### 🚀 Other
-
-- Updating docstring to follow Google Styleguide
-
-### V0.1.3
+### V0.1.6
 
 #### ✨ New Features
 
-- New feature: replace all remote images in Markdown files with local ones.
-- Refactored `pdfdeal` function, now supports batch input of files.
+- Add a new function, `get_files`, to quickly generate all the files in a folder and keep the file structure consistent before and after processing.
 
 #### 🐛 Bug Fixes
 
-- Reformatting the output of native OCR file processing functions.
-- `pdfdeal` can't output md files under some circumstances.
-- Remove `Doc2x` used in version 0.0.x.
-
-#### 🚀 Other
-
-- Documentation will be refactored for the next release
+- Doc2X API does not return an obvious error when uploading files over 100MB (API limit).
 
 ### V0.1.x
 
-Please see  [0.1.2 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.2), [0.1.1 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1) and [0.1.0 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
+Please see [releases](https://github.com/Menghuan1918/pdfdeal/releases)
 
 
 ## Summary

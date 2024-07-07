@@ -1,26 +1,6 @@
-## Update for V0.1.0 and V0.1.1
+## Recent updates and any interface changes
 
-Please see [0.1.1 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.1) and [0.1.0 release](https://github.com/Menghuan1918/pdfdeal/releases/tag/v0.1.0)。
-
-🔨 Interface changes in these two versions:
-
-- All functions now support the new return format, through the **optional parameter** `version` to choose, when it is `v2`, it will return: `list: successful processing files` `list: processing failed files` `bool`, and the default `v1` return parameter will only return `list: successful processing files`.
-- `pdf2file` and `file2pdf` now support the **optional parameter** `output_names` to specify the output file name.
-
-## Update for V0.1.2
-
-✅ No interface changes for seamless upgrades.
-
-#### ✨ New Features
-
-- Refactored RPM limiter to enhance batch file processing stability.
-- New unit tests for handling large number of files, all unit tests will be automatically completed by GitHub Actions.
-- Backward compatible with python 3.8.
-
-### 🐛 Bug Fixes
-
-- Improve the stability of batch file processing
-- Discard unnecessary parameters
+Please see [releases](https://github.com/Menghuan1918/pdfdeal/releases)
 
 ## Installation
 
@@ -229,29 +209,57 @@ When processing fails, the example output is:
 ['']
 ```
 
-#### Example: Convert multiple pdfs to docx files, return in `v2` format
+#### Example: Convert a pdf in a folder to a docx file and keep the original file structure
 
 ```python
 from pdfdeal.doc2x import Doc2X
-from pdfdeal.file_tools import gen_folder_list
+from pdfdeal import get_files
 client = Doc2X()
-file_list = gen_folder_list("tests/pdf", "pdf")
-success, failed, flag = client.pdfdeal(
-    input=file_list,
-    path="./Output/test/multiple/pdfdeal",
+file_list, rename_list = get_files(
+    path="./tests/pdf", mode="pdf", out="docx"
+)
+success, failed, flag = client.pdf2file(
+    pdf_file=file_list,
+    output_path="./Output/newfolder",
+    output_names=rename_list,
+    output_format="docx",
     version="v2",
 )
 print(success)
 print(failed)
 print(flag)
 ```
+Where `. /tests/pdf` has the file structure:
+```bash
+pdf
+├── sample_bad.pdf
+├── sample.pdf
+└── test
+    └── sampleB.pdf
+```
 
-When the first file fails to process and the second file is processed successfully, the example output is:
+> Note that `sample_bad.pdf` is a corrupted file used to test exception handling, and it is normal for handling to fail.
+
+Expected Output:
 
 ```python
-['', './Output/test/multiple/pdfdeal/sample.pdf']
-[{'error': Exception('Upload file error! 500:{"code":"service unavailable","msg":"read file error"}'), 'path': 'tests/pdf/sample_bad.pdf'}, {'error': '', 'path': ''}]
+PDF Progress: 2/3 files successfully processed.
+-----
+Failed deal with ./tests/pdf/sample_bad.pdf with error:
+Error Upload file error! 400:{"code":"invalid request","msg":"bad params"}
+-----
+['./Output/newfolder/sample.docx', '', './Output/newfolder/test/sampleB.docx']
+[{'error': '', 'path': ''}, {'error': 'Error Upload file error! 400:{"code":"invalid request","msg":"bad params"}', 'path': './tests/pdf/sample_bad.pdf'}, {'error': '', 'path': ''}]
 True
+```
+
+and the structure of the processed file:
+```bash
+Output
+└── newfolder
+    ├── sample.docx
+    └── test
+        └── sampleB.docx
 ```
 
 ### Get Remaining Request Times
