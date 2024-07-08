@@ -5,6 +5,7 @@ from typing import Tuple
 from ..FileTools.ocr import BUILD_IN_OCR
 from ..FileTools.tool import BUILD_IN_TOOL
 from .i18n import LANGUAGES, WORDS, WORDS_LOCAL
+from .connect import BUILD_IN_CONNECT, load_build_in_connect
 
 
 def init_config(language: str = None) -> dict:
@@ -27,8 +28,8 @@ def init_config(language: str = None) -> dict:
     # If select needs API
     if "doc2x" in option1 or "doc2x" in option2:
         Key, RPM = doc2x_api(words)
-        Config["Key"] = Key
-        Config["RPM"] = RPM
+        Config["Doc2X_Key"] = Key
+        Config["Doc2X_RPM"] = RPM
 
     return Config
 
@@ -58,6 +59,11 @@ def init_local_config(language: str = None, folder_name=None) -> Tuple[str, dict
     print(words[2])
     print(folder)
     os.makedirs(folder)
+    connect = curses_select(BUILD_IN_CONNECT, words[4])
+    config_init_fnc = load_build_in_connect(BUILD_IN_CONNECT[connect])
+    _, config_fnc = config_init_fnc()
+    connect_config = config_fnc()
+    config.update(connect_config)
     return folder_name, config
 
 
@@ -74,7 +80,7 @@ def curses_select(selects: list, show: str) -> int:
             stdscr.addstr(0, 0, show)
             for idx, item in enumerate(selects):
                 x = w // 4 - len(item) // 2
-                y = 4 + idx
+                y = w // 4 + idx
                 if idx == current_row:
                     stdscr.attron(curses.A_REVERSE)
                     stdscr.addstr(y, x, item)

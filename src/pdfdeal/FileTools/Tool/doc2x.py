@@ -13,6 +13,8 @@ def Doc2X_Tool(Client) -> Callable:
         raise Exception("The Doc2X limit is 0, please check your account.")
 
     def Tool(path: str, options: dict) -> Tuple[list, list, bool]:
-        return Client.pdfdeal(input=path, path=options["output"], version="v2")
+        return Client.pdfdeal(
+            input=path, path=options["output"], version="v2", convert=False
+        )
 
     return Tool

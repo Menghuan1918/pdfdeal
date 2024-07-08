@@ -43,8 +43,10 @@ def connect(file_list: list, base_path: str, options: dict) -> Tuple[list, list,
     return success, faied, flag
 
 
-def config(language: str = None) -> dict:
+def config(language: str = None, get_args: bool = False) -> dict:
     """Set the configuration of the local directory"""
+    if get_args:
+        return ["target_path"]
     from ..config import curses_select
 
     if language is None:

@@ -21,12 +21,14 @@ WORDS_LOCAL_CN = [
     "⚠️ 文件夹已存在，请重新输入：",
     "🔗 正在尝试在以下路径初始化项目文件夹配置：",
     "💾 找到全局配置，是否使用全局配置？",
+    "🌐 请选择预处理完成后的文件输出方式："
 ]
 WORDS_LOCAL_EN = [
     "📂 Please enter the name of the project folder:",
     "⚠️ The folder already exists, please re-enter:",
     "🔗 Trying to initialize the project folder configuration at the following path:",
     "💾 Found global configuration, do you want to use it?",
+    "🌐 Please select the file output method after preprocessing:"
 ]
 
 WORDS_LOCAL = [WORDS_LOCAL_CN, WORDS_LOCAL_EN]
