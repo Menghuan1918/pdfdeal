@@ -5,6 +5,7 @@ from .Doc2X.Types import OutputFormat, OutputVersion, RAG_OutputType
 from .FileTools.dealpdfs import strore_pdf
 from typing import Tuple
 from .FileTools.file_tools import list_rename
+import uuid
 
 from .Doc2X.Convert import (
     refresh_key,
@@ -435,7 +436,9 @@ class Doc2X:
                 translate=False,
             )
             await check_folder(path)
-            file_name = os.path.basename(input).replace(".pdf", f".{output}")
+            file_name = os.path.basename(input).replace(
+                ".pdf", f"_{uuid.uuid4()}.{output}"
+            )
             output_path = os.path.join(path, file_name)
             if output == "pdf":
                 strore_pdf(output_path, texts)
@@ -503,7 +506,7 @@ class Doc2X:
         Returns:
             tuple[list,list,str]:
             ⚠️️if `version` is set to `v1` will return `list`: output file path.
-            
+
             ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
