@@ -4,11 +4,11 @@ import os
 
 
 
-def test_pdfdeal_v1():
+def test_pdfdeal():
     client = Doc2X()
     filepath = client.pdfdeal(
-        input="tests/pdf/sample.pdf",
-        path="./Output/test/pdfdeal",
+        pdf_file="tests/pdf/sample.pdf",
+        output_path="./Output/test/pdfdeal",
     )
     if filepath[0] != "":
         assert os.path.exists(filepath[0])
@@ -17,13 +17,12 @@ def test_pdfdeal_v1():
         assert os.path.basename(filepath[0]) == "sample.pdf"
 
 
-def test_multiple_pdfdeal_v2():
+def test_multiple_pdfdeal():
     client = Doc2X()
     file_list = gen_folder_list("tests/pdf", "pdf")
     success, failed, flag = client.pdfdeal(
-        input=file_list,
-        path="./Output/test/multiple/pdfdeal",
-        version="v2",
+        pdf_file=file_list,
+        output_path="./Output/test/multiple/pdfdeal",
     )
     assert flag
     assert len(success) == len(failed) == 2
@@ -40,7 +39,6 @@ def test_multiple_pdfdeal_v2():
 #     success, failed, flag = client.pdfdeal(
 #         input=file_list,
 #         path="./Output/test/high_rpm/pdfdeal",
-#         version="v2",
 #     )
 #     assert len(success) == len(failed) == 20
 #     i = 0

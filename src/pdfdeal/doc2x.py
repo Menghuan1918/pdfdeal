@@ -488,43 +488,40 @@ class Doc2X:
 
     def pdfdeal(
         self,
-        input,
-        output: str = "pdf",
-        path: str = "./Output",
+        pdf_file,
+        output_format: str = "pdf",
+        output_names: list = None,
+        output_path: str = "./Output",
         convert: bool = True,
-        version: str = "v1",
-    ):
+    ) -> Tuple[list, list, bool]:
         """Deal with pdf file, convert it to specified format for RAG system
 
         Args:
-            input (str or list): input file path, or a list of input file path
-            output (str, optional): output format, accept 'pdf', 'md' or 'texts'. Defaults to "pdf".
-            path (str, optional): output path. Defaults to "./Output".
+            pdf_file (str or list): input file path, or a list of input file path
+            output_format (str, optional): output format, accept 'pdf', 'md' or 'texts'. Defaults to "pdf".
+            output_names (list, optional): Custom Output File Names, must be the same length as `image_file`. Defaults to None.
+            output_path (str, optional): output path. Defaults to "./Output".
             convert (bool, optional): Whether to convert "[" to "$" and "[[" to "$$". Defaults to True.
-            version (str, optional): If version is `v2`, will return more information. Defaults to `v1`.
 
         Returns:
             tuple[list,list,str]:
-            ⚠️️if `version` is set to `v1` will return `list`: output file path.
-
-            ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
+            will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
         """
-        output = RAG_OutputType(output)
-        if isinstance(output, RAG_OutputType):
-            output = output.value
-        version = OutputVersion(version)
-        if isinstance(version, OutputVersion):
-            version = version.value
+        output_format = RAG_OutputType(output_format)
+        if isinstance(output_format, RAG_OutputType):
+            output_format = output_format.value
 
-        if isinstance(input, str):
-            input = [input]
+        if isinstance(pdf_file, str):
+            pdf_file = [pdf_file]
 
-        success, failed, flag = asyncio.run(self.pdfdeals(input, path, output, convert))
+        success, failed, flag = asyncio.run(
+            self.pdfdeals(pdf_file, output_path, output_format, convert)
+        )
         print(
-            f"PDFDEAL Progress: {sum(1 for s in success if s != '')}/{len(input)} files successfully processed."
+            f"PDFDEAL Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
@@ -532,9 +529,11 @@ class Doc2X:
                     print(
                         f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
-        if version == "v2":
-            return success, failed, flag
-        return success
+
+        if output_names is not None:
+            success = list_rename(success, output_names)
+
+        return success, failed, flag
 
     def pdf_translate(
         self,
