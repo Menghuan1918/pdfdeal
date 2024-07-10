@@ -3,7 +3,7 @@ from enum import Enum
 
 class OutputFormat(str, Enum):
     DOCX = "docx"
-    TXTS = "txts"
+    TXTS = "texts"
     LATEX = "latex"
     MD = "md"
     MD_DOLLAR = "md_dollar"
