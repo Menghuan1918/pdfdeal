@@ -13,6 +13,6 @@ def load_build_in_connect(connect: str):
 
 def local_folder_connect():
     """Connect to a local folder"""
-    from .Connect.local import connect, config
+    from .Connect.local import connect, config, get
 
-    return connect, config
+    return connect, config, get

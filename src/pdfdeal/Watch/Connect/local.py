@@ -43,10 +43,8 @@ def connect(file_list: list, base_path: str, options: dict) -> Tuple[list, list,
     return success, faied, flag
 
 
-def config(language: str = None, get_args: bool = False) -> dict:
+def config(language: str = None) -> dict:
     """Set the configuration of the local directory"""
-    if get_args:
-        return ["target_path"]
     from ..config import curses_select
 
     if language is None:
@@ -73,3 +71,8 @@ def config(language: str = None, get_args: bool = False) -> dict:
             if os.listdir(target_path):
                 raise FileExistsError(words[4])
     return {"target_path": os.path.abspath(target_path)}
+
+
+def get(config: dict) -> str:
+    """Get the option setting from the configuration"""
+    return {"target_path": config["target_path"]}
