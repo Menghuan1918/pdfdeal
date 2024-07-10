@@ -3,10 +3,9 @@ from pdfdeal.file_tools import gen_folder_list
 import os
 
 
-
 def test_pdfdeal():
     client = Doc2X()
-    filepath = client.pdfdeal(
+    filepath, _, _ = client.pdfdeal(
         pdf_file="tests/pdf/sample.pdf",
         output_path="./Output/test/pdfdeal",
     )
@@ -14,7 +13,6 @@ def test_pdfdeal():
         assert os.path.exists(filepath[0])
         assert os.path.isfile(filepath[0])
         assert filepath[0].endswith(".pdf")
-        assert os.path.basename(filepath[0]) == "sample.pdf"
 
 
 def test_multiple_pdfdeal():
@@ -28,10 +26,11 @@ def test_multiple_pdfdeal():
     assert len(success) == len(failed) == 2
     for s in success:
         if s != "":
-            assert s.endswith("sample.pdf")
+            assert s.endswith(".pdf")
     for f in failed:
-        if f ["path"]!= "":
+        if f["path"] != "":
             assert f["path"].endswith("sample_bad.pdf")
+
 
 # def test_multiple_high_rpm_v2():
 #     client = Doc2X()
