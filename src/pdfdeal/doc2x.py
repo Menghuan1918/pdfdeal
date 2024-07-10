@@ -1,7 +1,7 @@
 import asyncio
 import os
 from .Doc2X.Exception import RateLimit, RateLimiter
-from .Doc2X.Types import OutputFormat, OutputVersion, RAG_OutputType
+from .Doc2X.Types import OutputFormat, RAG_OutputType
 from .FileTools.dealpdfs import strore_pdf
 from typing import Tuple
 from .FileTools.file_tools import list_rename
@@ -223,8 +223,7 @@ class Doc2X:
         img_correction: bool = True,
         equation: bool = False,
         convert: bool = False,
-        version: OutputVersion = OutputVersion.V1,
-    ):
+    )-> Tuple[list, list, bool]:
         """Convert image file to specified file
 
         Args:
@@ -235,15 +234,13 @@ class Doc2X:
             img_correction (bool, optional): The image correction. Defaults to True.
             equation (bool, optional): Whether the image is an equation. Defaults to False.
             convert (bool, optional): Whether to convert `[` to `$` and `[[` to `$$`. Defaults to False.
-            version (str, optional): If version is `v2`, will return more information. Defaults to `v1`.
 
         Raises:
             ValueError: The length of files and output_names should be the same.
 
         Returns:
             tuple[list,list,str]:
-            ⚠️️if `version` is set to `v1` will return `list`: output file path.
-            ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
+            will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
@@ -251,9 +248,6 @@ class Doc2X:
         output_format = OutputFormat(output_format)
         if isinstance(output_format, OutputFormat):
             output_format = output_format.value
-        version = OutputVersion(version)
-        if isinstance(version, OutputVersion):
-            version = version.value
 
         if isinstance(image_file, str):
             image_file = [image_file]
@@ -288,9 +282,7 @@ class Doc2X:
         if output_names is not None:
             success = list_rename(success, output_names)
 
-        if version == "v2":
-            return success, failed, flag
-        return success
+        return success, failed, flag
 
     async def pdf2file_back(
         self,
@@ -340,8 +332,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-        version: str = OutputVersion.V1,
-    ):
+    )-> Tuple[list, list, bool]:
         """Convert pdf file to specified file
 
         Args:
@@ -351,15 +342,13 @@ class Doc2X:
             output_format (str, optional): output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`. Defaults to `md_dollar`.
             ocr (bool, optional): whether to use OCR. Defaults to True.
             convert (bool, optional): whether to convert `[` to `$` and `[[` to `$$`. Defaults to False.
-            version (str, optional): If version is `v2`, will return more information. Defaults to `v1`.
 
         Raises:
             ValueError: The length of files and output_names should be the same.
 
         Returns:
             tuple[list,list,str]:
-            ⚠️️if `version` is set to `v1` will return `list`: output file path.
-            ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
+            will return `list1`,`list2`,`bool`
                 `list1`: list of successful files path, if some files are failed, its path will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
@@ -367,9 +356,6 @@ class Doc2X:
         output_format = OutputFormat(output_format)
         if isinstance(output_format, OutputFormat):
             output_format = output_format.value
-        version = OutputVersion(version)
-        if isinstance(version, OutputVersion):
-            version = version.value
 
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
@@ -398,9 +384,7 @@ class Doc2X:
         if output_names is not None:
             success = list_rename(success, output_names)
 
-        if version == "v2":
-            return success, failed, flag
-        return success
+        return success, failed, flag
 
     def get_limit(self) -> int:
         """
@@ -540,8 +524,7 @@ class Doc2X:
         pdf_file,
         output_path: str = "./Output",
         convert: bool = False,
-        version: str = OutputVersion.V1,
-    ) -> Tuple[list, list]:
+    ) -> Tuple[list, list, bool]:
         """
         Translate pdf file to specified file
 
@@ -550,19 +533,13 @@ class Doc2X:
             output_path: output folder path, default is "./Output"
             ocr: whether to use OCR, default is True
             convert: whether to convert "[" to "$" and "[[" to "$$", default is False
-            version: If version is `v2`, will return more information, default is `v1`
 
         Returns:
-            ⚠️`list`: list of translated texts and list of translated texts location
-
-            ⚠️if `version` is set to `v2`, will return `list1`,`list2`,`bool`
+            will return `list1`,`list2`,`bool`
                 `list1`: list of translated texts and list of translated texts location, if some files are failed, its place will be empty string
                 `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
                 `bool`: True means that at least one file process failed
         """
-        version = OutputVersion(version)
-        if isinstance(version, OutputVersion):
-            version = version.value
         if self.apikey.startswith("sk-"):
             raise RuntimeError(
                 "Your secret key does not have access to the translation function! Please use your personal key."
@@ -581,15 +558,4 @@ class Doc2X:
                     print(
                         f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
-        if version == "v2":
-            return success, failed, flag
-        return success
-
-
-def Doc2x(api_key):
-    """
-    Deprecated function, use `from pdfdeal.doc2x import Doc2X` instead
-    """
-    raise DeprecationWarning(
-        "Deprecated function, use `from pdfdeal.doc2x import Doc2X` instead, please visit https://github.com/Menghuan1918/pdfdeal/blob/main/docs/doc2x.md for more information."
-    )
+        return success, failed, flag
