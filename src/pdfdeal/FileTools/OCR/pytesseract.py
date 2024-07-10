@@ -1,9 +1,22 @@
+"""Connect to local tesseract OCR"""
+
 import os
 from typing import Tuple
 
-def OCR_pytesseract(path, language=["eng"], GPU=False) -> Tuple[str, bool]:
-    """
-    OCR with pytesseract
+
+def ocr(path, language=["eng"], options: dict = None) -> Tuple[str, bool]:
+    """Do OCR with tesseract
+
+    Args:
+        path (str): The path to pictures folder or a picture
+        language (list, optional): The language use for tesseract, only first one will use. Defaults to ["eng"].
+        options (dict, optional): No need for tesseract. Defaults to None.
+
+    Raises:
+        ImportError: If not install `pytesseract`
+
+    Returns:
+        Tuple[str, bool]:  The OCR text and if all the files are done
     """
     try:
         import pytesseract
@@ -38,3 +51,11 @@ def OCR_pytesseract(path, language=["eng"], GPU=False) -> Tuple[str, bool]:
                         All_Done = False
                         pass
     return text, All_Done
+
+
+def config(language: str = None) -> dict:
+    return {}
+
+
+def get() -> dict:
+    return None

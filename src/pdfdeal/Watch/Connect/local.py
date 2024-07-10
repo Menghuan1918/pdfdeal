@@ -75,4 +75,7 @@ def config(language: str = None) -> dict:
 
 def get(config: dict) -> str:
     """Get the option setting from the configuration"""
-    return {"target_path": config["target_path"]}
+    try:
+        return {"target_path": config["target_path"]}
+    except KeyError:
+        raise KeyError("The configuration is invalid, please check the configuration")
