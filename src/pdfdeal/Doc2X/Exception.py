@@ -41,9 +41,7 @@ def async_retry(max_retries=3, backoff_factor=2):
                 except Exception as e:
                     last_exception = e
                     wait_time = backoff_factor**retries
-                    print(
-                        f"Failed to connect to the server or some error happend. Retrying in {wait_time} seconds."
-                    )
+                    print(f"Get exception {e}. Retrying in {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
                     retries += 1
             raise last_exception
