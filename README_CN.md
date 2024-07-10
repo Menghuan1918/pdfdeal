@@ -1,6 +1,6 @@
 <div align=center>
 <h1 aligh="center">
-pdfdeal
+<img src="https://github.com/Menghuan1918/pdfdeal/assets/122662527/837cfd7f-4546-4b44-a199-d826d78784fc" width="45">  pdfdeal
 </h1>
 
 **更好的RAG效果！**
@@ -24,9 +24,31 @@ pdfdeal
 
 更轻松简单地处理 PDF，提取可读文本，用 OCR 识别图像文本并清理格式,使其更适合构建知识库。
 
+
+
+## 简介
+
+使用多种OCR或者PDF识别工具来识别图像并将其添加到原始文本中。可以设置输出格式使用 pdf 格式，这将确保识别后的文本在新 PDF 中的页数与原始文本相同。同时提供了多种实用的文件处理工具。
+
+对 PDF 进行处理后与知识库应用程序（例如[graphrag](https://github.com/microsoft/graphrag)，[Dify](https://github.com/langgenius/dify)，[FastGPT](https://github.com/labring/FastGPT)），可以达到更好的识别率。
+
+建议使用Doc2X以达到最佳效果。
+
+![main](https://github.com/Menghuan1918/pdfdeal/assets/122662527/b92335eb-bda0-4a61-b890-e864cebc5f67)
+
+## 案例
+
+例如[graphrag](https://github.com/microsoft/graphrag)不支持识别pdf，你可以使用`pdfdeal`将其转换为md文档进行使用。
+
+或者对于知识库应用，你也可以使用`pdfdeal`对文档进行增强，以下是在Dify中原始PDF/OCR增强/Doc2X处理后的效果：
+
+![222](https://github.com/Menghuan1918/pdfdeal/assets/122662527/457036e8-9d78-458a-8a48-763bd33e95f9)
+
 ## 最近更新
 
-你可以[在此处](https://github.com/users/Menghuan1918/projects/3)查看正在开发的新功能！如果直接使用Doc2X进行转换请参阅[Doc2x支持](./docs/doc2x_cn.md)。
+你可以[在此处](https://github.com/users/Menghuan1918/projects/3)查看正在开发的新功能！
+
+如果直接使用Doc2X进行转换请参阅[Doc2x支持](./docs/doc2x_cn.md)。
 
 ### V0.1.6
 
@@ -41,30 +63,6 @@ pdfdeal
 ### V0.1.x版本
 
 请参阅[更新](https://github.com/Menghuan1918/pdfdeal/releases)
-
-## 简介
-
-使用 [easyocr](https://github.com/JaidedAI/EasyOCR) 或 [Doc2x](./docs/doc2x_cn.md)来识别图像并将其添加到原始文本中。可以设置输出格式使用 pdf 格式，这将确保文本在新 PDF 中的页数与原始文本相同。对 PDF 进行处理后与知识库应用程序（如[Dify](https://github.com/langgenius/dify)、[FastGPT](https://github.com/labring/FastGPT)），理论上可以达到更好的识别率。
-
-![111](https://github.com/Menghuan1918/pdfdeal/assets/122662527/58155389-f846-41fd-9314-1cd86282e66a)
-
-![222](https://github.com/Menghuan1918/pdfdeal/assets/122662527/457036e8-9d78-458a-8a48-763bd33e95f9)
-
-## 对Doc2x的支持
-
-新增对Doc2x的支持，目前其每日有500页的**免费**使用额度，其对表格/公式的识别效果卓越。
-
-你也可以**单独使用**Doc2x的支持模块直接将pdf转换为markdown/latex/docx等格式，就像下面这样。详细请参阅[Doc2x支持](./docs/doc2x_cn.md)。
-
-
-```python
-from pdfdeal.doc2x import Doc2X
-
-Client = Doc2X()
-filelist = gen_folder_list("./test","pdf")
-# This is a built-in function for generating the folder under the path of all the pdf, you can give any list of the form of the path of the pdf
-Client.pdfdeal(filelist)
-```
 
 ## 使用方法
 [示范代码](https://github.com/Menghuan1918/pdfdeal/blob/main/README_CN.md#%E5%B0%86%E6%96%87%E4%BB%B6%E5%A4%B9%E4%B8%AD%E7%9A%84%E6%89%80%E6%9C%89%E6%96%87%E4%BB%B6%E8%BF%9B%E8%A1%8C%E5%A4%84%E7%90%86%E5%B9%B6%E6%94%BE%E7%BD%AE%E5%9C%A8output%E6%96%87%E4%BB%B6%E5%A4%B9%E4%B8%AD)
