@@ -53,7 +53,7 @@ def option_part(tool_or_ocr: str, file_list: list, config: dict):
 
         temp_path = os.path.join(os.path.expanduser("~"), ".cache", "pdfdeal", "dealed")
         ocr = ocrs(tool_or_ocr, config)
-        success, fail, flag = deal_pdf(file_list, ocr=ocr, path=temp_path)
+        success, fail, flag = deal_pdf(file_list, ocr=ocr, output_path=temp_path)
     else:
         success, fail, flag = tools(tool_or_ocr, file_list, config)
     return success, fail, flag

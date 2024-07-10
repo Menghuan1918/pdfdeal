@@ -1,11 +1,14 @@
 import os
 from .file_tools import extract_text_and_images
-from .ocr import OCR_easyocr, OCR_pytesseract, OCR_pass
+from .ocr import load_build_in_ocr, BUILD_IN_OCR
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
-from ..Doc2X.Types import RAG_OutputType, OutputVersion
+from ..Doc2X.Types import RAG_OutputType
+import uuid
+from typing import Tuple
+from .file_tools import list_rename
 
 
 def strore_pdf(pdf_path, Text):
@@ -30,29 +33,18 @@ def deal_pdf_back(
     language: list = ["ch_sim", "en"],
     GPU: bool = False,
     path: str = "./Output",
-    version: OutputVersion = OutputVersion.V1,
 ):
     pdf_path = input
-    if ocr is None:
-        Text, All_Done = extract_text_and_images(
-            pdf_path=pdf_path, ocr=OCR_easyocr, language=language, GPU=GPU
-        )
-    elif ocr == "pytesseract":
-        Text, All_Done = extract_text_and_images(
-            pdf_path=pdf_path, ocr=OCR_pytesseract, language=language, GPU=GPU
-        )
-    elif ocr == "pass":
-        Text, All_Done = extract_text_and_images(
-            pdf_path=pdf_path, ocr=OCR_pass, language=language, GPU=GPU
-        )
-    else:
-        Text, All_Done = extract_text_and_images(
-            pdf_path=pdf_path, ocr=ocr, language=language, GPU=GPU
-        )
+
+    Text, All_Done = extract_text_and_images(
+        pdf_path=pdf_path, ocr=ocr, language=language, GPU=GPU
+    )
+
     if output == "texts":
         return Text, All_Done
+
     else:
-        filename = pdf_path.split("/")[-1].replace(".pdf", f".{output}")
+        filename = pdf_path.split("/")[-1].replace(".pdf", f"_{uuid.uuid4()}.{output}")
         os.makedirs(path, exist_ok=True)
         if output == "md":
             try:
@@ -73,52 +65,66 @@ def deal_pdf_back(
 
 
 def deal_pdf(
-    input,
-    output: str = "pdf",
+    pdf_file,
+    output_format: str = "pdf",
+    output_names: list = None,
     ocr=None,
     language: list = ["ch_sim", "en"],
     GPU: bool = False,
-    path: str = "./Output",
-    version: str = "v1",
-):
+    output_path: str = "./Output",
+    option: dict = {},
+) -> Tuple[list, list, bool]:
     """Deal with PDF files with OCR, make PDF more readable for RAG
 
     Args:
-        input (str or list): input file path, str or list
-        output (str, optional): the type of output, "texts" "md" or "pdf", default is "pdf". Defaults to "pdf".
-        ocr (function, optional): custom ocr function, not define will use easyocr. Or use `string`: `pytesseract` to use pytesseract, string `pass` to skip OCR. Defaults to None.
+        pdf_file (str or list): input file path, str or list
+        output_format (str, optional): the type of output, "texts" "md" or "pdf", default is "pdf". Defaults to "pdf".
+        output_names (list, optional): Custom Output File Names, must be the same length as `image_file`. Defaults to None.
+        ocr (function, optional): custom ocr/tool function, not define will use easyocr. Or use `string`: `pytesseract` to use pytesseract, string `pass` to skip OCR. Defaults to None.
         language (list, optional): the language used in OCR, default is ["ch_sim", "en"] for easyocr, ["eng"] for pytesseract. Defaults to ["ch_sim", "en"].
         GPU (bool, optional): whether to use GPU in OCR, default is False, not working for pytesseract. Defaults to False.
-        path (str, optional): the path of folder to save the output, default is "./Output", only used when output is "md" or "pdf". Defaults to "./Output".
-        version (str, optional): If version is `v2`, will return more information, default is `v1`. Defaults to "v1".
+        output_path (str, optional): the path of folder to save the output, default is "./Output", only used when output is "md" or "pdf". Defaults to "./Output".
+        option (dict, optional): the option of the OCR/tool. Defaults to `{}`.
 
     Returns:
         tuple[list,list,str]:
-        ⚠️️if `version` is set to `v1` will return `list`: output file path.
-        ⚠️if `version` is set to `v2` will return `list1`,`list2`,`bool`
+        will return `list1`,`list2`,`bool`
             `list1`: list of successful files path, if some files are failed, its path will be empty string
             `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
             `bool`: True means that at least one file process failed
     """
-    output = RAG_OutputType(output)
-    if isinstance(output, RAG_OutputType):
-        output = output.value
-    version = OutputVersion(version)
-    if isinstance(version, OutputVersion):
-        version = version.value
+    output_format = RAG_OutputType(output_format)
+    if isinstance(output_format, RAG_OutputType):
+        output_format = output_format.value
 
-    if isinstance(input, str):
-        if not input.endswith(".pdf"):
+    if isinstance(pdf_file, str):
+        if not pdf_file.endswith(".pdf"):
             RuntimeError("The input must be path to a PDF file")
-        input = [input]
+        pdf_file = [pdf_file]
+
+    ocr = ocr or "easyocr"
+
+    if isinstance(ocr, callable):
+        if len(ocr.__code__.co_varnames) == 2:
+            # if using tool function
+            option["output"] = output_path
+            return ocr(pdf_file, option)
+
+    elif isinstance(ocr, str):
+        if ocr in BUILD_IN_OCR:
+            ocr, _, _ = load_build_in_ocr(ocr)
+        else:
+            RuntimeError(f"OCR {ocr} is not supported.")
+    else:
+        raise RuntimeError("The ocr must be a function or a string")
 
     success_file = []
     failed_file = []
     error_flag = False
-    for pdf_path in input:
+    for pdf_path in pdf_file:
         try:
             output_path, All_Done = deal_pdf_back(
-                pdf_path, output, ocr, language, GPU, path, version
+                pdf_path, output_format, ocr, language, GPU, output_path
             )
             success_file.append(output_path)
             if not All_Done:
@@ -136,7 +142,7 @@ def deal_pdf(
             failed_file.append({"error": str(e), "file": pdf_path})
             error_flag = True
     print(
-        f"PDFDEAL Progress: {sum(1 for s in success_file if s != '')}/{len(input)} files successfully processed."
+        f"PDFDEAL Progress: {sum(1 for s in success_file if s != '')}/{len(pdf_file)} files successfully processed."
     )
     if All_Done is False:
         print(
@@ -148,6 +154,8 @@ def deal_pdf(
                 print(
                     f"-----\nFailed to process file: {f['file']} with error: {f['error']}\n-----"
                 )
-    if version == "v2":
-        return success_file, failed_file, error_flag
-    return success_file
+
+    if output_names is not None:
+        success_file = list_rename(success_file, output_names)
+
+    return success_file, failed_file, error_flag

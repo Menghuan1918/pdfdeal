@@ -6,7 +6,6 @@ import emoji
 import unicodedata
 import os
 import zipfile
-from .ocr import OCR_easyocr
 import shutil
 from typing import Tuple
 from ..Doc2X.Types import Support_File_Type, OutputFormat
@@ -57,9 +56,7 @@ def clear_cache():
             os.remove(file_path)
 
 
-def extract_text_and_images(
-    pdf_path, ocr=OCR_easyocr, language=["ch_sim", "en"], GPU=False
-):
+def extract_text_and_images(pdf_path, ocr, language=["ch_sim", "en"], GPU=False):
     """
     Extract text and images from a PDF file
     """
@@ -92,9 +89,9 @@ def extract_text_and_images(
                     f"{id}.png",
                 )
                 pil_image.save(temp_image_path)
-
+            option = {"GPU": GPU}
             # Use ocr to extract text from images
-            ocr_text, All_Done = ocr(temp_image_folder, language, GPU)
+            ocr_text, All_Done = ocr(temp_image_folder, language, option)
             text += f"\n{ocr_text}"
             Text.append(clean_text(text))
         clear_cache()
