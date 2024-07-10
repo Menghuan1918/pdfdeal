@@ -223,7 +223,7 @@ class Doc2X:
         img_correction: bool = True,
         equation: bool = False,
         convert: bool = False,
-    )-> Tuple[list, list, bool]:
+    ) -> Tuple[list, list, bool]:
         """Convert image file to specified file
 
         Args:
@@ -332,7 +332,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-    )-> Tuple[list, list, bool]:
+    ) -> Tuple[list, list, bool]:
         """Convert pdf file to specified file
 
         Args:

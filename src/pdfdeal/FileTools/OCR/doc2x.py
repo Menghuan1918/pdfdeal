@@ -71,7 +71,6 @@ def ocr(path, language=["auto"], options: dict = None) -> Tuple[str, bool]:
                 image_file=path,
                 output_format="txts",
                 equation=equation,
-                version="v2",
             )
             for t in texts:
                 text += t + "\n"
@@ -106,7 +105,6 @@ def ocr(path, language=["auto"], options: dict = None) -> Tuple[str, bool]:
                             image_file=path,
                             output_format="txts",
                             equation=equation,
-                            version="v2",
                         )
                         for t in texts:
                             text += t + "\n"

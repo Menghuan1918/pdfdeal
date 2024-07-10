@@ -36,9 +36,7 @@ def tool(path: str, options: dict) -> Tuple[list, list, bool]:
     if limit == 0:
         raise Exception("The Doc2X limit is 0, please check your account.")
 
-    return Client.pdfdeal(
-        pdf_file=path, output_path=options["output"], version="v2", convert=False
-    )
+    return Client.pdfdeal(pdf_file=path, output_path=options["output"], convert=False)
 
 
 def config(language: str = None) -> dict:
