@@ -8,31 +8,44 @@ BUILD_IN_OCR = ["doc2x_ocr", "easyocr", "pytesseract"]
 def load_build_in_ocr(ocr: str):
     """
     Load the build-in OCR engine
+
+    Args:
+        ocr: The name of the OCR engine, support `doc2x_ocr`, `easyocr`, `pytesseract`, `pass`
+
+    Returns:
+        ocr, config, get
     """
     ocr_mapping = {
         "doc2x_ocr": OCR_pass,
         "easyocr": OCR_easyocr,
         "pytesseract": OCR_pytesseract,
     }
-    return ocr_mapping.get(ocr, OCR_pass)
+    ocr_init = ocr_mapping.get(ocr, OCR_pass)
+    return ocr_init()
 
 
 def OCR_easyocr(path, language=["ch_sim", "en"], GPU=False) -> Tuple[str, bool]:
     """
     OCR with easyocr
+
+    Returns:
+        ocr, config, get
     """
-    from .OCR.easyocr import OCR_easyocr
+    from .OCR.easyocr import ocr, config, get
 
-    return OCR_easyocr(path, language, GPU)
+    return ocr, config, get
 
 
-def OCR_pytesseract(path, language=["eng"], GPU=False) -> Tuple[str, bool]:
+def OCR_pytesseract():
     """
     OCR with pytesseract
-    """
-    from .OCR.pytesseract import OCR_pytesseract
 
-    return OCR_pytesseract(path, language, GPU)
+    Returns:
+        ocr, config, get
+    """
+    from .OCR.pytesseract import ocr, config, get
+
+    return ocr, config, get
 
 
 def OCR_pass():
