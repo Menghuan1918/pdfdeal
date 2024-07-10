@@ -7,7 +7,7 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
 from ..Doc2X.Types import RAG_OutputType
 import uuid
-from typing import Tuple
+from typing import Tuple,Callable
 from .file_tools import list_rename
 
 
@@ -104,7 +104,7 @@ def deal_pdf(
 
     ocr = ocr or "easyocr"
 
-    if isinstance(ocr, callable):
+    if isinstance(ocr, Callable):
         if len(ocr.__code__.co_varnames) == 2:
             # if using tool function
             option["output"] = output_path
