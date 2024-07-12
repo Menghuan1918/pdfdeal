@@ -13,6 +13,27 @@ def set_global_setting():
         json.dump(config, file)
 
 
+def change_one_global_setting(key: str, value: str):
+    """Change one global setting or add a new one if not exist"""
+    global_setting = get_global_setting()
+    global_setting[key] = value
+    base_folder = os.path.expanduser("~/pdfdeal")
+    global_setting_file = os.path.join(base_folder, "global_setting.json")
+    with open(global_setting_file, "w") as file:
+        json.dump(global_setting, file)
+    print("✅ Done!")
+
+def delete_one_global_setting(key: str):
+    """Delete one global setting"""
+    global_setting = get_global_setting()
+    if key in global_setting:
+        del global_setting[key]
+    base_folder = os.path.expanduser("~/pdfdeal")
+    global_setting_file = os.path.join(base_folder, "global_setting.json")
+    with open(global_setting_file, "w") as file:
+        json.dump(global_setting, file)
+    print("✅ Done!")
+
 def get_global_setting() -> dict:
     """Get the global setting for pdfdeal"""
     base_folder = os.path.expanduser("~/pdfdeal")

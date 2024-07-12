@@ -152,6 +152,14 @@ def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
     elif mode == "img":
         extensions = [".jpg", ".jpeg", ".png"]
 
+    if os.path.isfile(path):
+        if any(path.lower().endswith(ext) for ext in extensions):
+            full_paths.append(path)
+            rel_path = os.path.relpath(path, os.path.dirname(path))
+            rel_path_out = os.path.splitext(rel_path)[0] + "." + out
+            relative_paths.append(rel_path_out)
+            return full_paths, relative_paths
+
     for root, dirs, files in os.walk(path):
         for file in files:
             if any(file.lower().endswith(ext) for ext in extensions):

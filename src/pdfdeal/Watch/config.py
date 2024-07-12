@@ -77,10 +77,13 @@ def curses_select(selects: list, show: str) -> int:
         while True:
             stdscr.clear()
             h, w = stdscr.getmaxyx()
-            stdscr.addstr(0, 0, show)
+            stdscr.addstr(0, 0, show[: w - 1])
             for idx, item in enumerate(selects):
-                x = w // 4 - len(item) // 2
-                y = w // 4 + idx
+                x = max(0, w // 4 - len(item) // 2)
+                y = h // 4 + idx
+                if y >= h:
+                    break
+                item = item[: w - x - 1]
                 if idx == current_row:
                     stdscr.attron(curses.A_REVERSE)
                     stdscr.addstr(y, x, item)
