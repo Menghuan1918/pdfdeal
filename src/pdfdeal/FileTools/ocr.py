@@ -24,7 +24,7 @@ def load_build_in_ocr(ocr: str):
     return ocr_init()
 
 
-def OCR_easyocr(path, language=["ch_sim", "en"], GPU=False) -> Tuple[str, bool]:
+def OCR_easyocr() -> Tuple[str, bool]:
     """
     OCR with easyocr
 

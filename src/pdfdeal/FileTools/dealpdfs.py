@@ -123,10 +123,10 @@ def deal_pdf(
     error_flag = False
     for pdf_path in pdf_file:
         try:
-            output_path, All_Done = deal_pdf_back(
+            output, All_Done = deal_pdf_back(
                 pdf_path, output_format, ocr, language, GPU, output_path
             )
-            success_file.append(output_path)
+            success_file.append(output)
             if not All_Done:
                 failed_file.append(
                     {

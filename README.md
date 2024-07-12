@@ -1,9 +1,9 @@
 <div align=center>
 <h1 aligh="center">
-pdfdeal
+<img src="https://github.com/Menghuan1918/pdfdeal/assets/122662527/837cfd7f-4546-4b44-a199-d826d78784fc" width="45">  pdfdeal
 </h1>
-  
-**For better RAG!**
+
+**Better RAG Effect!**
 
 <br>
 
@@ -19,186 +19,91 @@ pdfdeal
 
 <br>
 
-🗺️ ENGLISH | [简体中文](README_CN.md)
-
 </div>
 
+Easily handle PDFs, extract readable text, recognize image text with OCR and clean up formatting to make it more suitable for building knowledge bases.
 
-## What's new
+## Introduction
+### Doc2X Support
+![doc2x](https://github.com/user-attachments/assets/3ebd3440-9b07-4be1-be2e-fc764d9d07f8)
 
-Check out the [task list](https://github.com/users/Menghuan1918/projects/3) to see what new features are in the works!
+[Doc2X](https://doc2x.com/) is a new universal document OCR tool that can convert images or PDF files into Markdown/LaTeX text with formulas and text formatting. It performs better than similar tools in most scenarios. `pdfdeal` provides abstract packaged classes to use Doc2X for requests.
 
-### V0.1.6
+### Processing PDFs
+Use various OCR or PDF recognition tools to identify images and add them to the original text. You can set the output format to use PDF, which will ensure that the recognized text retains the same page numbers as the original in the new PDF. It also offers various practical file processing tools.
 
-#### ✨ New Features
+After processing PDFs, you can achieve better recognition rates when used with knowledge base applications such as [graphrag](https://github.com/microsoft/graphrag), [Dify](https://github.com/langgenius/dify), and [FastGPT](https://github.com/labring/FastGPT).
 
-- Add a new function, `get_files`, to quickly generate all the files in a folder and keep the file structure consistent before and after processing.
+It is recommended to use Doc2X for the best results.
 
-#### 🐛 Bug Fixes
+![main](https://github.com/Menghuan1918/pdfdeal/assets/122662527/b92335eb-bda0-4a61-b890-e864cebc5f67)
 
-- Doc2X API does not return an obvious error when uploading files over 100MB (API limit).
+## Cases
 
-### V0.1.x
+For example, if [graphrag](https://github.com/microsoft/graphrag) does not support recognizing PDFs, you can use `pdfdeal` to convert it into an MD document for use.
 
-Please see [releases](https://github.com/Menghuan1918/pdfdeal/releases)
-
-
-## Summary
-
-Easier to deal with PDF, extract readable text and OCR to recognise image text and clean the format. Make it more suitable for knowledge base construction.
-
-Its going to use [easyocr](https://github.com/JaidedAI/EasyOCR) or [Doc2x](./docs/doc2x.md) to recognise the image and add it to the original text. If the output format uses pdf format, this ensures that the text is on the same number of pages in the new PDF as the original. You can use knowledge base applications (such as [Dify](https://github.com/langgenius/dify),[FastGPT](https://github.com/labring/FastGPT)) after the PDF processing, so that theoretically can reach a better recognition rate.
-
-![111](https://github.com/Menghuan1918/pdfdeal/assets/122662527/58155389-f846-41fd-9314-1cd86282e66a)
+Or for knowledge base applications, you can also use `pdfdeal` to enhance documents. Below are the effects of original PDF/OCR enhancement/Doc2X processing in Dify:
 
 ![222](https://github.com/Menghuan1918/pdfdeal/assets/122662527/457036e8-9d78-458a-8a48-763bd33e95f9)
 
-## Support for Doc2x
+## Documentation
 
-Added support for Doc2x, which currently has a daily 500-page **free** usage quota, and its recognition of tables/formulas is excellent. 
+You can view new features under development [here](https://github.com/users/Menghuan1918/projects/3)!
 
-You can also use Doc2x support module **alone** to convert pdf to markdown/latex/docx directly like below. See [Doc2x Support](./docs/doc2x.md) for more.
+For details, please refer to the [documentation](https://menghuan1918.github.io/pdfdeal-docs/) 
 
-```python
-from pdfdeal.doc2x import Doc2X
+Or check out the [documentation repository pdfdeal-docs](https://github.com/Menghuan1918/pdfdeal-docs).
 
-Client = Doc2X()
-filelist = gen_folder_list("./test","pdf")
-# This is a built-in function for generating the folder under the path of all the pdf, you can give any list of the form of the path of the pdf
-Client.pdfdeal(filelist)
-```
+## Quick Start
 
-## Usage
-See the [example codes](https://github.com/Menghuan1918/pdfdeal?tab=readme-ov-file#processes-all-the-files-in-a-file-and-saves-them-in-the-output-folder).
+For details, please refer to the [documentation](https://menghuan1918.github.io/pdfdeal-docs/) 
 
-### Install
+### Installation
 Install from PyPI:
 
 ```bash
-pip install 'pdfdeal[easyocr]'
+pip install --upgrade pdfdeal
+
 ```
 
-Using `pytesseract`, make sure you have install [tesseract](https://github.com/tesseract-ocr/tesseract) first:
+### Using pytesseract as an OCR engine
+
+When using "pytesseract", make sure that [tesseract](https://github.com/tesseract-ocr/tesseract) is installed first:
 
 ```bash
 pip install 'pdfdeal[pytesseract]'
 ```
 
-Using own custom OCR function or Doc2x or skip OCR:
-
-```bash
-pip install pdfdeal
-```
-
-Install from source:
-
-```bash
-pip install 'pdfdeal[all] @ git+https://github.com/Menghuan1918/pdfdeal.git'
-```
-
-### Parameters
-Import the function by`from pdfdeal import deal_pdf`. Explanation of the parameters accepted by the function:
-
-- **input**: `str` or `list`
-  - Description: The local path to the PDF file that you want to process.
-  - Example:  `["1.pdf","2.pdf"]`
-
-- **output**: `str`, optional, default: `"texts"`
-  - Description: Specifies the type of output you want. The options are:
-    - `"texts"`: Extracted text from the PDF as a list of strings, one per page.
-    - `"md"`: Markdown formatted text.
-    - `"pdf"`: A new PDF file with the extracted text.
-  - Example: `"md"`
-
-- **ocr**: `function`, optional, default: `None`
-  - Description: A custom OCR (Optical Character Recognition) function. If not provided, the default OCR function will be used. Use string "pytesseract" to use pytesseract, string "pass" to skip OCR
-  - Example custom OCR function: `custom_ocr_function`, input is :`(path, language=["ch_sim", "en"], GPU=False)`, return a `string`,`bool`
-
-
-- **language**: `list`, optional, default: `["ch_sim", "en"]`
-  - Description: A list of languages to be used in OCR. The default languages are Simplified Chinese (`"ch_sim"`) and English (`"en"`). ["eng"] for pytesseract.
-  - Example: `["en", "fr"]`
-
-- **GPU**: `bool`, optional, default: `False`
-  - Description: A boolean flag indicating whether to use GPU for OCR processing. If set to `True`, GPU will be used.
-  - Example: `True`
-
-- **path**: `str`, optional, default: `None`
-  - Description: The directory path where the output file will be saved. This parameter is only used when the `output` type is `"md"` or `"pdf"`.
-  - Example: `"/path/to/save/output"`
-
-### Replace all remote images in Markdown files with local ones
-
-Args:
-- `mdfile`: `str`, the markdown file path.
-- `replace`: `str`, only "local" accepted now, will add "R2", "S3", "OSS" in the future.
-- `outputpath`: `str`, the output path to save the images.
-- `relative`: `bool`, whether to save the images with relative path. Default is `False`.
-    
 ```python
-from pdfdeal import md_replace_imgs
+from pdfdeal import deal_pdf, get_files
 
-md_replace_imgs(
-    mdfile="Output/sample.md",
-    replace="local",
-    outputpath="./Output/test/md_replace_imgs",
-)
-```
-
-### Processes all the files in a file and saves them in the Output folder
-
-```python
-import os
-from pdfdeal import deal_pdf
-for root, dirs, files in os.walk("./PPT"):
-    for file in files:
-        file_path = os.path.join(root, file)
-        deal_pdf(
-            input=file_path, output="pdf", language=["en"], path="./Output", GPU=True
-        )
-        print(f"Deal with {file_path} successfully!")
-```
-
-### Get the the list of text in the pdf
-
-```python
-from pdfdeal import deal_pdf
-Text = deal_pdf(input="test.pdf", output="texts", language=["en"], GPU=True)
-for text in Text:
-  print(text)
-```
-
-### Using pytesseract to do OCR
-
-```python
-from pdfdeal import deal_pdf, gen_folder_list
-files = gen_folder_list("tests/pdf", "pdf")
-output_path = deal_pdf(
-    input=files,
-    output="md",
+files, rename = get_files("tests/pdf", "pdf", "md")
+output_path, failed, flag = deal_pdf(
+    pdf_file=files,
+    output_format="md",
     ocr="pytesseract",
     language=["eng"],
-    path="Output",
+    output_path="Output",
+    output_names=rename,
 )
 for f in output_path:
     print(f"Save processed file to {f}")
 ```
 
-### Skip OCR
+### Using Doc2X as PDF deal tool
 
 ```python
-print(deal_pdf(input="test.pdf",ocr="pass"))
+from pdfdeal import Doc2X
+from pdfdeal import get_files
+
+client = Doc2X()
+file_list, rename = get_files(path="tests/pdf", mode="pdf", out="pdf")
+success, failed, flag = client.pdfdeal(
+    pdf_file=file_list,
+    output_path="./Output/test/multiple/pdfdeal",
+    output_names=rename,
+)
+print(success)
+print(failed)
+print(flag)
 ```
-
-### Doc2x support
-
-```python
-from pdfdeal.doc2x import Doc2X
-
-Client = Doc2X()
-filelist = gen_folder_list("./test","pdf")
-# This is a built-in function for generating the folder under the path of all the pdf, you can give any list of the form of the path of the pdf
-Client.pdfdeal(filelist)
-```
-
-See [Doc2x Support](./docs/doc2x.md).

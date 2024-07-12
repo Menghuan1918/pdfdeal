@@ -51,15 +51,20 @@
 
 你可以[在此处](https://github.com/users/Menghuan1918/projects/3)查看正在开发的新功能！
 
-详细请查看[文档](https://menghuan1918.github.io/pdfdeal-docs/zh/)，或者查看[文档储存库 pdfdeal-docs](https://github.com/Menghuan1918/pdfdeal-docs)。
+详细请查看[在线文档](https://menghuan1918.github.io/pdfdeal-docs/zh/)。
+
+或者你也可以查看文档的开源[储存库 pdfdeal-docs](https://github.com/Menghuan1918/pdfdeal-docs)。
+
+## 快速开始
 
 ### 安装
 从 PyPI 安装：
 
 ```bash
 pip install --upgrade pdfdeal
-
 ```
+
+### 使用pytesseract作为OCR引擎
 
 使用 “pytesseract ”时，请确保首先安装了 [tesseract](https://github.com/tesseract-ocr/tesseract)：
 
@@ -67,14 +72,36 @@ pip install --upgrade pdfdeal
 pip install 'pdfdeal[pytesseract]'
 ```
 
-使用easyocr：
+```python
+from pdfdeal import deal_pdf, get_files
 
-```bash
-pip install 'pdfdeal[easyocr]'
+files, rename = get_files("tests/pdf", "pdf", "md")
+output_path, failed, flag = deal_pdf(
+    pdf_file=files,
+    output_format="md",
+    ocr="pytesseract",
+    language=["eng"],
+    output_path="Output",
+    output_names=rename,
+)
+for f in output_path:
+    print(f"Save processed file to {f}")
 ```
 
-从源码安装：
+### 使用Doc2X作为PDF处理工具
 
-```bash
-pip install 'pdfdeal[all] @ git+https://github.com/Menghuan1918/pdfdeal.git'
+```python
+from pdfdeal import Doc2X
+from pdfdeal import get_files
+
+client = Doc2X()
+file_list, rename = get_files(path="tests/pdf", mode="pdf", out="pdf")
+success, failed, flag = client.pdfdeal(
+    pdf_file=file_list,
+    output_path="./Output/test/multiple/pdfdeal",
+    output_names=rename,
+)
+print(success)
+print(failed)
+print(flag)
 ```
