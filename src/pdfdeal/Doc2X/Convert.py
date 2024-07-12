@@ -3,7 +3,7 @@ import json
 import os
 import re
 from typing import Tuple, Literal
-from .Exception import RateLimit, FileError, async_retry
+from .Exception import RateLimit, FileError, RequestError, async_retry
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
@@ -97,6 +97,8 @@ async def uuid2file(
     else:
         if get_res.status_code == 429:
             raise RateLimit()
+        elif get_res.status_code == 400:
+            raise RequestError(get_res.text)
         else:
             raise Exception(
                 f"Download file error! {get_res.status_code}:{get_res.text}"
@@ -194,6 +196,8 @@ async def upload_pdf(
         return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
     elif post_res.status_code == 429:
         raise RateLimit()
+    elif post_res.status_code == 400:
+        raise RequestError(post_res.text)
     else:
         raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
 
@@ -246,6 +250,8 @@ async def upload_img(
         return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
     elif post_res.status_code == 429:
         raise RateLimit()
+    elif post_res.status_code == 400:
+        raise RequestError(post_res.text)
     else:
         raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
 

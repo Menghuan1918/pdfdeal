@@ -11,6 +11,12 @@ class RateLimit(Exception):
 
     pass
 
+class RequestError(Exception):
+    """
+    Error when request is not successful, usually because of the file broken.
+    """
+
+    pass
 
 class FileError(Exception):
     """
@@ -38,6 +44,8 @@ def async_retry(max_retries=3, backoff_factor=2):
                     raise RateLimit
                 except FileError as e:
                     raise e
+                except RequestError as e:
+                    raise f"{e} This usually means the file is broken."
                 except Exception as e:
                     last_exception = e
                     wait_time = backoff_factor**retries
