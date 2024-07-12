@@ -216,6 +216,24 @@ def main():
             output_format=format,
         )
 
+    for file in success:
+        if file != "":
+            file = os.path.abspath(file)
+            print(f"Save to: {file}")
+    if flag:
+        print("Some files failed to process, please check the error message.")
+        print("Try to save the failed files to fail.txt")
+        try:
+            with open("fail.txt", "w") as f:
+                for file in fail:
+                    if file['path'] != "":
+                        f.write(file + "\n")
+        except Exception as e:
+            print(f"Failed to save the failed files to fail.txt: {e}")
+            print("The failed files are:")
+            for file in fail:
+                print(file)
+
 
 if __name__ == "__main__":
     main()
