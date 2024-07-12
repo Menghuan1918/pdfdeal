@@ -151,15 +151,18 @@ def main():
             rpm = int(get_global_setting()["Doc2X_RPM"])
             print("Find API: ", api_key[:5] + "*" * (len(api_key) - 10) + api_key[-5:])
         except Exception:
-            api_key = None
-            print(
-                "The global setting does not exist, please set the global setting first."
-            )
-            doc2x_setting, language = set_doc2x_key(language)
-            for key, value in doc2x_setting.items():
-                change_one_global_setting(key, value)
-            api_key = str(doc2x_setting["Doc2X_Key"])
-            rpm = int(doc2x_setting["Doc2X_RPM"])
+            if args.y:
+                pass
+            else:
+                api_key = None
+                print(
+                    "The global setting does not exist, please set the global setting first."
+                )
+                doc2x_setting, language = set_doc2x_key(language)
+                for key, value in doc2x_setting.items():
+                    change_one_global_setting(key, value)
+                api_key = str(doc2x_setting["Doc2X_Key"])
+                rpm = int(doc2x_setting["Doc2X_RPM"])
     else:
         api_key = str(args.api_key)
 
@@ -168,14 +171,20 @@ def main():
     image = args.image
     pdf = args.pdf
     if not image and not pdf:
-        image, pdf, language = file_type(language)
+        if args.y:
+            pdf = True
+        else:
+            image, pdf, language = file_type(language)
     if image and pdf:
         raise ValueError("You can only choose one type of file to process.")
 
     filename = args.filename
 
     if filename is None:
-        filename, language = get_file_folder(language)
+        if args.y:
+            filename = "./"
+        else:
+            filename, language = get_file_folder(language)
 
     output = args.output if args.output else "./Output"
 
@@ -183,7 +192,10 @@ def main():
 
     equation = args.equation
 
-    Client = Doc2X(apikey=api_key, rpm=rpm)
+    if api_key is None or api_key == "":
+        Client = Doc2X()
+    else:
+        Client = Doc2X(apikey=api_key, rpm=rpm)
 
     if image:
         files, rename = get_files(filename, "img", format)
