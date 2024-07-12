@@ -1,5 +1,5 @@
-from pdfdeal.doc2x import Doc2X
-from pdfdeal.file_tools import gen_folder_list
+from pdfdeal import Doc2X
+from pdfdeal.file_tools import get_files
 import os
 
 
@@ -20,18 +20,18 @@ def test_single_pic2file():
 
 def test_multiple_pic2file():
     client = Doc2X()
-    file_list = gen_folder_list("tests/image", "img")
+    file_list, rename = get_files("tests/image", "img", "docx")
     success, failed, flag = client.pic2file(
         image_file=file_list,
         output_path="./Output/test/multiple/pic2file",
-        output_names=["pic_sample1.docx", "pic_sample2.docx"],
+        output_names=rename,
         output_format="docx",
     )
     assert flag
-    assert len(success) == len(failed) == 2
+    assert len(success) == len(failed) == 3
     for s in success:
         if s != "":
-            assert s.endswith("pic_sample1.docx") or s.endswith("pic_sample2.docx")
+            assert s.endswith("sample1.docx") or s.endswith("sample.docx")
     for f in failed:
         if f["path"] != "":
             assert f["path"].endswith("sample_bad.png")

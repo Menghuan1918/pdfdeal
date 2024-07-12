@@ -1,4 +1,4 @@
-from pdfdeal.doc2x import Doc2X
+from pdfdeal import Doc2X
 import os
 
 def test_client():

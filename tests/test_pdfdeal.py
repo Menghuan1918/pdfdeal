@@ -1,5 +1,5 @@
-from pdfdeal.doc2x import Doc2X
-from pdfdeal.file_tools import gen_folder_list
+from pdfdeal import Doc2X
+from pdfdeal.file_tools import get_files
 import os
 
 
@@ -17,13 +17,14 @@ def test_pdfdeal():
 
 def test_multiple_pdfdeal():
     client = Doc2X()
-    file_list = gen_folder_list("tests/pdf", "pdf")
+    file_list, rename = get_files("tests/pdf", "pdf", "pdf")
     success, failed, flag = client.pdfdeal(
         pdf_file=file_list,
         output_path="./Output/test/multiple/pdfdeal",
+        output_names=rename,
     )
     assert flag
-    assert len(success) == len(failed) == 2
+    assert len(success) == len(failed) == 3
     for s in success:
         if s != "":
             assert s.endswith(".pdf")

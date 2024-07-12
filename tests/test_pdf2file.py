@@ -1,5 +1,5 @@
-from pdfdeal.doc2x import Doc2X
-from pdfdeal.file_tools import gen_folder_list
+from pdfdeal import Doc2X
+from pdfdeal import get_files
 import os
 
 
@@ -20,18 +20,18 @@ def test_single_pdf2file():
 
 def test_multiple_pdf2file():
     client = Doc2X()
-    file_list = gen_folder_list("tests/pdf", "pdf")
+    file_list, rename = get_files("tests/pdf", "pdf", "docx")
     success, failed, flag = client.pdf2file(
         pdf_file=file_list,
         output_path="./Output/test/multiple/pdf2file",
-        output_names=["sample1.docx", "sample2.docx"],
+        output_names=rename,
         output_format="docx",
     )
     assert flag
-    assert len(success) == len(failed) == 2
+    assert len(success) == len(failed) == 3
     for s in success:
         if s != "":
-            assert s.endswith("sample1.docx") or s.endswith("sample2.docx")
+            assert s.endswith("sample.docx") or s.endswith("sampleB.docx")
     for f in failed:
         if f["path"] != "":
             assert f["path"].endswith("sample_bad.pdf")
