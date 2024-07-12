@@ -50,6 +50,8 @@ async def pdf2file_v1(
     rpm: int,
     convert: bool,
     translate: bool = False,
+    language: str = "zh",
+    model: str = "deepseek",
 ):
     """
     Convert pdf file to specified file,
@@ -57,14 +59,26 @@ async def pdf2file_v1(
     # Upload the file and get uuid
     try:
         uuid = await upload_pdf(
-            apikey=apikey, pdffile=pdf_path, ocr=ocr, translate=translate
+            apikey=apikey,
+            pdffile=pdf_path,
+            ocr=ocr,
+            translate=translate,
+            language=language,
+            model=model,
         )
     except RateLimit:
         while True:
             print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
             await asyncio.sleep(60 // rpm + 15)
             try:
-                uuid = await upload_pdf(apikey=apikey, pdffile=pdf_path, ocr=ocr)
+                uuid = await upload_pdf(
+                    apikey=apikey,
+                    pdffile=pdf_path,
+                    ocr=ocr,
+                    translate=translate,
+                    language=language,
+                    model=model,
+                )
                 break
             except RateLimit:
                 continue
@@ -292,6 +306,8 @@ class Doc2X:
         ocr: bool = True,
         convert: bool = False,
         translate: bool = False,
+        language: str = "zh",
+        model: str = "deepseek",
     ) -> str:
         """
         Convert pdf file to specified file, with rate/thread limit, async version
@@ -314,6 +330,8 @@ class Doc2X:
                     rpm=self.rpm,
                     convert=convert,
                     translate=translate,
+                    language=language,
+                    model=model,
                 )
             except Exception as e:
                 return f"Error {e}"
@@ -387,8 +405,10 @@ class Doc2X:
         return success, failed, flag
 
     def get_limit(self) -> int:
-        """
-        Get the limit of the apikey
+        """Get the rate limit of the apikey
+
+        Returns:
+            int: The rate limit of the apikey
         """
         return asyncio.run(get_limit(self.apikey))
 
@@ -524,6 +544,8 @@ class Doc2X:
         pdf_file,
         output_path: str = "./Output",
         convert: bool = False,
+        language: str = "zh",
+        model: str = "deepseek",
     ) -> Tuple[list, list, bool]:
         """
         Translate pdf file to specified file
@@ -533,6 +555,8 @@ class Doc2X:
             output_path: output folder path, default is "./Output"
             ocr: whether to use OCR, default is True
             convert: whether to convert "[" to "$" and "[[" to "$$", default is False
+            language: the language to translate, default is "zh". Support languages: "en", "zh", "ja", "fr", "ru", "pt", "es", "de", "ko", "ar"
+            model: the model to translate, default is "deepseek". Support models: "deepseek", "glm4"
 
         Returns:
             will return `list1`,`list2`,`bool`
@@ -547,7 +571,16 @@ class Doc2X:
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
         success, failed, flag = asyncio.run(
-            self.pdf2file_back(pdf_file, output_path, "texts", True, convert, True)
+            self.pdf2file_back(
+                pdf_file=pdf_file,
+                output_path=output_path,
+                output_format="texts",
+                ocr=True,
+                convert=convert,
+                translate=True,
+                language=language,
+                model=model,
+            )
         )
         print(
             f"TRANSLATE Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."

@@ -134,6 +134,8 @@ async def upload_pdf(
     pdffile: str,
     ocr: bool = True,
     translate: bool = False,
+    language: str = "zh",
+    model: str = "deepseek",
 ) -> str:
     """Upload pdf file to server and return the uuid of the file
 
@@ -142,6 +144,8 @@ async def upload_pdf(
         pdffile (str): The pdf file path
         ocr (bool, optional): Do OCR or not. Defaults to True.
         translate (bool, optional): Do translate or not. Defaults to False.
+        language (str, optional): The language of the file. Defaults to "zh", only valid when translate is True.
+        model (str, optional): The model of the file. Defaults to "deepseek", only valid when translate is True.
 
     Raises:
         FileError: Input file size is too large
@@ -165,13 +169,27 @@ async def upload_pdf(
     ocr = 1 if ocr else 0
     translate = 2 if translate else 1
     timeout = httpx.Timeout(120)
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        post_res = await client.post(
-            url,
-            headers={"Authorization": "Bearer " + apikey},
-            files=file,
-            data={"ocr": ocr, "parse_to": translate},
-        )
+    if translate == 1:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            post_res = await client.post(
+                url,
+                headers={"Authorization": "Bearer " + apikey},
+                files=file,
+                data={"ocr": ocr, "parse_to": translate},
+            )
+    else:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            post_res = await client.post(
+                url,
+                headers={"Authorization": "Bearer " + apikey},
+                files=file,
+                data={
+                    "ocr": ocr,
+                    "parse_to": translate,
+                    "lang": language,
+                    "model": model,
+                },
+            )
     if post_res.status_code == 200:
         return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
     elif post_res.status_code == 429:
