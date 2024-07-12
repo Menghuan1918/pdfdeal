@@ -26,7 +26,10 @@ async def refresh_key(key: str) -> str:
     async with httpx.AsyncClient(timeout=timeout) as client:
         get_res = await client.post(url, headers={"Authorization": "Bearer " + key})
     if get_res.status_code == 200:
-        return json.loads(get_res.content.decode("utf-8"))["data"]["token"]
+        try:
+            return json.loads(get_res.content.decode("utf-8"))["data"]["token"]
+        except Exception as e:
+            raise Exception(f"Failed to verify key: {e}")
     else:
         raise Exception(f"Failed to verify key: {get_res.status_code}:{get_res.text}")
 
@@ -193,7 +196,10 @@ async def upload_pdf(
                 },
             )
     if post_res.status_code == 200:
-        return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        try:
+            return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        except Exception as e:
+            raise Exception(f"Upload file error! {e}")
     elif post_res.status_code == 429:
         raise RateLimit()
     elif post_res.status_code == 400:
@@ -247,7 +253,10 @@ async def upload_img(
             data={"equation": formula, "img_correction": img_correction},
         )
     if post_res.status_code == 200:
-        return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        try:
+            return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        except Exception as e:
+            raise Exception(f"Upload file error! {e}")
     elif post_res.status_code == 429:
         raise RateLimit()
     elif post_res.status_code == 400:
