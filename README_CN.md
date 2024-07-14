@@ -41,7 +41,9 @@
 
 ## 案例
 
-例如[graphrag](https://github.com/microsoft/graphrag)不支持识别pdf，你可以使用`pdfdeal`将其转换为md文档进行使用。
+例如[graphrag](https://github.com/microsoft/graphrag)不支持识别pdf，你可以使用`doc2x`将其转换为txt文档进行使用。
+
+![rag](https://github.com/user-attachments/assets/f9e8408b-9a4b-42b9-9aee-0d1229065a91)
 
 或者对于知识库应用，你也可以使用`pdfdeal`对文档进行增强，以下是在Dify中原始PDF/OCR增强/Doc2X处理后的效果：
 
