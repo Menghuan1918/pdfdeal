@@ -136,6 +136,12 @@ def main():
         required=False,
         action="store_true",
     )
+    parser.add_argument(
+        "--graphrag",
+        help="Change md document to txt form, used for output is converted to the txt form accepted by graphRAG. The output format needs to be md or md_dollar at this time",
+        required=False,
+        action="store_true",
+    )
     # Only if need user input, will ask language
     language = None
     args = parser.parse_args()
@@ -197,6 +203,12 @@ def main():
     else:
         Client = Doc2X(apikey=api_key, rpm=rpm)
 
+    if args.graphrag:
+        assert format in [
+            "md",
+            "md_dollar",
+        ], "The output format needs to be md or md_dollar at this time"
+
     if image:
         files, rename = get_files(filename, "img", format)
         success, fail, flag = Client.pic2file(
@@ -226,13 +238,32 @@ def main():
         try:
             with open("fail.txt", "w") as f:
                 for file in fail:
-                    if file['path'] != "":
+                    if file["path"] != "":
                         f.write(file + "\n")
         except Exception as e:
             print(f"Failed to save the failed files to fail.txt: {e}")
             print("The failed files are:")
             for file in fail:
                 print(file)
+
+    if args.graphrag:
+        from pdfdeal.FileTools.file_tools import unzip
+
+        for file in success:
+            if file != "":
+                file = os.path.abspath(file)
+                try:
+                    unzip(file)
+                except Exception as e:
+                    print(f"Failed to unzip the file: {file}, error: {e}")
+        output_folder = os.path.abspath(output)
+        for root, dirs, files in os.walk(output_folder):
+            for file in files:
+                if file.endswith(".md"):
+                    file_path = os.path.join(root, file)
+                    new_file_path = file_path[:-3] + ".txt"
+                    os.rename(file_path, new_file_path)
+        print(f"Unzip and rename the files in {output_folder} successfully.")
 
 
 if __name__ == "__main__":
