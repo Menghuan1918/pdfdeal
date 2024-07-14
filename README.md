@@ -42,7 +42,7 @@ It is recommended to use Doc2X for the best results.
 
 ## Cases
 
-For example, if [graphrag](https://github.com/microsoft/graphrag) does not support recognizing PDFs, you can use `doc2x` to convert it into an MD document for use.
+For example, if [graphrag](https://github.com/microsoft/graphrag) does not support recognizing PDFs, you can use `doc2x` to convert it into txt documents for use.
 
 ![rag](https://github.com/user-attachments/assets/f9e8408b-9a4b-42b9-9aee-0d1229065a91)
 
