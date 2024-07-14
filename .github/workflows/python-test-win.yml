@@ -24,6 +24,7 @@ jobs:
       env:
         DOC2X_APIKEY: ${{ secrets.DOC2X_APIKEY }}
         DOC2X_APIKEY_PERSONAL: ${{ secrets.DOC2X_APIKEY_PERSONAL }}
+        PYTHONIOENCODING: utf-8
       run: |
         pytest -s
 
