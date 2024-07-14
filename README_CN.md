@@ -25,6 +25,9 @@
 
 
 ## 简介
+### 最近更新
+文档更新:[如何与graphrag结合使用](https://menghuan1918.github.io/pdfdeal-docs/zh/demo/graphrag.html)
+
 ### Doc2X 支持
 ![doc2x](https://github.com/user-attachments/assets/3ebd3440-9b07-4be1-be2e-fc764d9d07f8)
 
