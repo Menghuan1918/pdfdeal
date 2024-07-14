@@ -19,6 +19,8 @@
 
 <br>
 
+🗺️ ENGLISH | [简体中文](README_CN.md)
+
 </div>
 
 Easily handle PDFs, extract readable text, recognize image text with OCR and clean up formatting to make it more suitable for building knowledge bases.
