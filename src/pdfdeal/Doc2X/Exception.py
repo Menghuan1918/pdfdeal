@@ -11,6 +11,12 @@ class RateLimit(Exception):
 
     pass
 
+class RequestError(Exception):
+    """
+    Error when request is not successful, usually because of the file broken.
+    """
+
+    pass
 
 class FileError(Exception):
     """
@@ -20,7 +26,7 @@ class FileError(Exception):
     pass
 
 
-def async_retry(max_retries=3, backoff_factor=2):
+def async_retry(max_retries=2, backoff_factor=2):
     """
     Decorator to retry an async function when an exception is raised.
     `max_retries`: Maximum number of retries.
@@ -37,13 +43,13 @@ def async_retry(max_retries=3, backoff_factor=2):
                 except RateLimit:
                     raise RateLimit
                 except FileError as e:
-                    raise e
+                    raise FileError(e)
+                except RequestError as e:
+                    raise RequestError(f"{e} \nThis usually means the file is broken.")
                 except Exception as e:
                     last_exception = e
                     wait_time = backoff_factor**retries
-                    print(
-                        f"Failed to connect to the server or some error happend. Retrying in {wait_time} seconds."
-                    )
+                    print(f"Get exception {e}. \nRetrying in {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
                     retries += 1
             raise last_exception

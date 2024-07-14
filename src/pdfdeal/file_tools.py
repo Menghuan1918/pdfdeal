@@ -1,12 +1,4 @@
-from pdfdeal import gen_folder_list as gfl
-import warnings
+from .FileTools.file_tools import gen_folder_list, get_files
+from .FileTools.extract_img import md_replace_imgs
 
-def gen_folder_list(
-        path: str,
-        mode: str,
-)->list:
-    """
-    This function will be deprecated in the future, please use `from pdfdeal import gen_folder_list` instead.
-    """
-    warnings.warn("This function will be deprecated in the future, please use `from pdfdeal import gen_folder_list` instead.", DeprecationWarning)
-    return gfl(path, mode)
+__all__ = ["gen_folder_list", "get_files", "md_replace_imgs"]

@@ -3,29 +3,50 @@ import json
 import os
 import re
 from typing import Tuple, Literal
-from .Exception import RateLimit, FileError, async_retry
+from .Exception import RateLimit, FileError, RequestError, async_retry
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
 
 @async_retry()
 async def refresh_key(key: str) -> str:
-    """
-    Get new key by refresh key
+    """Get the real key by the personal key
+
+    Args:
+        key (str): The personal key
+
+    Raises:
+        Exception: Failed to verify key
+
+    Returns:
+        str: The real key
     """
     url = f"{Base_URL}/token/refresh"
     timeout = httpx.Timeout(30)
     async with httpx.AsyncClient(timeout=timeout) as client:
         get_res = await client.post(url, headers={"Authorization": "Bearer " + key})
     if get_res.status_code == 200:
-        return json.loads(get_res.content.decode("utf-8"))["data"]["token"]
+        try:
+            return json.loads(get_res.content.decode("utf-8"))["data"]["token"]
+        except Exception as e:
+            raise Exception(f"Failed to verify key: {e}")
     else:
         raise Exception(f"Failed to verify key: {get_res.status_code}:{get_res.text}")
 
 
 async def check_folder(path: str) -> bool:
-    """
-    检查输入的是否为文件夹，是则保证文件夹存在并返回True,否则抛出异常
+    """Make sure the path is a folder
+
+    Args:
+        path (str): The path to check
+
+    Raises:
+        Exception: Input path already exists as a file
+        Exception: Input path is not a directory
+        Exception: Create folder error
+
+    Returns:
+        bool: Whether the path is a folder
     """
     try:
         os.makedirs(path, exist_ok=True)
@@ -46,17 +67,22 @@ async def uuid2file(
     output_format: Literal["md", "md_dollar", "latex", "docx"],
     output_path: str = "./Output",
 ) -> str:
-    """
-    用于获取文件，输入：
-    `apikey`: key
-    `uuid`: 文件uuid
-    `output_format`: 输出格式
-    `output_path`: 输出文件夹路径
+    """Get the file by the uuid
 
-    返回：
-    `str`：输出文件路径
+    Args:
+        apikey (str): The key
+        uuid (str): The uuid of the file
+        output_format (Literal[&quot;md&quot;, &quot;md_dollar&quot;, &quot;latex&quot;, &quot;docx&quot;]): The output format
+        output_path (str, optional): The output path. Defaults to "./Output".
+
+    Raises:
+        Exception: Input path is not a directory
+        RateLimit: Rate limit exceeded
+        Exception: Download file error
+
+    Returns:
+        str: The path of the file
     """
-    # 检查输出路径并拼接url，纠正下载的文件格式
     await check_folder(output_path)
     url = f"{Base_URL}/export?request_id={uuid}&to={output_format}"
     download_format = output_format if output_format == "docx" else "zip"
@@ -74,6 +100,8 @@ async def uuid2file(
     else:
         if get_res.status_code == 429:
             raise RateLimit()
+        elif get_res.status_code == 400:
+            raise RequestError(get_res.text)
         else:
             raise Exception(
                 f"Download file error! {get_res.status_code}:{get_res.text}"
@@ -82,12 +110,16 @@ async def uuid2file(
 
 @async_retry()
 async def get_limit(apikey: str) -> int:
-    """
-    Get the limit of the key
-    Input:
-    `apikey`: key
-    Return:
-    `int`, remain limit
+    """Get the limit of the key
+
+    Args:
+        apikey (str): The key
+
+    Raises:
+        RuntimeError: The key is invalid
+
+    Returns:
+        int: The limit of the key
     """
     if apikey.startswith("sk-"):
         url = f"{Base_URL}/v1/limit"
@@ -107,18 +139,27 @@ async def upload_pdf(
     pdffile: str,
     ocr: bool = True,
     translate: bool = False,
+    language: str = "zh",
+    model: str = "deepseek",
 ) -> str:
-    """
-    Upload pdf file to server and return the uuid of the file
+    """Upload pdf file to server and return the uuid of the file
 
-    Input:
-    `apikey`: key
-    `pdffile`: pdf file path
-    `ocr`: whether to use ocr, default is True
-    `translate`: whether to translate, default is False
+    Args:
+        apikey (str): The key
+        pdffile (str): The pdf file path
+        ocr (bool, optional): Do OCR or not. Defaults to True.
+        translate (bool, optional): Do translate or not. Defaults to False.
+        language (str, optional): The language of the file. Defaults to "zh", only valid when translate is True.
+        model (str, optional): The model of the file. Defaults to "deepseek", only valid when translate is True.
 
-    Return:
-    `str`: file uuid
+    Raises:
+        FileError: Input file size is too large
+        FileError: Open file error
+        RateLimit: Rate limit exceeded
+        Exception: Upload file error
+
+    Returns:
+        str: The uuid of the file
     """
     if apikey.startswith("sk-"):
         url = f"{Base_URL}/v1/async/pdf"
@@ -133,17 +174,36 @@ async def upload_pdf(
     ocr = 1 if ocr else 0
     translate = 2 if translate else 1
     timeout = httpx.Timeout(120)
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        post_res = await client.post(
-            url,
-            headers={"Authorization": "Bearer " + apikey},
-            files=file,
-            data={"ocr": ocr, "parse_to": translate},
-        )
+    if translate == 1:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            post_res = await client.post(
+                url,
+                headers={"Authorization": "Bearer " + apikey},
+                files=file,
+                data={"ocr": ocr, "parse_to": translate},
+            )
+    else:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            post_res = await client.post(
+                url,
+                headers={"Authorization": "Bearer " + apikey},
+                files=file,
+                data={
+                    "ocr": ocr,
+                    "parse_to": translate,
+                    "lang": language,
+                    "model": model,
+                },
+            )
     if post_res.status_code == 200:
-        return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        try:
+            return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        except Exception as e:
+            raise Exception(f"Upload file error! {e}")
     elif post_res.status_code == 429:
         raise RateLimit()
+    elif post_res.status_code == 400:
+        raise RequestError(post_res.text)
     else:
         raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
 
@@ -155,16 +215,22 @@ async def upload_img(
     formula: bool = False,
     img_correction: bool = False,
 ) -> str:
-    """
-    Upload image file to server and return the uuid of the file
-    Input:
-    `apikey`: key
-    `imgfile`: image file path
-    `formula`: whether to return pure formula, default is False
-    `img_correction`: whether to correct image, default is False
+    """Upload image file to server and return the uuid of the file
 
-    Return:
-    `str`: file uuid
+    Args:
+        apikey (str): The key
+        imgfile (str): The image file path
+        formula (bool, optional): Only formula or not. Defaults to False.
+        img_correction (bool, optional): Do img correction or not. Defaults to False.
+
+    Raises:
+        FileError: Image file size is too large
+        FileError: Open file error
+        RateLimit: Rate limit exceeded
+        Exception: Upload file error
+
+    Returns:
+        str: The uuid of the file
     """
     if apikey.startswith("sk-"):
         url = f"{Base_URL}/v1/async/img"
@@ -187,16 +253,27 @@ async def upload_img(
             data={"equation": formula, "img_correction": img_correction},
         )
     if post_res.status_code == 200:
-        return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        try:
+            return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        except Exception as e:
+            raise Exception(f"Upload file error! {e}")
     elif post_res.status_code == 429:
         raise RateLimit()
+    elif post_res.status_code == 400:
+        raise RequestError(post_res.text)
     else:
         raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
 
 
 async def decode_data(datas: json, convert: bool) -> Tuple[list, list]:
-    """
-    Used to decode basic data
+    """Decode the data
+
+    Args:
+        datas (json): The data
+        convert (bool): Convert "[" and "[[" to "$" and "$$"
+
+    Returns:
+        Tuple[list, list]: The texts and locations
     """
     texts = []
     locations = []
@@ -229,8 +306,14 @@ async def decode_data(datas: json, convert: bool) -> Tuple[list, list]:
 
 
 async def decode_translate(datas: json, convert: bool) -> Tuple[list, list]:
-    """
-    Used to decode translate data
+    """Decode the translate data
+
+    Args:
+        datas (json): The data
+        convert (bool): Convert "[" and "[[" to "$" and "$$"
+
+    Returns:
+        Tuple[list, list]: The texts and locations
     """
     texts = []
     locations = []
@@ -266,16 +349,21 @@ async def uuid_status(
     convert: bool = False,
     translate: bool = False,
 ) -> Tuple[int, str, list]:
-    """
-    Get the status of the file and the converted uuid
-    Input:
-    `apikey`: key
-    `uuid`: file uuid
-    `convert`: whether to convert "[" and "[[" to "$" and "$$", default is False
-    `translate`: whether to translate, default is False
+    """Get the status of the file
 
-    Return:
-    `Tuple[int, str, list]`: progress, status, converted text
+    Args:
+        apikey (str): The key
+        uuid (str): The uuid of the file
+        convert (bool, optional): Convert or not. Defaults to False.
+        translate (bool, optional): Translate or not. Defaults to False.
+
+    Raises:
+        RuntimeError: Pages limit exceeded
+        RuntimeError: Unknown status
+        Exception: Get status error
+
+    Returns:
+        Tuple[int, str, list]: The progress, status and texts
     """
     if apikey.startswith("sk-"):
         url = f"{Base_URL}/v1/async/status?uuid={uuid}"
@@ -315,15 +403,14 @@ async def uuid_status(
 
 
 async def process_status(original_file: list, output_file: list):
-    """
-    Check the status of the file and return the success and error file
+    """Check the status of the files, error or success
 
-    Input:
-    `original_file`: original file
-    `output_file`: output file
+    Args:
+        original_file (list): The original file list
+        output_file (list): The output file list
 
-    Return:
-    `Tuple[list, list, bool]`: success file, error file, has error flag
+    Returns:
+        _type_: The success file list, error file list and has error flag
     """
     success_file = []
     error_file = []

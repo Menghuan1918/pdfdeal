@@ -6,7 +6,6 @@ import emoji
 import unicodedata
 import os
 import zipfile
-from .ocr import OCR_easyocr
 import shutil
 from typing import Tuple
 from ..Doc2X.Types import Support_File_Type, OutputFormat
@@ -57,9 +56,7 @@ def clear_cache():
             os.remove(file_path)
 
 
-def extract_text_and_images(
-    pdf_path, ocr=OCR_easyocr, language=["ch_sim", "en"], GPU=False
-):
+def extract_text_and_images(pdf_path, ocr, language=["ch_sim", "en"], GPU=False):
     """
     Extract text and images from a PDF file
     """
@@ -92,9 +89,9 @@ def extract_text_and_images(
                     f"{id}.png",
                 )
                 pil_image.save(temp_image_path)
-
+            option = {"GPU": GPU}
             # Use ocr to extract text from images
-            ocr_text, All_Done = ocr(temp_image_folder, language, GPU)
+            ocr_text, All_Done = ocr(temp_image_folder, language, option)
             text += f"\n{ocr_text}"
             Text.append(clean_text(text))
         clear_cache()
@@ -134,7 +131,7 @@ def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
     Args:
         path (str): The path of the folder to be processed
         mode (str): Which type of file to process, 'pdf' or 'img'
-        out (str): Which type of file want to output, `md`, `md_dollar`, `latex` or `docx`
+        out (str): Which type of file want to output, `md`, `md_dollar`, `latex` or `docx`, or `pdf` if you are using for RAG
 
     Returns:
         Tuple[list, list]: The list of full paths and relative paths, use in (like)`input` and `output_format`
@@ -142,10 +139,11 @@ def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
     mode = Support_File_Type(mode)
     if isinstance(mode, Support_File_Type):
         mode = mode.value
-    out = OutputFormat(out)
-    if isinstance(out, OutputFormat):
-        out = out.value
-    out = out if out == "docx" else "zip"
+    if out != "pdf":
+        out = OutputFormat(out)
+        if isinstance(out, OutputFormat):
+            out = out.value
+        out = out if out == "docx" else "zip"
     full_paths = []
     relative_paths = []
 
@@ -153,6 +151,14 @@ def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
         extensions = [".pdf"]
     elif mode == "img":
         extensions = [".jpg", ".jpeg", ".png"]
+
+    if os.path.isfile(path):
+        if any(path.lower().endswith(ext) for ext in extensions):
+            full_paths.append(path)
+            rel_path = os.path.relpath(path, os.path.dirname(path))
+            rel_path_out = os.path.splitext(rel_path)[0] + "." + out
+            relative_paths.append(rel_path_out)
+            return full_paths, relative_paths
 
     for root, dirs, files in os.walk(path):
         for file in files:

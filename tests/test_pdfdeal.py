@@ -1,38 +1,37 @@
-from pdfdeal.doc2x import Doc2X
-from pdfdeal.file_tools import gen_folder_list
+from pdfdeal import Doc2X
+from pdfdeal.file_tools import get_files
 import os
 
 
-
-def test_pdfdeal_v1():
+def test_pdfdeal():
     client = Doc2X()
-    filepath = client.pdfdeal(
-        input="tests/pdf/sample.pdf",
-        path="./Output/test/pdfdeal",
+    filepath, _, _ = client.pdfdeal(
+        pdf_file="tests/pdf/sample.pdf",
+        output_path="./Output/test/pdfdeal",
     )
     if filepath[0] != "":
         assert os.path.exists(filepath[0])
         assert os.path.isfile(filepath[0])
         assert filepath[0].endswith(".pdf")
-        assert os.path.basename(filepath[0]) == "sample.pdf"
 
 
-def test_multiple_pdfdeal_v2():
+def test_multiple_pdfdeal():
     client = Doc2X()
-    file_list = gen_folder_list("tests/pdf", "pdf")
+    file_list, rename = get_files("tests/pdf", "pdf", "pdf")
     success, failed, flag = client.pdfdeal(
-        input=file_list,
-        path="./Output/test/multiple/pdfdeal",
-        version="v2",
+        pdf_file=file_list,
+        output_path="./Output/test/multiple/pdfdeal",
+        output_names=rename,
     )
     assert flag
-    assert len(success) == len(failed) == 2
+    assert len(success) == len(failed) == 3
     for s in success:
         if s != "":
-            assert s.endswith("sample.pdf")
+            assert s.endswith(".pdf")
     for f in failed:
-        if f ["path"]!= "":
+        if f["path"] != "":
             assert f["path"].endswith("sample_bad.pdf")
+
 
 # def test_multiple_high_rpm_v2():
 #     client = Doc2X()
@@ -40,7 +39,6 @@ def test_multiple_pdfdeal_v2():
 #     success, failed, flag = client.pdfdeal(
 #         input=file_list,
 #         path="./Output/test/high_rpm/pdfdeal",
-#         version="v2",
 #     )
 #     assert len(success) == len(failed) == 20
 #     i = 0
