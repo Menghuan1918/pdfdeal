@@ -26,6 +26,9 @@
 Easily handle PDFs, extract readable text, recognize image text with OCR and clean up formatting to make it more suitable for building knowledge bases.
 
 ## Introduction
+### What's NEW
+Added documentation tutorial on how to [integrate with graphrag](https://menghuan1918.github.io/pdfdeal-docs/demo/graphrag.html)
+
 ### Doc2X Support
 ![doc2x](https://github.com/user-attachments/assets/3ebd3440-9b07-4be1-be2e-fc764d9d07f8)
 
