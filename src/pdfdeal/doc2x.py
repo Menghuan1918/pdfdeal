@@ -1,6 +1,6 @@
 import asyncio
 import os
-from .Doc2X.Exception import RateLimit, RateLimiter
+from .Doc2X.Exception import RateLimit
 from .Doc2X.Types import OutputFormat, RAG_OutputType
 from .FileTools.dealpdfs import strore_pdf
 from typing import Tuple
@@ -185,10 +185,6 @@ class Doc2X:
                 self.rpm = 10
             else:
                 self.rpm = 1
-        if self.apikey.startswith("sk-"):
-            self.limiter = RateLimiter(200)
-        else:
-            self.limiter = RateLimiter(10)
         self.maxretry = maxretry
 
     async def pic2file_back(
@@ -205,12 +201,10 @@ class Doc2X:
         input refers to `pic2file` function
         """
         limit = asyncio.Semaphore(self.rpm)
-        lock = asyncio.Lock()
 
         async def limited_img2file_v1(img):
             try:
                 await limit.acquire()
-                await self.limiter.require(lock)
                 return await img2file_v1(
                     apikey=self.apikey,
                     img_path=img,
@@ -317,12 +311,10 @@ class Doc2X:
         input refers to `pdf2file` function
         """
         limit = asyncio.Semaphore(self.rpm)
-        lock = asyncio.Lock()
 
         async def limited_pdf2file_v1(pdf):
             try:
                 await limit.acquire()
-                await self.limiter.require(lock)
                 return await pdf2file_v1(
                     apikey=self.apikey,
                     pdf_path=pdf,
@@ -427,10 +419,8 @@ class Doc2X:
         async version function
         """
         limit = asyncio.Semaphore(self.rpm)
-        lock = asyncio.Lock()
         try:
             await limit.acquire()
-            await self.limiter.require(lock)
             texts = await pdf2file_v1(
                 apikey=self.apikey,
                 pdf_path=input,
