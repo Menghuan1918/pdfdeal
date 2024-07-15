@@ -167,7 +167,6 @@ class Doc2X:
         apikey: str = None,
         rpm: int = None,
         thread: int = None,
-        maxretry: int = None,
     ) -> None:
         """Init the Doc2X class
 
@@ -175,7 +174,6 @@ class Doc2X:
             apikey (str, optional): Your doc2x apikey. Defaults to read from environment variable `DOC2X_APIKEY`.
             rpm (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey. Please use `thread` instead of `rpm`.
             thread (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey.
-            maxretry (int, optional): Have no use now.
         """
         self.apikey = asyncio.run(get_key(apikey))
         if rpm is not None and thread is not None:
@@ -184,14 +182,19 @@ class Doc2X:
             )
         if thread is not None:
             self.rpm = thread
-        if rpm is not None:
+        elif rpm is not None:
+            import warnings
+
+            warnings.warn(
+                "The `rpm` parameter is deprecated and will be removed in the future. Please use the `thread` parameter instead.",
+            )
             self.rpm = rpm
         else:
             if self.apikey.startswith("sk-"):
                 self.rpm = 10
             else:
                 self.rpm = 1
-        self.maxretry = maxretry
+        self.maxretry = None
 
     async def pic2file_back(
         self,

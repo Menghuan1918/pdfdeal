@@ -18,7 +18,7 @@ def tools(tool: str, file_list: list, config: dict):
     if tool == "doc2x_pdf":
         from pdfdeal import Doc2X
 
-        Client = Doc2X(apikey=config["Doc2X_Key"], rpm=config["Doc2X_RPM"])
+        Client = Doc2X(apikey=config["Doc2X_Key"], thread=config["Doc2X_RPM"])
         tool_func = tool_init_func(Client)
     options = {"output": temp_path}
     return tool_func(file_list, options)
@@ -31,7 +31,7 @@ def ocrs(ocr: str, config: dict):
     if ocr == "doc2x_ocr":
         from pdfdeal import Doc2X
 
-        Client = Doc2X(apikey=config["Doc2X_Key"], rpm=config["Doc2X_RPM"])
+        Client = Doc2X(apikey=config["Doc2X_Key"], thread=config["Doc2X_RPM"])
         return ocr_init_func(Client)
     return ocr_init_func
 

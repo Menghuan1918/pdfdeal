@@ -53,7 +53,7 @@ def ocr(path, language=["auto"], options: dict = None) -> Tuple[str, bool]:
     if rpm is None:
         Client = Doc2X(apikey=api_key)
     else:
-        Client = Doc2X(apikey=api_key, rpm=rpm)
+        Client = Doc2X(apikey=api_key, thread=rpm)
 
     try:
         limit = Client.get_limit()
