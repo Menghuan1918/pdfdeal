@@ -234,12 +234,12 @@ def main():
             print(f"Save to: {file}")
     if flag:
         print("Some files failed to process, please check the error message.")
-        print("Try to save the failed files to fail.txt")
+        print("Try to save the failed file path and reasons to fail.txt")
         try:
             with open("fail.txt", "w") as f:
                 for file in fail:
                     if file["path"] != "":
-                        f.write(file + "\n")
+                        f.write(str(file))
         except Exception as e:
             print(f"Failed to save the failed files to fail.txt: {e}")
             print("The failed files are:")
