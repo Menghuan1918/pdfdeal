@@ -209,6 +209,8 @@ async def upload_pdf(
                 raise RateLimit()
             else:
                 return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        except RateLimit:
+            raise RateLimit()
         except Exception as e:
             raise Exception(
                 f"Upload file error with {e} ! {post_res.status_code}:{post_res.text}"
@@ -274,6 +276,8 @@ async def upload_img(
                 raise RateLimit()
             else:
                 return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+        except RateLimit:
+            raise RateLimit()
         except Exception as e:
             raise Exception(
                 f"Upload file error with {e}! {post_res.status_code}:{post_res.text}"
