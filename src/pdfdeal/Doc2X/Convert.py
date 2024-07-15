@@ -131,7 +131,9 @@ async def get_limit(apikey: str) -> int:
         try:
             return int(get_res.json()["data"]["remain"])
         except Exception as e:
-            raise RuntimeError(f"Get limit error with {e}! {get_res.status_code}:{get_res.text}")
+            raise RuntimeError(
+                f"Get limit error with {e}! {get_res.status_code}:{get_res.text}"
+            )
     else:
         raise RuntimeError(f"Get limit error! {get_res.status_code}:{get_res.text}")
 
@@ -200,9 +202,17 @@ async def upload_pdf(
             )
     if post_res.status_code == 200:
         try:
-            return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+            if (
+                "parse_task_limit_exceeded"
+                == json.loads(post_res.content.decode("utf-8"))["code"]
+            ):
+                raise RateLimit()
+            else:
+                return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
         except Exception as e:
-            raise Exception(f"Upload file error with {e} ! {post_res.status_code}:{post_res.text}")
+            raise Exception(
+                f"Upload file error with {e} ! {post_res.status_code}:{post_res.text}"
+            )
     elif post_res.status_code == 429:
         raise RateLimit()
     elif post_res.status_code == 400:
@@ -257,9 +267,17 @@ async def upload_img(
         )
     if post_res.status_code == 200:
         try:
-            return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
+            if (
+                "parse_task_limit_exceeded"
+                == json.loads(post_res.content.decode("utf-8"))["code"]
+            ):
+                raise RateLimit()
+            else:
+                return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
         except Exception as e:
-            raise Exception(f"Upload file error with {e}! {post_res.status_code}:{post_res.text}")
+            raise Exception(
+                f"Upload file error with {e}! {post_res.status_code}:{post_res.text}"
+            )
     elif post_res.status_code == 429:
         raise RateLimit()
     elif post_res.status_code == 400:
@@ -382,7 +400,9 @@ async def uuid_status(
         try:
             datas = json.loads(get_res.content.decode("utf-8"))["data"]
         except Exception as e:
-            raise Exception(f"Get status error with {e}! {get_res.status_code}:{get_res.text}")
+            raise Exception(
+                f"Get status error with {e}! {get_res.status_code}:{get_res.text}"
+            )
         if datas["status"] == "ready":
             return 0, "Waiting for processing", [], []
 
