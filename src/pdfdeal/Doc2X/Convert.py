@@ -199,7 +199,7 @@ async def upload_pdf(
         try:
             return json.loads(post_res.content.decode("utf-8"))["data"]["uuid"]
         except Exception as e:
-            raise Exception(f"Upload file error! {e}")
+            raise Exception(f"Upload file error with {e} ! {post_res.status_code}:{post_res.text}")
     elif post_res.status_code == 429:
         raise RateLimit()
     elif post_res.status_code == 400:

@@ -50,7 +50,7 @@ def set_doc2x_key(language):
         if key.startswith("sk-"):
             RPM = 10
         else:
-            RPM = 4
+            RPM = 1
     return {"Doc2X_Key": key, "Doc2X_RPM": int(RPM)}, language
 
 

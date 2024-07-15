@@ -59,7 +59,7 @@ def config(language: str = None) -> dict:
         if key.startswith("sk-"):
             RPM = 10
         else:
-            RPM = 4
+            RPM = 1
     return {"Doc2X_Key": key, "Doc2X_RPM": int(RPM)}
 
 
