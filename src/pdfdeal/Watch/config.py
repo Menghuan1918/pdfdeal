@@ -123,5 +123,5 @@ def doc2x_api(words: list) -> Tuple[str, int]:
         if Key.startswith("sk-"):
             RPM = 10
         else:
-            RPM = 4
+            RPM = 1
     return Key, int(RPM)

@@ -1,6 +1,6 @@
 import asyncio
 import os
-from .Doc2X.Exception import RateLimit, RateLimiter
+from .Doc2X.Exception import RateLimit
 from .Doc2X.Types import OutputFormat, RAG_OutputType
 from .FileTools.dealpdfs import strore_pdf
 from typing import Tuple
@@ -68,8 +68,8 @@ async def pdf2file_v1(
         )
     except RateLimit:
         while True:
-            print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
-            await asyncio.sleep(60 // rpm + 15)
+            print("Reach the rate limit, wait for 25 seconds")
+            await asyncio.sleep(25)
             try:
                 uuid = await upload_pdf(
                     apikey=apikey,
@@ -129,8 +129,8 @@ async def img2file_v1(
     except RateLimit:
         # Retry according to maxretry and current rpm
         while True:
-            print(f"Reach the rate limit, wait for {60 // rpm + 15} seconds")
-            await asyncio.sleep(60 // rpm + 15)
+            print("Reach the rate limit, wait for 25 seconds")
+            await asyncio.sleep(25)
             try:
                 uuid = await upload_img(
                     apikey=apikey,
@@ -167,26 +167,34 @@ class Doc2X:
         apikey: str = None,
         rpm: int = None,
         thread: int = None,
-        maxretry: int = None,
     ) -> None:
         """Init the Doc2X class
 
         Args:
             apikey (str, optional): Your doc2x apikey. Defaults to read from environment variable `DOC2X_APIKEY`.
-            rpm (int, optional): The rate limit per minume. Defaults will be auto set according to the apikey.
-            thread (int, optional): Have no use now. Defaults to None.
-            maxretry (int, optional): Have no use now. Defaults to None.
+            rpm (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey. Please use `thread` instead of `rpm`.
+            thread (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey.
         """
         self.apikey = asyncio.run(get_key(apikey))
-        if rpm is not None:
+        if rpm is not None and thread is not None:
+            raise ValueError(
+                "Please use `rpm` or `thread`, not both. Suggest to use `thread`."
+            )
+        if thread is not None:
+            self.rpm = thread
+        elif rpm is not None:
+            import warnings
+
+            warnings.warn(
+                "The `rpm` parameter is deprecated and will be removed in the future. Please use the `thread` parameter instead.",
+            )
             self.rpm = rpm
         else:
             if self.apikey.startswith("sk-"):
                 self.rpm = 10
             else:
-                self.rpm = 4
-        self.limiter = RateLimiter(self.rpm)
-        self.maxretry = maxretry
+                self.rpm = 1
+        self.maxretry = None
 
     async def pic2file_back(
         self,
@@ -202,12 +210,10 @@ class Doc2X:
         input refers to `pic2file` function
         """
         limit = asyncio.Semaphore(self.rpm)
-        lock = asyncio.Lock()
 
         async def limited_img2file_v1(img):
             try:
                 await limit.acquire()
-                await self.limiter.require(lock)
                 return await img2file_v1(
                     apikey=self.apikey,
                     img_path=img,
@@ -314,12 +320,10 @@ class Doc2X:
         input refers to `pdf2file` function
         """
         limit = asyncio.Semaphore(self.rpm)
-        lock = asyncio.Lock()
 
         async def limited_pdf2file_v1(pdf):
             try:
                 await limit.acquire()
-                await self.limiter.require(lock)
                 return await pdf2file_v1(
                     apikey=self.apikey,
                     pdf_path=pdf,
@@ -424,10 +428,8 @@ class Doc2X:
         async version function
         """
         limit = asyncio.Semaphore(self.rpm)
-        lock = asyncio.Lock()
         try:
             await limit.acquire()
-            await self.limiter.require(lock)
             texts = await pdf2file_v1(
                 apikey=self.apikey,
                 pdf_path=input,

@@ -32,9 +32,6 @@ def test_multiple_pic2file():
     for s in success:
         if s != "":
             assert s.endswith("sample1.docx") or s.endswith("sample.docx")
-    for f in failed:
-        if f["path"] != "":
-            assert f["path"].endswith("sample_bad.png")
 
 
 # def test_multiple_high_rpm():

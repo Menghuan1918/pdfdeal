@@ -11,12 +11,14 @@ class RateLimit(Exception):
 
     pass
 
+
 class RequestError(Exception):
     """
     Error when request is not successful, usually because of the file broken.
     """
 
     pass
+
 
 class FileError(Exception):
     """
@@ -92,6 +94,7 @@ def nomal_retry(max_retries=3, backoff_factor=2):
     return decorator
 
 
+#! Explain to delete in next version
 class RateLimiter:
     def __init__(self, rpm):
         self.rpm = rpm
@@ -107,3 +110,6 @@ class RateLimiter:
                     print(f"Find Rate limit reached. Waiting for {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
             self.last_call_times.append(now)
+
+
+#! End here
