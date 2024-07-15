@@ -69,7 +69,7 @@ def md_replace_imgs(
     Fail_flag = True
     for i, imgurl in enumerate(imgpath):
         try:
-            savepath = f"{outputpath}/img{i}.png"
+            savepath = f"{outputpath}/img{i}.jpg"
             download_img_from_url(imgurl, savepath)
             if relative:
                 savepath = os.path.relpath(savepath, os.path.dirname(mdfile))
