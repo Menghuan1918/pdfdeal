@@ -13,7 +13,7 @@ LANGUAGES = ["简体中文", "Enlish"]
 WORDS_CN = [
     "📇 请输入 Doc2X 的身份令牌，个人用户请访问 https://doc2x.noedgeai.com/ 获取, 将会自动保存至本地：",
     "⚠️ 验证 Doc2X 的身份令牌失败，请检查网络连接或者身份令牌是否正确",
-    "📌 请选择 Doc2X 的速率限制，单位为次/分钟，强烈建议输入 A 以自动选择速率限制：",
+    "📌 请选择 Doc2X 的速率限制，含意为同时请求数量，强烈建议输入 A 以自动选择速率限制：",
     "🚧 请选择要处理的文件类型:",
     "📂 请输入要处理的文件或文件夹：",
     "⚠️ 未找到所在文件或文件夹",
@@ -21,7 +21,7 @@ WORDS_CN = [
 WORDS_EN = [
     "📇 Please enter the API key of the Doc2X, for personal use, visit https://doc2x.com/ to get the key, will auto save to local:",
     "⚠️ Failed to verify the API key of Doc2X, please check the network connection or the API key",
-    "📌 Please select the rate limit of Doc2X, the unit is times/minute, it is recommended to enter A to automatically select the rate limit:",
+    "📌 Please select the rate limit of Doc2X, means number of simultaneous requests, it is recommended to enter A to automatically select the rate limit:",
     "🚧 Please select the type of file to process:",
     "📂 Please enter the file or folder to deal with:",
     "⚠️ The file or folder does not exist",
