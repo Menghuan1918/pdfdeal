@@ -173,11 +173,17 @@ class Doc2X:
 
         Args:
             apikey (str, optional): Your doc2x apikey. Defaults to read from environment variable `DOC2X_APIKEY`.
-            rpm (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey.
-            thread (int, optional): Have no use now. Defaults to None.
-            maxretry (int, optional): Have no use now. Defaults to None.
+            rpm (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey. Please use `thread` instead of `rpm`.
+            thread (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey.
+            maxretry (int, optional): Have no use now.
         """
         self.apikey = asyncio.run(get_key(apikey))
+        if rpm is not None and thread is not None:
+            raise ValueError(
+                "Please use `rpm` or `thread`, not both. Suggest to use `thread`."
+            )
+        if thread is not None:
+            self.rpm = thread
         if rpm is not None:
             self.rpm = rpm
         else:
