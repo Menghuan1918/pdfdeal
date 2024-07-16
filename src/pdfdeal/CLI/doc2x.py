@@ -274,6 +274,8 @@ def main():
                         os.rename(file_path, new_file_path)
         print(f"Unzip and rename the files in {output_folder} successfully.")
 
+    print(f"===\nLeft Doc2X pages: {Client.get_limit()}\n Have a nice day!")
+
 
 if __name__ == "__main__":
     main()
