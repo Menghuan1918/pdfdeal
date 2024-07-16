@@ -142,6 +142,12 @@ def main():
         required=False,
         action="store_true",
     )
+    parser.add_argument(
+        "--unzip",
+        help="Unzip the output file, only works for the output is zip file",
+        required=False,
+        action="store_true",
+    )
     # Only if need user input, will ask language
     language = None
     args = parser.parse_args()
@@ -248,23 +254,24 @@ def main():
             for file in fail:
                 print(file)
 
-    if args.graphrag:
+    if args.graphrag or args.unzip:
         from pdfdeal.FileTools.file_tools import unzip
 
         for file in success:
-            if file != "":
+            if file != "" and file.endswith(".zip"):
                 file = os.path.abspath(file)
                 try:
                     unzip(file)
                 except Exception as e:
                     print(f"Failed to unzip the file: {file}, error: {e}")
         output_folder = os.path.abspath(output)
-        for root, dirs, files in os.walk(output_folder):
-            for file in files:
-                if file.endswith(".md"):
-                    file_path = os.path.join(root, file)
-                    new_file_path = file_path[:-3] + ".txt"
-                    os.rename(file_path, new_file_path)
+        if args.graphrag:
+            for root, dirs, files in os.walk(output_folder):
+                for file in files:
+                    if file.endswith(".md"):
+                        file_path = os.path.join(root, file)
+                        new_file_path = file_path[:-3] + ".txt"
+                        os.rename(file_path, new_file_path)
         print(f"Unzip and rename the files in {output_folder} successfully.")
 
 
