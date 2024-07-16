@@ -145,6 +145,7 @@ def main():
     # Only if need user input, will ask language
     language = None
     args = parser.parse_args()
+    rpm = None
 
     if args.clear:
         delete_one_global_setting("Doc2X_Key")
@@ -172,7 +173,8 @@ def main():
     else:
         api_key = str(args.api_key)
 
-    rpm = int(args.rpm) if args.rpm else 10 if api_key.startswith("sk-") else 4
+    if rpm is None:
+        rpm = int(args.rpm) if args.rpm else 10 if api_key.startswith("sk-") else 1
 
     image = args.image
     pdf = args.pdf
@@ -201,7 +203,7 @@ def main():
     if api_key is None or api_key == "":
         Client = Doc2X()
     else:
-        Client = Doc2X(apikey=api_key, rpm=rpm)
+        Client = Doc2X(apikey=api_key, thread=rpm)
 
     if args.graphrag:
         assert format in [
