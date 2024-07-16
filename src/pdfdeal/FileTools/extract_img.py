@@ -53,7 +53,7 @@ def md_replace_imgs(
     Replace the image links in the markdown file with the cdn links.
     Args:
         `mdfile`: `str`, the markdown file path.
-        `replace`: `str`, only "local" accepted now, will add "R2", "S3", "OSS" in the future.
+        `replace`: `str`, only "local" accepted now.
         `outputpath`: `str`, the output path to save the images.
         `relative`: `bool`, whether to save the images with relative path. Default is `False`.
     """
@@ -69,7 +69,7 @@ def md_replace_imgs(
     Fail_flag = True
     for i, imgurl in enumerate(imgpath):
         try:
-            savepath = f"{outputpath}/img{i}.png"
+            savepath = f"{outputpath}/img{i}.jpg"
             download_img_from_url(imgurl, savepath)
             if relative:
                 savepath = os.path.relpath(savepath, os.path.dirname(mdfile))

@@ -142,9 +142,16 @@ def main():
         required=False,
         action="store_true",
     )
+    parser.add_argument(
+        "--unzip",
+        help="Unzip the output file, only works for the output is zip file",
+        required=False,
+        action="store_true",
+    )
     # Only if need user input, will ask language
     language = None
     args = parser.parse_args()
+    rpm = None
 
     if args.clear:
         delete_one_global_setting("Doc2X_Key")
@@ -172,7 +179,8 @@ def main():
     else:
         api_key = str(args.api_key)
 
-    rpm = int(args.rpm) if args.rpm else 10 if api_key.startswith("sk-") else 4
+    if rpm is None:
+        rpm = int(args.rpm) if args.rpm else 10 if api_key.startswith("sk-") else 1
 
     image = args.image
     pdf = args.pdf
@@ -201,7 +209,7 @@ def main():
     if api_key is None or api_key == "":
         Client = Doc2X()
     else:
-        Client = Doc2X(apikey=api_key, rpm=rpm)
+        Client = Doc2X(apikey=api_key, thread=rpm)
 
     if args.graphrag:
         assert format in [
@@ -246,24 +254,27 @@ def main():
             for file in fail:
                 print(file)
 
-    if args.graphrag:
+    if args.graphrag or args.unzip:
         from pdfdeal.FileTools.file_tools import unzip
 
         for file in success:
-            if file != "":
+            if file != "" and file.endswith(".zip"):
                 file = os.path.abspath(file)
                 try:
                     unzip(file)
                 except Exception as e:
                     print(f"Failed to unzip the file: {file}, error: {e}")
         output_folder = os.path.abspath(output)
-        for root, dirs, files in os.walk(output_folder):
-            for file in files:
-                if file.endswith(".md"):
-                    file_path = os.path.join(root, file)
-                    new_file_path = file_path[:-3] + ".txt"
-                    os.rename(file_path, new_file_path)
+        if args.graphrag:
+            for root, dirs, files in os.walk(output_folder):
+                for file in files:
+                    if file.endswith(".md"):
+                        file_path = os.path.join(root, file)
+                        new_file_path = file_path[:-3] + ".txt"
+                        os.rename(file_path, new_file_path)
         print(f"Unzip and rename the files in {output_folder} successfully.")
+
+    print(f"===\nLeft Doc2X pages: {Client.get_limit()}\n Have a nice day!")
 
 
 if __name__ == "__main__":

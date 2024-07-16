@@ -160,7 +160,7 @@ async def img2file_v1(
 
 
 class Doc2X:
-    """Init the Doc2X class"""
+    """Init the Doc2X class(V1)"""
 
     def __init__(
         self,
