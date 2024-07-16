@@ -180,7 +180,7 @@ class Doc2X:
             raise ValueError(
                 "Please use `rpm` or `thread`, not both. Suggest to use `thread`."
             )
-        if thread is not None:
+        elif thread is not None:
             self.rpm = thread
         elif rpm is not None:
             import warnings
@@ -422,12 +422,12 @@ class Doc2X:
         output: str,
         path: str,
         convert: bool,
+        limit: asyncio.Semaphore,
     ):
         """
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function
         """
-        limit = asyncio.Semaphore(self.rpm)
         try:
             await limit.acquire()
             texts = await pdf2file_v1(
@@ -471,8 +471,9 @@ class Doc2X:
         Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
         async version function, input refers to `pdfdeal` function
         """
+        limit = asyncio.Semaphore(self.rpm)
         tasks = [
-            self.pdfdeal_back(pdf_file, output_format, output_path, convert)
+            self.pdfdeal_back(pdf_file, output_format, output_path, convert, limit)
             for pdf_file in pdf_files
         ]
         completed_tasks = await asyncio.gather(*tasks)
