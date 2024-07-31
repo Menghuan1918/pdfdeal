@@ -1,7 +1,7 @@
 import asyncio
 from functools import wraps
 import time
-from collections import deque
+import traceback
 
 
 class RateLimit(Exception):
@@ -54,6 +54,8 @@ def async_retry(max_retries=2, backoff_factor=2):
                     print(f"Get exception {e}. \nRetrying in {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
                     retries += 1
+            print("Error details:\n")
+            print(traceback.format_exc())
             raise last_exception
 
         return wrapper
@@ -82,11 +84,11 @@ def nomal_retry(max_retries=3, backoff_factor=2):
                 except Exception as e:
                     last_exception = e
                     wait_time = backoff_factor**retries
-                    print(
-                        f"Failed to connect to the server or some error happend. Retrying in {wait_time} seconds."
-                    )
+                    print(f"Get exception {e}. \n Retrying in {wait_time} seconds.")
                     time.sleep(wait_time)
                     retries += 1
+            print("Error details:\n")
+            print(traceback.format_exc())
             raise last_exception
 
         return wrapper
@@ -94,22 +96,17 @@ def nomal_retry(max_retries=3, backoff_factor=2):
     return decorator
 
 
-#! Explain to delete in next version
-class RateLimiter:
-    def __init__(self, rpm):
-        self.rpm = rpm
-        self.last_call_times = deque(maxlen=rpm)
+def run_async(coro):
+    """This function is used to run async function in sync way. As `asyncio.run` not work in jupyter notebook.
 
-    async def require(self, lock):
-        async with lock:
-            now = time.time()
-            if len(self.last_call_times) >= self.rpm:
-                elapsed_time = now - self.last_call_times[-1]
-                if elapsed_time < 60 // self.rpm:
-                    wait_time = 60 // self.rpm - elapsed_time + 10
-                    print(f"Find Rate limit reached. Waiting for {wait_time} seconds.")
-                    await asyncio.sleep(wait_time)
-            self.last_call_times.append(now)
+    Args:
+        coro (_type_): The function to run.
 
-
-#! End here
+    Returns:
+        _type_: The result of the function.
+    """
+    try:
+        return asyncio.run(coro)
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(coro)
