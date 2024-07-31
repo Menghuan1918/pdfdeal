@@ -2,6 +2,8 @@ import asyncio
 from functools import wraps
 import time
 import traceback
+import sys
+from concurrent.futures import ThreadPoolExecutor
 
 
 class RateLimit(Exception):
@@ -105,8 +107,16 @@ def run_async(coro):
     Returns:
         _type_: The result of the function.
     """
-    try:
-        return asyncio.run(coro)
-    except RuntimeError:
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(coro)
+    if "IPython" in sys.modules:
+        # Jupyter Notebook
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, coro)
+                return future.result()
+    # Python
+    return asyncio.run(coro)
