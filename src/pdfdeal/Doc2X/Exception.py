@@ -47,17 +47,26 @@ def async_retry(max_retries=2, backoff_factor=2):
                 except RateLimit:
                     raise RateLimit
                 except FileError as e:
+                    print("Error details:\n")
+                    print(traceback.format_exc())
+                    print("\n===================\n")
                     raise FileError(e)
                 except RequestError as e:
+                    print("Error details:\n")
+                    print(traceback.format_exc())
+                    print("\n===================\n")
                     raise RequestError(f"{e} \nThis usually means the file is broken.")
                 except Exception as e:
                     last_exception = e
                     wait_time = backoff_factor**retries
-                    print(f"Get exception {e}. \nRetrying in {wait_time} seconds.")
+                    print("\n===================\n")
+                    print(f"⚠️Get exception {e}. \n♻️Retrying in {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
                     retries += 1
+            print("\n===================\n")
             print("Error details:\n")
             print(traceback.format_exc())
+            print("\n===================\n")
             raise last_exception
 
         return wrapper
@@ -82,15 +91,22 @@ def nomal_retry(max_retries=3, backoff_factor=2):
                 except RateLimit:
                     raise RateLimit
                 except FileError as e:
+                    print("\n===================\n")
+                    print("Error details:\n")
+                    print(traceback.format_exc())
+                    print("\n===================\n")
                     raise e
                 except Exception as e:
                     last_exception = e
                     wait_time = backoff_factor**retries
+                    print("\n===================\n")
                     print(f"Get exception {e}. \n Retrying in {wait_time} seconds.")
                     time.sleep(wait_time)
                     retries += 1
+            print("\n===================\n")
             print("Error details:\n")
             print(traceback.format_exc())
+            print("\n===================\n")
             raise last_exception
 
         return wrapper
