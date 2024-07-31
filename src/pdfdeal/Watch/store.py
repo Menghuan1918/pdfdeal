@@ -22,6 +22,7 @@ def change_one_global_setting(key: str, value: str):
     global_setting[key] = value
     base_folder = os.path.expanduser("~/pdfdeal")
     global_setting_file = os.path.join(base_folder, "global_setting.json")
+    os.makedirs(base_folder, exist_ok=True)
     with open(global_setting_file, "w") as file:
         json.dump(global_setting, file)
     print("✅ Done!")
