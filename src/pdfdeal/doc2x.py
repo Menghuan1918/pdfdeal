@@ -1,6 +1,6 @@
 import asyncio
 import os
-from .Doc2X.Exception import RateLimit
+from .Doc2X.Exception import RateLimit, run_async
 from .Doc2X.Types import OutputFormat, RAG_OutputType
 from .FileTools.dealpdfs import strore_pdf
 from typing import Tuple
@@ -175,7 +175,7 @@ class Doc2X:
             rpm (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey. Please use `thread` instead of `rpm`.
             thread (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey.
         """
-        self.apikey = asyncio.run(get_key(apikey))
+        self.apikey = run_async(get_key(apikey))
         if rpm is not None and thread is not None:
             raise ValueError(
                 "Please use `rpm` or `thread`, not both. Suggest to use `thread`."
@@ -278,7 +278,7 @@ class Doc2X:
                     "The length of files and output_names should be the same."
                 )
 
-        success, failed, flag = asyncio.run(
+        success, failed, flag = run_async(
             self.pic2file_back(
                 image_file,
                 output_path,
@@ -388,7 +388,7 @@ class Doc2X:
                     "The length of files and output_names should be the same."
                 )
 
-        success, failed, flag = asyncio.run(
+        success, failed, flag = run_async(
             self.pdf2file_back(
                 pdf_file, output_path, output_format, ocr, convert, False
             )
@@ -414,7 +414,7 @@ class Doc2X:
         Returns:
             int: The rate limit of the apikey
         """
-        return asyncio.run(get_limit(self.apikey))
+        return run_async(get_limit(self.apikey))
 
     async def pdfdeal_back(
         self,
@@ -524,7 +524,7 @@ class Doc2X:
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
 
-        success, failed, flag = asyncio.run(
+        success, failed, flag = run_async(
             self.pdfdeals(pdf_file, output_path, output_format, convert)
         )
         print(
@@ -573,7 +573,7 @@ class Doc2X:
             )
         if isinstance(pdf_file, str):
             pdf_file = [pdf_file]
-        success, failed, flag = asyncio.run(
+        success, failed, flag = run_async(
             self.pdf2file_back(
                 pdf_file=pdf_file,
                 output_path=output_path,
