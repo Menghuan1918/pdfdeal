@@ -111,6 +111,8 @@ def gen_folder_list(path: str, mode: str) -> list:
     Returns:
         list: The list of full paths of the files
     """
+    if os.path.isfile(path):
+        raise ValueError("The input should be a folder.")
     if mode == "pdf":
         return [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")]
     elif mode == "img":
@@ -136,6 +138,9 @@ def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
     Returns:
         Tuple[list, list]: The list of full paths and relative paths, use in (like)`input` and `output_format`
     """
+    # check if input is a file or a folder
+    if os.path.isfile(path):
+        raise ValueError("The input should be a folder.")
     mode = Support_File_Type(mode)
     if isinstance(mode, Support_File_Type):
         mode = mode.value
