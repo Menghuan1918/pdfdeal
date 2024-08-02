@@ -428,7 +428,7 @@ async def uuid_status(
             raise RuntimeError("Pages limit exceeded!")
 
         else:
-            raise RuntimeError(f"Unknown status! {datas['status']}")
+            raise RuntimeError(f"Unknown status! {get_res.text}")
 
     raise Exception(f"Get status error! {get_res.status_code}:{get_res.text}")
 
