@@ -3,6 +3,7 @@ from typing import Tuple
 import httpx
 import os
 from ..Doc2X.Exception import nomal_retry
+import concurrent.futures
 
 
 def get_imgcdnlink_list(text: str) -> Tuple[list, list]:
@@ -51,16 +52,21 @@ def download_img_from_url(url: str, savepath: str) -> None:
 def md_replace_imgs(
     mdfile: str,
     replace: str,
-    outputpath: str,
+    outputpath: str = "",
     relative: bool = False,
+    threads: int = 5,
 ) -> bool:
-    """
-    Replace the image links in the markdown file with the cdn links.
+    """Replace the image links in the markdown file (cdn links -> local file).
+
     Args:
-        `mdfile`: `str`, the markdown file path.
-        `replace`: `str`, only "local" accepted now.
-        `outputpath`: `str`, the output path to save the images.
-        `relative`: `bool`, whether to save the images with relative path. Default is `False`.
+        mdfile (str): The markdown file path.
+        replace (str): Only "local" accepted now.
+        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
+        relative (bool, optional): The output path to save the images with relative path. Defaults to False.
+        threads (int, optional): The number of threads to download the images. Defaults to 5.
+
+    Returns:
+        bool: If all images are downloaded successfully, return True, else return False.
     """
     with open(mdfile, "r", encoding="utf-8") as file:
         content = file.read()
@@ -73,11 +79,11 @@ def md_replace_imgs(
     if outputpath == "":
         outputpath = os.path.splitext(mdfile)[0] + "_img"
     os.makedirs(outputpath, exist_ok=True)
-    Fail_flag = True
-    for i, imgurl in enumerate(imgpath):
+
+    def download_image(i, imgurl, outputpath, relative, mdfile):
         if not imgurl.startswith("http"):
             print(f"===\nNot a valid url: {imgurl}, Skip it.")
-            continue
+            return None
         try:
             print(f"===\nDownloading the image: {imgurl}")
             savepath = f"{outputpath}/img{i}"
@@ -85,22 +91,40 @@ def md_replace_imgs(
             savepath = f"{savepath}.{extension}"
             if relative:
                 savepath = os.path.relpath(savepath, os.path.dirname(mdfile))
-                content = content.replace(imglist[i], f"![{imgurl}](<{savepath}>)\n")
+                return (imglist[i], f"![{imgurl}](<{savepath}>)\n")
             else:
                 savepath = os.path.abspath(savepath)
-                content = content.replace(
-                    imglist[i], f'<img src="{savepath}" alt="{imgurl}">\n'
-                )
+                return (imglist[i], f'<img src="{savepath}" alt="{imgurl}">\n')
         except Exception as e:
-            Fail_flag = False
             print(f"Error to download the image: {imgurl}, {e}")
             print("Continue to download the next image.")
-            continue
+            return None
+
+    replacements = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        futures = [
+            executor.submit(
+                download_image,
+                i,
+                imgurl,
+                outputpath,
+                relative,
+                mdfile,
+            )
+            for i, imgurl in enumerate(imgpath)
+        ]
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result:
+                replacements.append(result)
+
+    for old, new in replacements:
+        content = content.replace(old, new)
 
     with open(mdfile, "w", encoding="utf-8") as file:
         file.write(content)
 
-    if Fail_flag is False:
+    if len(replacements) < len(imglist):
         print("Some images download failed.")
         return False
 
@@ -112,14 +136,18 @@ def mds_replace_imgs(
     replace: str,
     outputpath: str = "",
     relative: bool = False,
+    threads: int = 2,
+    down_load_threads: int = 3,
 ) -> Tuple[list, list, bool]:
-    """Replace the image links in the markdown file with the cdn links.
+    """Replace the image links in the markdown file (cdn links -> local file).
 
     Args:
         path (str): The markdown file path.
         replace (str): Only "local" accepted now.
         outputpath (str): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
         relative (bool, optional): Whether to save the images with relative path. Defaults to False.
+        threads (int, optional): The number of threads to download the images. Defaults to 2.
+        down_load_threads (int, optional): The number of threads to download the images in one md file. Defaults to 3.
 
     Returns:
         Tuple[list, list, bool]:
@@ -132,7 +160,7 @@ def mds_replace_imgs(
     mdfiles = gen_folder_list(path=path, mode="md", recursive=True)
     if len(mdfiles) == 0:
         print("No markdown file found in the path.")
-        return [], [], False
+        return [], [], True
 
     import concurrent.futures
 
@@ -149,7 +177,7 @@ def mds_replace_imgs(
     fail_files = []
     Fail_flag = True
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
         futures = [
             executor.submit(process_mdfile, mdfile, replace, outputpath, relative)
             for mdfile in mdfiles
@@ -170,6 +198,6 @@ def mds_replace_imgs(
 
     if Fail_flag is False:
         print("Some markdown files process failed.")
-        return success_files, fail_files, False
+        return success_files, fail_files, True
 
-    return success_files, fail_files, True
+    return success_files, fail_files, False
