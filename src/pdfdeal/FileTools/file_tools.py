@@ -98,12 +98,13 @@ def extract_text_and_images(pdf_path, ocr, language=["ch_sim", "en"], GPU=False)
     return Text, All_Done
 
 
-def gen_folder_list(path: str, mode: str) -> list:
+def gen_folder_list(path: str, mode: str, recursive: bool = False) -> list:
     """Generate a list of all files in the folder
 
     Args:
         path (str): The path of the folder to be processed
         mode (str): The type of file to find, 'pdf', 'img' or 'md'
+        recursive (bool): Whether to search subdirectories recursively
 
     Raises:
         ValueError: If the mode is not 'pdf', 'img' or 'md'
@@ -113,18 +114,32 @@ def gen_folder_list(path: str, mode: str) -> list:
     """
     if os.path.isfile(path):
         raise ValueError("The input should be a folder.")
-    if mode == "pdf":
-        return [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")]
-    elif mode == "img":
-        return [
-            os.path.join(path, f)
-            for f in os.listdir(path)
-            if f.endswith(".png") or f.endswith(".jpg") or f.endswith(".jpeg")
-        ]
-    elif mode == "md":
-        return [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".md")]
+
+    def _find_files(path, mode):
+        if mode == "pdf":
+            return [
+                os.path.join(path, f) for f in os.listdir(path) if f.endswith(".pdf")
+            ]
+        elif mode == "img":
+            return [
+                os.path.join(path, f)
+                for f in os.listdir(path)
+                if f.endswith(".png") or f.endswith(".jpg") or f.endswith(".jpeg")
+            ]
+        elif mode == "md":
+            return [
+                os.path.join(path, f) for f in os.listdir(path) if f.endswith(".md")
+            ]
+        else:
+            raise ValueError("Mode should be 'pdf','img' or 'md'")
+
+    if not recursive:
+        return _find_files(path, mode)
     else:
-        raise ValueError("Mode should be 'pdf','img' or 'md'")
+        all_files = []
+        for root, _, files in os.walk(path):
+            all_files.extend(_find_files(root, mode))
+        return all_files
 
 
 def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:

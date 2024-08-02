@@ -35,12 +35,17 @@ def get_imgcdnlink_list(text: str) -> Tuple[list, list]:
 @nomal_retry()
 def download_img_from_url(url: str, savepath: str) -> None:
     """
-    Download the image from the url to the savepath.
+    Download the image from the url to the savepath, changing the extension based on the content type.
     """
     with httpx.stream("GET", url) as response:
+        content_type = response.headers.get("Content-Type")
+        if content_type:
+            extension = content_type.split("/")[-1]
+            savepath = f"{savepath}.{extension}"
         with open(savepath, "wb") as file:
             for chunk in response.iter_bytes():
                 file.write(chunk)
+        return extension
 
 
 def md_replace_imgs(
@@ -65,18 +70,27 @@ def md_replace_imgs(
         print("No image links found in the markdown file.")
         return True
 
+    if outputpath == "":
+        outputpath = os.path.splitext(mdfile)[0] + "_img"
     os.makedirs(outputpath, exist_ok=True)
     Fail_flag = True
     for i, imgurl in enumerate(imgpath):
+        if not imgurl.startswith("http"):
+            print(f"===\nNot a valid url: {imgurl}, Skip it.")
+            continue
         try:
-            savepath = f"{outputpath}/img{i}.jpg"
-            download_img_from_url(imgurl, savepath)
+            print(f"===\nDownloading the image: {imgurl}")
+            savepath = f"{outputpath}/img{i}"
+            extension = download_img_from_url(imgurl, savepath)
+            savepath = f"{savepath}.{extension}"
             if relative:
                 savepath = os.path.relpath(savepath, os.path.dirname(mdfile))
-                content = content.replace(imglist[i], f"![{imgurl}]({savepath})\n")
+                content = content.replace(imglist[i], f"![{imgurl}](<{savepath}>)\n")
             else:
                 savepath = os.path.abspath(savepath)
-                content = content.replace(imglist[i], f"<img src=\"{savepath}\" alt=\"{imgurl}\">\n")
+                content = content.replace(
+                    imglist[i], f'<img src="{savepath}" alt="{imgurl}">\n'
+                )
         except Exception as e:
             Fail_flag = False
             print(f"Error to download the image: {imgurl}, {e}")
@@ -91,3 +105,71 @@ def md_replace_imgs(
         return False
 
     return True
+
+
+def mds_replace_imgs(
+    path: str,
+    replace: str,
+    outputpath: str = "",
+    relative: bool = False,
+) -> Tuple[list, list, bool]:
+    """Replace the image links in the markdown file with the cdn links.
+
+    Args:
+        path (str): The markdown file path.
+        replace (str): Only "local" accepted now.
+        outputpath (str): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
+        relative (bool, optional): Whether to save the images with relative path. Defaults to False.
+
+    Returns:
+        Tuple[list, list, bool]:
+                `list1`: list of successfilly processed md file path, if the file failed, its path will be empty string
+                `list2`: list of failed files's error message and its original file path, if some files are successful, its error message will be empty string
+                `bool`: If all files are processed successfully, return True, else return False.
+    """
+    from pdfdeal import gen_folder_list
+
+    mdfiles = gen_folder_list(path=path, mode="md", recursive=True)
+    if len(mdfiles) == 0:
+        print("No markdown file found in the path.")
+        return [], [], False
+
+    import concurrent.futures
+
+    def process_mdfile(mdfile, replace, outputpath, relative):
+        try:
+            md_replace_imgs(
+                mdfile=mdfile, replace=replace, outputpath=outputpath, relative=relative
+            )
+            return mdfile, None
+        except Exception as e:
+            return mdfile, e
+
+    success_files = []
+    fail_files = []
+    Fail_flag = True
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(process_mdfile, mdfile, replace, outputpath, relative)
+            for mdfile in mdfiles
+        ]
+        for future in concurrent.futures.as_completed(futures):
+            mdfile, error = future.result()
+            if error:
+                Fail_flag = False
+                fail_files.append({"error": str(error), "path": mdfile})
+                print(f"Error to process the markdown file: {mdfile}, {error}")
+                print("Continue to process the next markdown file.")
+            else:
+                success_files.append(mdfile)
+
+    print(
+        f"===\n[MARKDOWN REPLACE] Successfully processed {len(success_files)}/{len(mdfiles)} markdown files."
+    )
+
+    if Fail_flag is False:
+        print("Some markdown files process failed.")
+        return success_files, fail_files, False
+
+    return success_files, fail_files, True
