@@ -32,32 +32,29 @@ def gen_imglist_from_md(mdfile: str) -> Tuple[list, list]:
     return imglist, imgpath
 
 
-def add_split_of_md(mdfile: str, split_str: str) -> bool:
+def split_of_md(mdfile: str, mode: str) -> list:
     """Find the header of the markdown file and add a split line before it.
 
     Args:
         mdfile (str): The markdown file path.
-        split_str (str): The split line string.
+        mode (str): The way to split. Only support `title`(split by every title) now.
 
     Returns:
-        bool: If the split line is added successfully, return True, else return False.
+        list: A list of strings where each string is a segment of the markdown file between headers.
     """
-
-    Finded = False
-
     with open(mdfile, "r", encoding="utf-8") as file:
-        content = file.readlines()
+        content = file.read()
 
     pattern = r"(^#{1,6}\s.*$)"
     matches = re.finditer(pattern, content, re.MULTILINE)
+    headers = [match.group() for match in matches]
 
-    insert_positions = [match.start() for match in matches]
-    if insert_positions:
-        Finded = True
-        for pos in reversed(insert_positions):
-            content = content[:pos] + split_str + "\n" + content[pos:]
+    segments = []
+    start = 0
+    for header in headers:
+        end = content.find(header, start)
+        segments.append(content[start:end].strip())
+        start = end
 
-    with open(mdfile, "w", encoding="utf-8") as file:
-        file.write(content)
-
-    return Finded
+    segments.append(content[start:].strip())
+    return segments

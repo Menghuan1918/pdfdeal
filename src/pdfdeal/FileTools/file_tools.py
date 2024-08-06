@@ -9,6 +9,8 @@ import zipfile
 import shutil
 from typing import Tuple
 from ..Doc2X.Types import Support_File_Type, OutputFormat
+from .dealmd import split_of_md
+import traceback
 
 
 def clean_text(text):
@@ -261,3 +263,52 @@ def list_rename(files: list, new_name: list) -> list:
         os.rename(os.path.join(new_file_folder, os.path.basename(file)), new_file)
         new_files.append(new_file)
     return new_files
+
+
+def auto_split_md(
+    mdfile: str,
+    mode: str = "title",
+    out_type: str = "single",
+    split_str: str = "=+=+=+=+=+=+=+=+=",
+    output_path: str = "./Output",
+) -> Tuple[str, bool]:
+    """Split the md file
+
+    Args:
+        mdfile (str): The path to md file
+        mode (str, optional): The way to split. Only support `title`(split by every title) now. Defaults to "title".
+        out_type (str, optional): The way to output the splited file. Only support `single`(one file) and `replace`(replace the original file) now. Defaults to "single".
+        split_str (str, optional): The string to split the md file. Defaults to `=+=+=+=+=+=+=+=+=`.
+        output_path (str, optional): The path to output the splited file. Defaults to "./Output". Not work when `out_type` is `replace`.
+
+    Returns:
+        Tuple[str,bool] : The path to the output file and whether the file is splited.
+    """
+    if not os.path.exists(mdfile):
+        raise FileNotFoundError(f"The file {mdfile} does not exist.")
+    elif os.path.isdir(mdfile):
+        raise IsADirectoryError(f"The path {mdfile} is a directory.")
+
+    #! In the future, will support more modes.
+    try:
+        new_content = split_of_md(mdfile=mdfile, mode="title")
+    except Exception as e:
+        print(traceback.format_exc())
+        return f"Error deal with {mdfile} : {e}", False
+
+    write_contene = ""
+    for content in new_content:
+        write_contene += split_str + "\n" + content + "\n"
+
+    if out_type == "replace":
+        with open(mdfile, "w", encoding="utf-8") as file:
+            file.writelines(write_contene)
+        return mdfile, True
+
+    elif out_type == "single":
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        new_file = os.path.join(output_path, os.path.basename(mdfile))
+        with open(new_file, "w", encoding="utf-8") as file:
+            file.writelines(write_contene)
+        return new_file, True

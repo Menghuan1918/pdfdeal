@@ -193,7 +193,7 @@ def mds_replace_imgs(
                 success_files.append(mdfile)
 
     print(
-        f"===\n[MARKDOWN REPLACE] Successfully processed {len(success_files)}/{len(mdfiles)} markdown files."
+        f"\n[MARKDOWN REPLACE] Successfully processed {len(success_files)}/{len(mdfiles)} markdown files."
     )
 
     if Fail_flag is False:
