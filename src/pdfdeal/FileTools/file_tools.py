@@ -294,6 +294,7 @@ def auto_split_md(
         new_content = split_of_md(mdfile=mdfile, mode="title")
     except Exception as e:
         print(traceback.format_exc())
+        print(f"=====\nError deal with {mdfile} : {e}")
         return f"Error deal with {mdfile} : {e}", False
 
     write_contene = ""
@@ -312,3 +313,71 @@ def auto_split_md(
         with open(new_file, "w", encoding="utf-8") as file:
             file.writelines(write_contene)
         return new_file, True
+
+
+def auto_split_mds(
+    mdpath: str,
+    mode: str = "title",
+    out_type: str = "single",
+    split_str: str = "=+=+=+=+=+=+=+=+=",
+    output_path: str = "./Output",
+    recursive: bool = True,
+) -> Tuple[list, list, bool]:
+    """Split the md files in the folder
+
+    Args:
+        mdpath (str): The path to the folder containing md files
+        mode (str, optional): The way to split. Only support `title`(split by every title) now. Defaults to "title".
+        out_type (str, optional): The way to output the splited file. Only support `single`(one file) and `replace`(replace the original file) now. Defaults to "single".
+        split_str (str, optional): The string to split the md file. Defaults to `=+=+=+=+=+=+=+=+=`.
+        output_path (str, optional): The path to output the splited file. Defaults to "./Output". Not work when `out_type` is `replace`.
+        recursive (bool, optional): Whether to search subdirectories recursively. Defaults to True.
+
+    Returns:
+        Tuple[list,list,str]:
+        will return `list1`,`list2`,`bool`
+        `list1`: is the list of the output files, if some files are not splited, the element will be `""`
+        `list2`: is the list of the error message and its original file path, if some files are successfully splited, the element will be `""`
+        `bool`: True means that at least one file process failed
+    """
+    if not os.path.exists(mdpath):
+        raise FileNotFoundError(f"The path {mdpath} does not exist.")
+    elif os.path.isfile(mdpath):
+        raise IsADirectoryError(f"The path {mdpath} is a file.")
+
+    md_files = gen_folder_list(mdpath, mode="md", recursive=recursive)
+    if len(md_files) == 0:
+        return [], False
+    success = []
+    failed = []
+    flag = False
+    for mdfile in md_files:
+        try:
+            temp, is_splited = auto_split_md(
+                mdfile=mdfile,
+                mode=mode,
+                out_type=out_type,
+                split_str=split_str,
+                output_path=output_path,
+            )
+            if is_splited:
+                success.append(temp)
+                failed.append({"error": "", "file": ""})
+            else:
+                success.append("")
+                failed.append({"error": temp, "file": mdfile})
+                flag = True
+        except Exception as e:
+            success.append("")
+            failed.append({"error": e, "file": mdfile})
+            flag = True
+    print(
+        f"=====\nMD SPLIT: {sum([1 for i in success if i != ''])}/{len(success)} files are successfully splited."
+    )
+    if flag:
+        for failed_file in failed:
+            if failed_file["error"] != "":
+                print(
+                    f"=====\nError deal with {failed_file['file']} : {failed_file['error']}"
+                )
+    return success, failed, flag
