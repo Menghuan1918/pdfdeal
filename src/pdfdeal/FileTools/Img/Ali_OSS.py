@@ -17,7 +17,7 @@ class OSS:
             self.bucket.put_object_from_file(remote_file_path, local_file_path)
             # * Default think the bucket is public read
             return (
-                f"https://{self.bucket.bucket_name}.{self.bucket.endpoint}/{remote_file_path}",
+                f"https://{self.bucket.bucket_name}.{self.bucket.endpoint.split('://')[1]}/{remote_file_path}",
                 True,
             )
         except Exception as e:

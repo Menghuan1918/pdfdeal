@@ -92,7 +92,7 @@ def md_replace_imgs(
             print(f"===\nNot a valid url: {imgurl}, Skip it.")
             return None
         try:
-            print(f"===\nDownloading the image: {imgurl}")
+            print(f"\n===\nDownloading the image: {imgurl}")
             savepath = f"{outputpath}/img{i}"
             extension = download_img_from_url(imgurl, savepath)
             savepath = f"{savepath}.{extension}"
@@ -142,7 +142,8 @@ def md_replace_imgs(
                 remote_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{os.path.basename(img_path)}"
                 new_url, flag = replace(img_path, remote_file_name)
                 if flag:
-                    return new_url, True, i
+                    img_url = f'<img src="{new_url}" alt="{os.path.splitext(os.path.basename(mdfile))[0]}">\n'
+                    return img_url, True, i
                 else:
                     print(f"=====\nError to upload the image: {img_path}, {new_url}")
                     print("Continue to upload the next image.")
