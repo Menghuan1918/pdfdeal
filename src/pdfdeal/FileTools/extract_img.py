@@ -1,5 +1,5 @@
 import re
-from typing import Tuple
+from typing import Tuple, Callable
 import httpx
 import os
 from ..Doc2X.Exception import nomal_retry
@@ -51,7 +51,7 @@ def download_img_from_url(url: str, savepath: str) -> None:
 
 def md_replace_imgs(
     mdfile: str,
-    replace: str,
+    replace,
     outputpath: str = "",
     relative: bool = False,
     threads: int = 5,
@@ -60,14 +60,20 @@ def md_replace_imgs(
 
     Args:
         mdfile (str): The markdown file path.
-        replace (str): Only "local" accepted now.
-        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
+        replace: Str or function to replace the image links. For str only "local" accepted. Defaults to "local".        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
         relative (bool, optional): The output path to save the images with relative path. Defaults to False.
         threads (int, optional): The number of threads to download the images. Defaults to 5.
 
     Returns:
         bool: If all images are downloaded successfully, return True, else return False.
     """
+    if isinstance(replace, str) and replace == "local":
+        pass
+    elif isinstance(replace, Callable):
+        pass
+    else:
+        raise ValueError("The replace must be 'local' or a function.")
+
     with open(mdfile, "r", encoding="utf-8") as file:
         content = file.read()
 
@@ -133,7 +139,7 @@ def md_replace_imgs(
 
 def mds_replace_imgs(
     path: str,
-    replace: str,
+    replace,
     outputpath: str = "",
     relative: bool = False,
     threads: int = 2,
@@ -143,9 +149,9 @@ def mds_replace_imgs(
 
     Args:
         path (str): The markdown file path.
-        replace (str): Only "local" accepted now.
-        outputpath (str): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
-        relative (bool, optional): Whether to save the images with relative path. Defaults to False.
+        replace: Str or function to replace the image links. For str only "local" accepted. Defaults to "local".
+        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`. Only works when `replace` is "local".
+        relative (bool, optional): Whether to save the images with relative path. Defaults to False, Only works when `replace` is "local".
         threads (int, optional): The number of threads to download the images. Defaults to 2.
         down_load_threads (int, optional): The number of threads to download the images in one md file. Defaults to 3.
 
@@ -155,6 +161,13 @@ def mds_replace_imgs(
                 `list2`: list of failed files's error message and its original file path, if some files are successful, its error message will be empty string
                 `bool`: If all files are processed successfully, return True, else return False.
     """
+    if isinstance(replace, str) and replace == "local":
+        pass
+    elif isinstance(replace, Callable):
+        pass
+    else:
+        raise ValueError("The replace must be 'local' or a function.")
+
     from pdfdeal import gen_folder_list
 
     mdfiles = gen_folder_list(path=path, mode="md", recursive=True)
@@ -167,7 +180,11 @@ def mds_replace_imgs(
     def process_mdfile(mdfile, replace, outputpath, relative):
         try:
             md_replace_imgs(
-                mdfile=mdfile, replace=replace, outputpath=outputpath, relative=relative
+                mdfile=mdfile,
+                replace=replace,
+                outputpath=outputpath,
+                relative=relative,
+                threads=down_load_threads,
             )
             return mdfile, None
         except Exception as e:
