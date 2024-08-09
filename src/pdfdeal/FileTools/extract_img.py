@@ -60,7 +60,8 @@ def md_replace_imgs(
 
     Args:
         mdfile (str): The markdown file path.
-        replace: Str or function to replace the image links. For str only "local" accepted. Defaults to "local".        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
+        replace: Str or function to replace the image links. For str only "local" accepted. Defaults to "local".
+        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
         relative (bool, optional): The output path to save the images with relative path. Defaults to False.
         threads (int, optional): The number of threads to download the images. Defaults to 5.
 
@@ -124,17 +125,53 @@ def md_replace_imgs(
             if result:
                 replacements.append(result)
 
+    flag = True
     for old, new in replacements:
         content = content.replace(old, new)
 
-    with open(mdfile, "w", encoding="utf-8") as file:
-        file.write(content)
-
     if len(replacements) < len(imglist):
         print("Some images download failed.")
-        return False
+        flag = False
 
-    return True
+    if isinstance(replace, Callable):
+        imglist, imgpath = get_imgcdnlink_list(content)
+
+        @nomal_retry()
+        def upload_task(i, img_path, replace):
+            try:
+                remote_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{os.path.basename(img_path)}"
+                new_url, flag = replace(img_path, remote_file_name)
+                if flag:
+                    return new_url, True, i
+                else:
+                    print(f"=====\nError to upload the image: {img_path}, {new_url}")
+                    print("Continue to upload the next image.")
+                    return new_url, False, i
+            except Exception as e:
+                print(f"=====\nError to upload the image: {img_path}, {e}")
+                print("Continue to upload the next image.")
+                return new_url, False, i
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+            futures = [
+                executor.submit(upload_task, i, img_path, replace)
+                for i, img_path in enumerate(imgpath)
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                new_url, flag, i = future.result()
+                if flag:
+                    content = content.replace(imglist[i], new_url)
+                else:
+                    print(f"=====\nError to upload the image: {imgpath[i]}, {new_url}")
+                    print("Continue to upload the next image.")
+                    flag = False
+
+        for img in imgpath:
+            os.remove(img)
+
+    with open(mdfile, "w", encoding="utf-8") as file:
+        file.write(content)
+    return flag
 
 
 def mds_replace_imgs(
