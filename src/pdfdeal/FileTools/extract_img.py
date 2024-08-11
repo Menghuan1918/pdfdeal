@@ -52,6 +52,7 @@ def download_img_from_url(url: str, savepath: str) -> None:
 def md_replace_imgs(
     mdfile: str,
     replace,
+    skip: str = None,
     outputpath: str = "",
     relative: bool = False,
     threads: int = 5,
@@ -61,8 +62,9 @@ def md_replace_imgs(
     Args:
         mdfile (str): The markdown file path.
         replace: Str or function to replace the image links. For str only "local" accepted. Defaults to "local".
-        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.
-        relative (bool, optional): The output path to save the images with relative path. Defaults to False.
+        skip (str, optional): The URL start with this string will be skipped. Defaults to None. For example, "https://menghuan1918.github.io/pdfdeal-docs".
+        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`. **⚠️Only works when `replace` is "local".**
+        relative (bool, optional): The output path to save the images with relative path. Defaults to False. **⚠️Only works when `replace` is "local".**
         threads (int, optional): The number of threads to download the images. Defaults to 5.
 
     Returns:
@@ -83,16 +85,22 @@ def md_replace_imgs(
         print("No image links found in the markdown file.")
         return True
 
+    no_outputppath_flag = False
     if outputpath == "":
+        no_outputppath_flag = True
         outputpath = os.path.splitext(mdfile)[0] + "_img"
     os.makedirs(outputpath, exist_ok=True)
 
+    print(f"Start to download images from file {mdfile}")
+
     def download_image(i, imgurl, outputpath, relative, mdfile):
         if not imgurl.startswith("http"):
-            print(f"===\nNot a valid url: {imgurl}, Skip it.")
+            print(f"\nNot a valid url: {imgurl}, Skip it.")
+            return None
+        elif skip and imgurl.startswith(skip):
+            print(f"\nSkip the image: {imgurl}, because it starts with {skip}.")
             return None
         try:
-            print(f"\n===\nDownloading the image: {imgurl}")
             savepath = f"{outputpath}/img{i}"
             extension = download_img_from_url(imgurl, savepath)
             savepath = f"{savepath}.{extension}"
@@ -103,8 +111,9 @@ def md_replace_imgs(
                 savepath = os.path.abspath(savepath)
                 return (imglist[i], f'<img src="{savepath}" alt="{imgurl}">\n')
         except Exception as e:
-            print(f"Error to download the image: {imgurl}, {e}")
-            print("Continue to download the next image.")
+            print(
+                f"Error to download the image: {imgurl}, continue to download the next image:\n {e}"
+            )
             return None
 
     replacements = []
@@ -130,7 +139,7 @@ def md_replace_imgs(
         content = content.replace(old, new)
 
     if len(replacements) < len(imglist):
-        print("Some images download failed.")
+        print("Some images may not be downloaded successfully. Please check the log.")
         flag = False
 
     if isinstance(replace, Callable):
@@ -138,6 +147,9 @@ def md_replace_imgs(
 
         @nomal_retry()
         def upload_task(i, img_path, replace):
+            if img_path.startswith("http://") or img_path.startswith("https://"):
+                print(f"Skip the image: {img_path}, because it is a url.")
+                return None, None, None
             try:
                 remote_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{os.path.basename(img_path)}"
                 new_url, flag = replace(img_path, remote_file_name)
@@ -162,6 +174,8 @@ def md_replace_imgs(
                 new_url, flag, i = future.result()
                 if flag:
                     content = content.replace(imglist[i], new_url)
+                elif flag is None:
+                    pass
                 else:
                     print(f"=====\nError to upload the image: {imgpath[i]}, {new_url}")
                     print("Continue to upload the next image.")
@@ -170,8 +184,16 @@ def md_replace_imgs(
         for img in imgpath:
             os.remove(img)
 
+        if no_outputppath_flag:
+            try:
+                os.rmdir(outputpath)
+            except Exception as e:
+                print(f"\nError to remove the folder: {outputpath}, {e}")
+
     with open(mdfile, "w", encoding="utf-8") as file:
         file.write(content)
+
+    print(f"Finish to process images in file {mdfile}.")
     return flag
 
 
@@ -180,6 +202,7 @@ def mds_replace_imgs(
     replace,
     outputpath: str = "",
     relative: bool = False,
+    skip: str = None,
     threads: int = 2,
     down_load_threads: int = 3,
 ) -> Tuple[list, list, bool]:
@@ -188,8 +211,9 @@ def mds_replace_imgs(
     Args:
         path (str): The markdown file path.
         replace: Str or function to replace the image links. For str only "local" accepted. Defaults to "local".
-        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`. Only works when `replace` is "local".
-        relative (bool, optional): Whether to save the images with relative path. Defaults to False, Only works when `replace` is "local".
+        outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`.  **⚠️Only works when `replace` is "local".**
+        relative (bool, optional): Whether to save the images with relative path. Defaults to False, **⚠️Only works when `replace` is "local".**
+        skip (str, optional): The URL start with this string will be skipped. Defaults to None. For example, "https://menghuan1918.github.io/pdfdeal-docs".
         threads (int, optional): The number of threads to download the images. Defaults to 2.
         down_load_threads (int, optional): The number of threads to download the images in one md file. Defaults to 3.
 
@@ -222,6 +246,7 @@ def mds_replace_imgs(
                 replace=replace,
                 outputpath=outputpath,
                 relative=relative,
+                skip=skip,
                 threads=down_load_threads,
             )
             return mdfile, None
