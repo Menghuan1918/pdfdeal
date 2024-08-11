@@ -18,6 +18,7 @@ def get_imgcdnlink_list(text: str) -> Tuple[list, list]:
             lambda m: (m.group(0), m.group(1)),
         ),
         (r'<img\s+src="([^"]+)"\s*/>', lambda m: (m.group(0), m.group(1))),
+        (r"!\[[^\]]*\]\(<([^>]+)>\)", lambda m: (m.group(0), m.group(1))),
         (r"!\[[^\]]*\]\(([^)]+)\)", lambda m: (m.group(0), m.group(1))),
     ]
 
@@ -27,8 +28,9 @@ def get_imgcdnlink_list(text: str) -> Tuple[list, list]:
     for pattern, extract in patterns:
         for match in re.finditer(pattern, text):
             origin_text, src = extract(match)
-            origin_text_list.append(origin_text)
-            imgpath_list.append(src)
+            if origin_text not in origin_text_list:  # 检查是否已存在于列表中
+                origin_text_list.append(origin_text)
+                imgpath_list.append(src)
 
     return origin_text_list, imgpath_list
 
@@ -109,7 +111,7 @@ def md_replace_imgs(
                 return (imglist[i], f"![{imgurl}](<{savepath}>)\n")
             else:
                 savepath = os.path.abspath(savepath)
-                return (imglist[i], f'<img src="{savepath}" alt="{imgurl}">\n')
+                return (imglist[i], f"![{imgurl}](<{savepath}>)\n")
         except Exception as e:
             print(
                 f"Error to download the image: {imgurl}, continue to download the next image:\n {e}"
@@ -154,7 +156,7 @@ def md_replace_imgs(
                 remote_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{os.path.basename(img_path)}"
                 new_url, flag = replace(img_path, remote_file_name)
                 if flag:
-                    img_url = f'<img src="{new_url}" alt="{os.path.splitext(os.path.basename(mdfile))[0]}">\n'
+                    img_url = f"![{os.path.splitext(os.path.basename(mdfile))[0]}](<{new_url}>)\n"
                     return img_url, True, i
                 else:
                     print(f"=====\nError to upload the image: {img_path}, {new_url}")
