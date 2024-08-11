@@ -276,7 +276,7 @@ def auto_split_md(
 
     Args:
         mdfile (str): The path to md file
-        mode (str, optional): The way to split. Only support `title`(split by every title) now. Defaults to "title".
+        mode (str, optional): The way to split. **Only support `title`(split by every title) now.** Defaults to "title".
         out_type (str, optional): The way to output the splited file. Only support `single`(one file) and `replace`(replace the original file) now. Defaults to "single".
         split_str (str, optional): The string to split the md file. Defaults to `=+=+=+=+=+=+=+=+=`.
         output_path (str, optional): The path to output the splited file. Defaults to "./Output". Not work when `out_type` is `replace`.
@@ -327,7 +327,7 @@ def auto_split_mds(
 
     Args:
         mdpath (str): The path to the folder containing md files
-        mode (str, optional): The way to split. Only support `title`(split by every title) now. Defaults to "title".
+        mode (str, optional): The way to split. **Only support `title`(split by every title) now.** Defaults to "title".
         out_type (str, optional): The way to output the splited file. Only support `single`(one file) and `replace`(replace the original file) now. Defaults to "single".
         split_str (str, optional): The string to split the md file. Defaults to `=+=+=+=+=+=+=+=+=`.
         output_path (str, optional): The path to output the splited file. Defaults to "./Output". Not work when `out_type` is `replace`.
@@ -372,8 +372,9 @@ def auto_split_mds(
             failed.append({"error": e, "file": mdfile})
             flag = True
     print(
-        f"=====\nMD SPLIT: {sum([1 for i in success if i != ''])}/{len(success)} files are successfully splited."
+        f"MD SPLIT: {sum([1 for i in success if i != ''])}/{len(success)} files are successfully splited."
     )
+    print(f"Note the split string is :\n{split_str}")
     if flag:
         for failed_file in failed:
             if failed_file["error"] != "":
