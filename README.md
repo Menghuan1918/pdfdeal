@@ -19,6 +19,11 @@
 
 <br>
 
+[![Downloads](https://static.pepy.tech/badge/pdfdeal)](https://pepy.tech/project/pdfdeal) ![GitHub License](https://img.shields.io/github/license/Menghuan1918/pdfdeal) ![PyPI - Version](https://img.shields.io/pypi/v/pdfdeal) ![GitHub Repo stars](https://img.shields.io/github/stars/Menghuan1918/pdfdeal)
+
+<br>
+
+
 🗺️ ENGLISH | [简体中文](README_CN.md)
 
 </div>
