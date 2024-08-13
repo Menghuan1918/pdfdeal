@@ -195,9 +195,18 @@ def get_files(path: str, mode: str, out: str) -> Tuple[list, list]:
     return full_paths, relative_paths
 
 
-def unzip(zip_path: str) -> str:
-    """
-    Unzip file and return the extract path
+def unzip(zip_path: str, rename: bool = True) -> str:
+    """Unzip the zip file and return the path of the extracted folder
+
+    Args:
+        zip_path (str): The path to the zip file
+        rename (bool, optional): If rename the .md or .tex file with the unziped folder name. Defaults to True.
+
+    Raises:
+        Exception: If the zip file is not valid
+
+    Returns:
+        str: The path of the extracted folder
     """
     folder_name = os.path.splitext(os.path.basename(zip_path))[0]
     extract_path = os.path.join(os.path.dirname(zip_path), folder_name)
@@ -206,6 +215,17 @@ def unzip(zip_path: str) -> str:
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_path)
         os.remove(zip_path)
+        if rename:
+            # Only find the first .md or .tex file and rename it
+            for root, _, files in os.walk(extract_path):
+                for file in files:
+                    if file.endswith(".md") or file.endswith(".tex"):
+                        old_file_path = os.path.join(root, file)
+                        new_file_path = os.path.join(
+                            root, folder_name + os.path.splitext(file)[1]
+                        )
+                        os.rename(old_file_path, new_file_path)
+                        return extract_path
         return extract_path
     except Exception as e:
         raise Exception(f"Unzip file error! {e}")
