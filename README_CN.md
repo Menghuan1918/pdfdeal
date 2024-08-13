@@ -19,6 +19,10 @@
 
 <br>
 
+[![Downloads](https://static.pepy.tech/badge/pdfdeal)](https://pepy.tech/project/pdfdeal) ![GitHub License](https://img.shields.io/github/license/Menghuan1918/pdfdeal) ![PyPI - Version](https://img.shields.io/pypi/v/pdfdeal) ![GitHub Repo stars](https://img.shields.io/github/stars/Menghuan1918/pdfdeal)
+
+<br>
+
 </div>
 
 更轻松简单地处理 PDF，提取可读文本，用 OCR 识别图像文本并清理格式,使其更适合构建知识库。

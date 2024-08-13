@@ -261,7 +261,7 @@ def main():
             if file != "" and file.endswith(".zip"):
                 file = os.path.abspath(file)
                 try:
-                    unzip(file)
+                    unzip(zip_path=file, rename=True)
                 except Exception as e:
                     print(f"Failed to unzip the file: {file}, error: {e}")
         output_folder = os.path.abspath(output)
