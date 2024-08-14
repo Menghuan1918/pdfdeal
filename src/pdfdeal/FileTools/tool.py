@@ -4,6 +4,7 @@ from typing import Tuple
 
 BUILD_IN_TOOL = ["doc2x_pdf"]
 
+
 def load_build_in_tool(tool: str):
     """
     Load the build-in tool engine
@@ -14,10 +15,8 @@ def load_build_in_tool(tool: str):
     Returns:
         tool, config, get
     """
-    tool_mapping = {
-        "doc2x_pdf": Tool_doc2x
-    }
-    tool_init =  tool_mapping.get(tool)
+    tool_mapping = {"doc2x_pdf": Tool_doc2x}
+    tool_init = tool_mapping.get(tool)
     return tool_init()
 
 

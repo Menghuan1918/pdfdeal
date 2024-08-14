@@ -6,6 +6,7 @@ def test_client():
     client = Doc2X()
     assert client is not None
 
+
 def test_client_with_invalid_key():
     with pytest.raises(Exception):
         Doc2X(apikey="invalid_key")
@@ -18,4 +19,4 @@ def test_client_thread():
 
 def test_client_unsupported_args():
     with pytest.raises(ValueError):
-        Doc2X(rpm=1,thread=2)
+        Doc2X(rpm=1, thread=2)
