@@ -5,7 +5,6 @@ import os
 
 from ..FileTools.ocr import BUILD_IN_OCR, load_build_in_ocr
 from ..FileTools.tool import BUILD_IN_TOOL, load_build_in_tool
-from .connect import BUILD_IN_CONNECT
 
 
 def tools(tool: str, file_list: list, config: dict):
@@ -65,12 +64,12 @@ def main_process(file_list: list, config: dict):
     if flag:
         logging.error("The first option failed, fallback to the second option.")
         done_files.extend([file for file in success if file != ""])
-        failed_files = [file['path'] for file in fail]
+        failed_files = [file["path"] for file in fail]
         success, fail, flag = option_part(config["option2"], failed_files, config)
         if flag:
             logging.error("The second option failed, fallback to the pass OCR.")
             done_files.extend([file for file in success if file != ""])
-            failed_files = [file['path'] for file in fail]
+            failed_files = [file["path"] for file in fail]
             success, fail, flag = option_part("pass", failed_files, config)
             done_files.extend([file for file in success if file != ""])
         else:

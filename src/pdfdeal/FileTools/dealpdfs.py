@@ -7,7 +7,7 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
 from ..Doc2X.Types import RAG_OutputType
 import uuid
-from typing import Tuple,Callable
+from typing import Tuple, Callable
 from .file_tools import list_rename
 
 

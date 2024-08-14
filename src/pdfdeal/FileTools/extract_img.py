@@ -97,10 +97,10 @@ def md_replace_imgs(
 
     def download_image(i, imgurl, outputpath, relative, mdfile):
         if not imgurl.startswith("http"):
-            print(f"\nNot a valid url: {imgurl}, Skip it.")
+            print(f"Not a valid url: {imgurl}, Skip it.")
             return None
         elif skip and imgurl.startswith(skip):
-            print(f"\nSkip the image: {imgurl}, because it starts with {skip}.")
+            print(f"Skip the image: {imgurl}, because it starts with {skip}.")
             return None
         try:
             savepath = f"{outputpath}/img{i}"
@@ -152,6 +152,8 @@ def md_replace_imgs(
             if img_path.startswith("http://") or img_path.startswith("https://"):
                 print(f"Skip the image: {img_path}, because it is a url.")
                 return None, None, None
+            if os.path.isabs(img_path) is False:
+                img_path = os.path.join(os.path.dirname(mdfile), img_path)
             try:
                 remote_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{os.path.basename(img_path)}"
                 new_url, flag = replace(img_path, remote_file_name)
@@ -183,10 +185,12 @@ def md_replace_imgs(
                     print("Continue to upload the next image.")
                     flag = False
 
-        for img in imgpath:
-            os.remove(img)
-
         if no_outputppath_flag:
+            for img in imgpath:
+                try:
+                    os.remove(img)
+                except Exception:
+                    pass
             try:
                 os.rmdir(outputpath)
             except Exception as e:
