@@ -25,8 +25,10 @@ pytesseract = ["pytesseract"]
 easyocr = ["easyocr"]
 
 [project.urls]
-Homepage = "https://github.com/Menghuan1918/pdfdeal"
 Issues = "https://github.com/Menghuan1918/pdfdeal/issues"
+Documentation = "https://menghuan1918.github.io/pdfdeal-docs/"
+Source = "https://github.com/Menghuan1918/pdfdeal"
+Changelog = "https://menghuan1918.github.io/pdfdeal-docs/changes/"
 
 [project.scripts]
 doc2x = "pdfdeal.CLI.doc2x:main"
