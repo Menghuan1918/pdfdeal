@@ -231,6 +231,34 @@ def unzip(zip_path: str, rename: bool = True) -> str:
         raise Exception(f"Unzip file error! {e}")
 
 
+def unzips(zip_paths: list, rename: bool = True) -> Tuple[list, list, bool]:
+    """Unzip the zip files and return the paths of the extracted folders
+
+    Args:
+        zip_paths (list): The list of paths to the zip files
+        rename (bool, optional):  If rename the .md or .tex file with the unziped folder name. Defaults to True.
+
+    Returns:
+        Tuple[list,list,str]:
+        will return `list1`,`list2`,`bool`
+        `list1`: is the list of the output files, if some files are not unziped, the element will be `""`
+        `list2`: is the list of the error message and its original file path, if some files are successfully unziped, the element will be `""`
+        `bool`: True means that at least one file process failed
+    """
+    extract_paths = []
+    failed_paths = []
+    flag = False
+    for zip_path in zip_paths:
+        try:
+            extract_paths.append(unzip(zip_path, rename))
+            failed_paths.append("")
+        except Exception as e:
+            extract_paths.append("")
+            failed_paths.append(f"Error deal with {zip_path} : {e}")
+            flag = True
+    return extract_paths, failed_paths, flag
+
+
 def texts_to_file(texts, filepath, output_format="txt"):
     """
     Write texts to a file.
@@ -381,7 +409,7 @@ def auto_split_mds(
 
     md_files = gen_folder_list(mdpath, mode="md", recursive=recursive)
     if len(md_files) == 0:
-        return [], False
+        return [], "No md files found in the folder.", False
     success = []
     failed = []
     flag = False
