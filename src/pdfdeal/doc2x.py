@@ -91,7 +91,9 @@ async def pdf2file_v1(
             # If output_format is texts, return texts directly
             if output_format == "texts":
                 return texts
-            print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
+            print(
+                f"{status_str} - Exporting document: {status_process}%    -- uuid: {uuid}"
+            )
             break
         # If translate is True, return texts and other(texts location inside)
         elif status_process == 100 and status_str == "Translate success":
