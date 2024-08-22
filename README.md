@@ -39,8 +39,6 @@ Handle PDF more easily and simply, utilizing Doc2X's powerful document conversio
 
 ### Doc2X Support
 
-![doc2x](https://github.com/user-attachments/assets/3ebd3440-9b07-4be1-be2e-fc764d9d07f8)
-
 [Doc2X](https://doc2x.com/) is a new universal document OCR tool that can convert images or PDF files into Markdown/LaTeX text with formulas and text formatting. It performs better than similar tools in most scenarios. `pdfdeal` provides abstract packaged classes to use Doc2X for requests.
 
 ### Processing PDFs
