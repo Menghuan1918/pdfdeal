@@ -31,6 +31,10 @@
 
 Handle PDF more easily and simply, utilizing Doc2X's powerful document conversion capabilities for retained format file conversion/RAG enhancement.
 
+<div align=center>
+<img src="https://github.com/user-attachments/assets/f008bed2-9314-4e45-a5cb-08b667b4b204" width="500px">
+</div>
+
 ## Introduction
 
 ### Doc2X Support
@@ -47,17 +51,26 @@ After conversion and pre-processing of PDF using Doc2X, you can achieve better r
 
 ## Cases
 
+### graphrag
+
 See [how to use it with graphrag](https://menghuan1918.github.io/pdfdeal-docs/demo/graphrag.html), [its not supported to recognize pdf](https://github.com/microsoft/graphrag), but you can use the CLI tool `doc2x` to convert it to a txt document for use.
 
-![rag](https://github.com/user-attachments/assets/f9e8408b-9a4b-42b9-9aee-0d1229065a91)
+<div align=center>
+<img src="https://github.com/user-attachments/assets/f9e8408b-9a4b-42b9-9aee-0d1229065a91" width="600px">
+</div>
 
-Or for knowledge base applications, you can also use `pdfdeal` to enhance documents. Below are the effects of original PDF/OCR enhancement/Doc2X processing in Dify:
+### Fastgpt/Dify or other RAG system
 
-![222](https://github.com/Menghuan1918/pdfdeal/assets/122662527/457036e8-9d78-458a-8a48-763bd33e95f9)
+Or for knowledge base applications, you can use `pdfdeal`'s built-in variety of enhancements to documents, such as uploading images to remote storage services, adding breaks by paragraph, etc. See [Integration with RAG applications]().
+
+<img src="https://github.com/user-attachments/assets/034d3eb0-d77e-4f7d-a707-9be08a092a9a" width="450px">
+<img src="https://github.com/user-attachments/assets/6078e585-7c06-485f-bcd3-9fac84eb7301" width="450px">
+
+### RAG system plug-in integration
+
+- You can find Doc2X plugin in [FastGPT 4.8.9 and later](https://github.com/labring/FastGPT/releases/tag/v4.8.9) which supports PDF/image conversion.
 
 ## Documentation
-
-You can view new features under development [here](https://github.com/users/Menghuan1918/projects/3)!
 
 For details, please refer to the [documentation](https://menghuan1918.github.io/pdfdeal-docs/)
 

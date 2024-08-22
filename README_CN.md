@@ -58,10 +58,18 @@
 <img src="https://github.com/user-attachments/assets/f9e8408b-9a4b-42b9-9aee-0d1229065a91" width="600px">
 </div>
 
+### FastGPT/Dify 或其他RAG应用
+
 或者对于知识库应用，你也可以使用`pdfdeal`内置的多种对文档进行增强，例如图片上传到远端储存服务，按段落添加分割符等。请参见[与RAG应用集成]()
 
 <img src="https://github.com/user-attachments/assets/034d3eb0-d77e-4f7d-a707-9be08a092a9a" width="450px">
 <img src="https://github.com/user-attachments/assets/6078e585-7c06-485f-bcd3-9fac84eb7301" width="450px">
+
+### RAG系统插件集成
+
+- 你可以在[FastGPT 4.8.9以及更高版本](https://github.com/labring/FastGPT/releases/tag/v4.8.9)的插件中找到Doc2X插件，其支持PDF/图片转换。
+
+- 你可以在[此处](https://www.coze.cn/store/plugin/7398010704374153253)找到扣子的Doc2X插件，其支持PDF转换。
 
 ## 文档
 
