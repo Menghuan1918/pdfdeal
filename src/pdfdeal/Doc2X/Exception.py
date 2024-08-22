@@ -47,26 +47,36 @@ def async_retry(max_retries=2, backoff_factor=2):
                 except RateLimit:
                     raise RateLimit
                 except FileError as e:
+                    print(
+                        f"Error in function '{func.__name__}': {type(e).__name__} - {e}"
+                    )
                     print("Error details:\n")
                     print(traceback.format_exc())
-                    print("\n===================\n")
+                    print("===================")
                     raise FileError(e)
                 except RequestError as e:
+                    print(
+                        f"Error in function '{func.__name__}': {type(e).__name__} - {e}"
+                    )
                     print("Error details:\n")
                     print(traceback.format_exc())
-                    print("\n===================\n")
+                    print("===================")
                     raise RequestError(f"{e} \nThis usually means the file is broken.")
                 except Exception as e:
                     last_exception = e
                     wait_time = backoff_factor**retries
-                    print("\n===================\n")
-                    print(f"⚠️Get exception {e}. \n♻️Retrying in {wait_time} seconds.")
+                    print("===================")
+                    print(
+                        f"⚠️ Exception in function '{func.__name__}': {type(e).__name__} - {e}"
+                    )
+                    print(f"⌛ Retrying in {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
                     retries += 1
-            print("\n===================\n")
-            print("Error details:\n")
-            print(traceback.format_exc())
-            print("\n===================\n")
+                    if retries == max_retries:
+                        print("===================")
+                        print("Error details:\n")
+                        print(traceback.format_exc())
+            print("===================")
             raise last_exception
 
         return wrapper
@@ -91,22 +101,32 @@ def nomal_retry(max_retries=3, backoff_factor=2):
                 except RateLimit:
                     raise RateLimit
                 except FileError as e:
-                    print("\n===================\n")
+                    print(
+                        f"Error in function '{func.__name__}': {type(e).__name__} - {e}"
+                    )
+                    print("===================")
                     print("Error details:\n")
                     print(traceback.format_exc())
-                    print("\n===================\n")
+                    print("===================")
                     raise e
                 except Exception as e:
+                    print(
+                        f"Error in function '{func.__name__}': {type(e).__name__} - {e}"
+                    )
                     last_exception = e
                     wait_time = backoff_factor**retries
-                    print("\n===================\n")
-                    print(f"Get exception {e}. \n Retrying in {wait_time} seconds.")
+                    print("===================")
+                    print(
+                        f"⚠️ Exception in function '{func.__name__}': {type(e).__name__} - {e}"
+                    )
+                    print(f"⌛ Retrying in {wait_time} seconds.")
                     time.sleep(wait_time)
                     retries += 1
-            print("\n===================\n")
-            print("Error details:\n")
-            print(traceback.format_exc())
-            print("\n===================\n")
+                    if retries == max_retries:
+                        print("===================")
+                        print("Error details:\n")
+                        print(traceback.format_exc())
+            print("===================")
             raise last_exception
 
         return wrapper

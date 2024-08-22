@@ -231,6 +231,34 @@ def unzip(zip_path: str, rename: bool = True) -> str:
         raise Exception(f"Unzip file error! {e}")
 
 
+def unzips(zip_paths: list, rename: bool = True) -> Tuple[list, list, bool]:
+    """Unzip the zip files and return the paths of the extracted folders
+
+    Args:
+        zip_paths (list): The list of paths to the zip files
+        rename (bool, optional):  If rename the .md or .tex file with the unziped folder name. Defaults to True.
+
+    Returns:
+        Tuple[list,list,str]:
+        will return `list1`,`list2`,`bool`
+        `list1`: is the list of the output files, if some files are not unziped, the element will be `""`
+        `list2`: is the list of the error message and its original file path, if some files are successfully unziped, the element will be `""`
+        `bool`: True means that at least one file process failed
+    """
+    extract_paths = []
+    failed_paths = []
+    flag = False
+    for zip_path in zip_paths:
+        try:
+            extract_paths.append(unzip(zip_path, rename))
+            failed_paths.append("")
+        except Exception as e:
+            extract_paths.append("")
+            failed_paths.append(f"Error deal with {zip_path} : {e}")
+            flag = True
+    return extract_paths, failed_paths, flag
+
+
 def texts_to_file(texts, filepath, output_format="txt"):
     """
     Write texts to a file.
@@ -297,12 +325,12 @@ def auto_split_md(
     Args:
         mdfile (str): The path to md file
         mode (str, optional): The way to split. **Only support `title`(split by every title) now.** Defaults to "title".
-        out_type (str, optional): The way to output the splited file. Only support `single`(one file) and `replace`(replace the original file) now. Defaults to "single".
+        out_type (str, optional): The way to output the splited file. Support `single`(one file) ,`replace`(replace the original file) and `multi`(multiple files) now. Defaults to "single".
         split_str (str, optional): The string to split the md file. Defaults to `=+=+=+=+=+=+=+=+=`.
         output_path (str, optional): The path to output the splited file. Defaults to "./Output". Not work when `out_type` is `replace`.
 
     Returns:
-        Tuple[str,bool] : The path to the output file and whether the file is splited.
+        Tuple[str,bool] : The path to the output file and whether the file is splited. If `out_type` is `multi", will return the path to the folder containing the splited files.
     """
     if not os.path.exists(mdfile):
         raise FileNotFoundError(f"The file {mdfile} does not exist.")
@@ -316,6 +344,17 @@ def auto_split_md(
         print(traceback.format_exc())
         print(f"=====\nError deal with {mdfile} : {e}")
         return f"Error deal with {mdfile} : {e}", False
+
+    if out_type == "multi":
+        new_file_folder = os.path.join(output_path, os.path.basename(mdfile))
+        os.makedirs(new_file_folder, exist_ok=True)
+        for content in new_content:
+            file_name = os.path.basename(mdfile) + content.split("\n")[0] + ".md"
+            with open(
+                os.path.join(new_file_folder, file_name), "w", encoding="utf-8"
+            ) as file:
+                file.writelines(content)
+        return new_file_folder, True
 
     write_contene = ""
     for content in new_content:
@@ -334,6 +373,9 @@ def auto_split_md(
             file.writelines(write_contene)
         return new_file, True
 
+    else:
+        raise ValueError(f"The out_type {out_type} is not supported.")
+
 
 def auto_split_mds(
     mdpath: str,
@@ -348,7 +390,7 @@ def auto_split_mds(
     Args:
         mdpath (str): The path to the folder containing md files
         mode (str, optional): The way to split. **Only support `title`(split by every title) now.** Defaults to "title".
-        out_type (str, optional): The way to output the splited file. Only support `single`(one file) and `replace`(replace the original file) now. Defaults to "single".
+        out_type (str, optional): The way to output the splited file. Support `single`(one file) ,`replace`(replace the original file) and `multi`(multiple files) now. Defaults to "single".
         split_str (str, optional): The string to split the md file. Defaults to `=+=+=+=+=+=+=+=+=`.
         output_path (str, optional): The path to output the splited file. Defaults to "./Output". Not work when `out_type` is `replace`.
         recursive (bool, optional): Whether to search subdirectories recursively. Defaults to True.
@@ -367,7 +409,7 @@ def auto_split_mds(
 
     md_files = gen_folder_list(mdpath, mode="md", recursive=recursive)
     if len(md_files) == 0:
-        return [], False
+        return [], "No md files found in the folder.", False
     success = []
     failed = []
     flag = False
