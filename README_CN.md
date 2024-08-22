@@ -32,11 +32,13 @@
 
 更轻松简单地处理 PDF，利用Doc2X强大的文档转换能力，进行保留格式文件转换/RAG增强。
 
+<div align=center>
+<img src="https://github.com/user-attachments/assets/f008bed2-9314-4e45-a5cb-08b667b4b204" width="500px">
+</div>
+
 ## 简介
 
 ### Doc2X 支持
-![doc2x](https://github.com/user-attachments/assets/3ebd3440-9b07-4be1-be2e-fc764d9d07f8)
-
 [Doc2X](https://doc2x.com/)是一款新型的通用的文档OCR工具，可将图像或pdf文件转换为带有公式和文本格式的Markdown/LaTeX文本，并且效果在大部分场景下优于同类型工具。`pdfdeal`提供了抽象包装好的类以使用Doc2X发起请求。
 
 ### 对PDF进行处理
@@ -52,9 +54,14 @@
 
 参见[如何与graphrag结合使用](https://menghuan1918.github.io/pdfdeal-docs/zh/demo/graphrag.html)，[其不支持识别pdf](https://github.com/microsoft/graphrag)，但你可以使用CLI工具`doc2x`将其转换为txt文档进行使用。
 
-![rag](https://github.com/user-attachments/assets/f9e8408b-9a4b-42b9-9aee-0d1229065a91)
+<div align=center>
+<img src="https://github.com/user-attachments/assets/f9e8408b-9a4b-42b9-9aee-0d1229065a91" width="600px">
+</div>
 
 或者对于知识库应用，你也可以使用`pdfdeal`内置的多种对文档进行增强，例如图片上传到远端储存服务，按段落添加分割符等。请参见[与RAG应用集成]()
+
+<img src="https://github.com/user-attachments/assets/034d3eb0-d77e-4f7d-a707-9be08a092a9a" width="450px">
+<img src="https://github.com/user-attachments/assets/6078e585-7c06-485f-bcd3-9fac84eb7301" width="450px">
 
 ## 文档
 
