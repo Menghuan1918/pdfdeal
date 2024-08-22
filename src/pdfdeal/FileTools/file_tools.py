@@ -349,7 +349,7 @@ def auto_split_md(
         new_file_folder = os.path.join(output_path, os.path.basename(mdfile))
         os.makedirs(new_file_folder, exist_ok=True)
         for content in new_content:
-            file_name = content.split("\n")[0] + ".md"
+            file_name = os.path.basename(mdfile) + content.split("\n")[0] + ".md"
             with open(
                 os.path.join(new_file_folder, file_name), "w", encoding="utf-8"
             ) as file:
