@@ -59,7 +59,7 @@ See [how to use it with graphrag](https://menghuan1918.github.io/pdfdeal-docs/de
 
 ### Fastgpt/Dify or other RAG system
 
-Or for knowledge base applications, you can use `pdfdeal`'s built-in variety of enhancements to documents, such as uploading images to remote storage services, adding breaks by paragraph, etc. See [Integration with RAG applications]().
+Or for knowledge base applications, you can use `pdfdeal`'s built-in variety of enhancements to documents, such as uploading images to remote storage services, adding breaks by paragraph, etc. See [Integration with RAG applications](https://menghuan1918.github.io/pdfdeal-docs/demo/RAG_pre.html).
 
 <img src="https://github.com/user-attachments/assets/034d3eb0-d77e-4f7d-a707-9be08a092a9a" width="450px">
 <img src="https://github.com/user-attachments/assets/6078e585-7c06-485f-bcd3-9fac84eb7301" width="450px">
