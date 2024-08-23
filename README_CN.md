@@ -60,7 +60,7 @@
 
 ### FastGPT/Dify 或其他RAG应用
 
-或者对于知识库应用，你也可以使用`pdfdeal`内置的多种对文档进行增强，例如图片上传到远端储存服务，按段落添加分割符等。请参见[与RAG应用集成]()
+或者对于知识库应用，你也可以使用`pdfdeal`内置的多种对文档进行增强，例如图片上传到远端储存服务，按段落添加分割符等。请参见[与RAG应用集成](https://menghuan1918.github.io/pdfdeal-docs/zh/demo/RAG_pre.html)
 
 <img src="https://github.com/user-attachments/assets/034d3eb0-d77e-4f7d-a707-9be08a092a9a" width="450px">
 <img src="https://github.com/user-attachments/assets/6078e585-7c06-485f-bcd3-9fac84eb7301" width="450px">
