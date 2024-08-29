@@ -9,6 +9,7 @@ from ..Doc2X.Types import RAG_OutputType
 import uuid
 from typing import Tuple, Callable
 from .file_tools import list_rename
+import logging
 
 
 def strore_pdf(pdf_path, Text):
@@ -141,17 +142,17 @@ def deal_pdf(
             success_file.append("")
             failed_file.append({"error": str(e), "file": pdf_path})
             error_flag = True
-    print(
+    logging.info(
         f"PDFDEAL Progress: {sum(1 for s in success_file if s != '')}/{len(pdf_file)} files successfully processed."
     )
     if All_Done is False:
-        print(
+        logging.warning(
             "Some pictures are failed to OCR, but the text and reset pictures is extracted"
         )
     if error_flag:
         for f in failed_file:
             if f["error"] != "":
-                print(
+                logging.error(
                     f"-----\nFailed to process file: {f['file']} with error: {f['error']}\n-----"
                 )
 

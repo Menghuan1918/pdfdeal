@@ -10,7 +10,7 @@ import shutil
 from typing import Tuple
 from ..Doc2X.Types import Support_File_Type, OutputFormat
 from .dealmd import split_of_md
-import traceback
+import logging
 
 
 def clean_text(text):
@@ -341,8 +341,7 @@ def auto_split_md(
     try:
         new_content = split_of_md(mdfile=mdfile, mode="title")
     except Exception as e:
-        print(traceback.format_exc())
-        print(f"=====\nError deal with {mdfile} : {e}")
+        logging.exception(f"Error deal with {mdfile} :")
         return f"Error deal with {mdfile} : {e}", False
 
     if out_type == "multi":
@@ -433,14 +432,14 @@ def auto_split_mds(
             success.append("")
             failed.append({"error": e, "file": mdfile})
             flag = True
-    print(
+    logging.info(
         f"MD SPLIT: {sum([1 for i in success if i != ''])}/{len(success)} files are successfully splited."
     )
-    print(f"Note the split string is :\n{split_str}")
+    logging.warning(f"Note the split string is :\n{split_str}")
     if flag:
         for failed_file in failed:
             if failed_file["error"] != "":
-                print(
+                logging.warning(
                     f"=====\nError deal with {failed_file['file']} : {failed_file['error']}"
                 )
     return success, failed, flag

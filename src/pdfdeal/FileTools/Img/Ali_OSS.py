@@ -1,4 +1,5 @@
 import oss2
+import logging
 
 
 class OSS:
@@ -32,7 +33,7 @@ class OSS:
                 True,
             )
         except Exception as e:
-            print(f"Error to upload the file: {local_file_path}, {e}")
+            logging.error(f"Error to upload the file: {local_file_path}, {e}")
             return e, False
 
 

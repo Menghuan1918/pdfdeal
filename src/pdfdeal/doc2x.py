@@ -6,6 +6,7 @@ from .FileTools.dealpdfs import strore_pdf
 from typing import Tuple
 from .FileTools.file_tools import list_rename
 import uuid
+import logging
 
 from .Doc2X.Convert import (
     refresh_key,
@@ -68,7 +69,7 @@ async def pdf2file_v1(
         )
     except RateLimit:
         while True:
-            print("Reach the rate limit, wait for 25 seconds")
+            logging.warning("Reach the rate limit, wait for 25 seconds")
             await asyncio.sleep(25)
             try:
                 uuid = await upload_pdf(
@@ -91,7 +92,7 @@ async def pdf2file_v1(
             # If output_format is texts, return texts directly
             if output_format == "texts":
                 return texts
-            print(
+            logging.info(
                 f"{status_str} - Exporting document: {status_process}%    -- uuid: {uuid}"
             )
             break
@@ -99,7 +100,7 @@ async def pdf2file_v1(
         elif status_process == 100 and status_str == "Translate success":
             final = {"texts": texts, "location": other}
             return final
-        print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
+        logging.info(f"{status_str}: {status_process}%    -- uuid: {uuid}")
         await asyncio.sleep(1)
     # Convert uuid to file
     return await uuid2file(
@@ -131,7 +132,7 @@ async def img2file_v1(
     except RateLimit:
         # Retry according to maxretry and current rpm
         while True:
-            print("Reach the rate limit, wait for 25 seconds")
+            logging.warning("Reach the rate limit, wait for 25 seconds")
             await asyncio.sleep(25)
             try:
                 uuid = await upload_img(
@@ -152,9 +153,9 @@ async def img2file_v1(
             # If output_format is texts, return texts directly
             if output_format == "texts":
                 return texts
-            print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
+            logging.info(f"{status_str}: {status_process}%    -- uuid: {uuid}")
             break
-        print(f"{status_str}: {status_process}%    -- uuid: {uuid}")
+        logging.info(f"{status_str}: {status_process}%    -- uuid: {uuid}")
         await asyncio.sleep(1)
     return await uuid2file(
         apikey=apikey, uuid=uuid, output_path=output_path, output_format=output_format
@@ -291,13 +292,13 @@ class Doc2X:
             )
         )
 
-        print(
+        logging.info(
             f"IMG Progress: {sum(1 for s in success if s != '')}/{len(image_file)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
                 if failed_file["error"] != "":
-                    print(
+                    logging.error(
                         f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
 
@@ -395,13 +396,13 @@ class Doc2X:
                 pdf_file, output_path, output_format, ocr, convert, False
             )
         )
-        print(
+        logging.info(
             f"PDF Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
                 if failed_file["error"] != "":
-                    print(
+                    logging.error(
                         f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
 
@@ -529,13 +530,13 @@ class Doc2X:
         success, failed, flag = run_async(
             self.pdfdeals(pdf_file, output_path, output_format, convert)
         )
-        print(
+        logging.info(
             f"PDFDEAL Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
                 if failed_file["error"] != "":
-                    print(
+                    logging.error(
                         f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
 
@@ -587,13 +588,13 @@ class Doc2X:
                 model=model,
             )
         )
-        print(
+        logging.info(
             f"TRANSLATE Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
         )
         if flag:
             for failed_file in failed:
                 if failed_file["error"] != "":
-                    print(
+                    logging.error(
                         f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
                     )
         return success, failed, flag

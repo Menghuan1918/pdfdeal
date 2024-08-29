@@ -1,6 +1,11 @@
 from pdfdeal import Doc2X
 from pdfdeal.file_tools import get_files
 import os
+import logging
+
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.setLevel(logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 
 def test_single_pic2file():

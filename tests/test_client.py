@@ -1,5 +1,11 @@
+import logging.config
 from pdfdeal import Doc2X
 import pytest
+import logging
+
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.setLevel(logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 
 
 def test_client():
