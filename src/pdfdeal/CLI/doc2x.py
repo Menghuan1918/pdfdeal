@@ -8,6 +8,7 @@ import os
 from pdfdeal import Doc2X
 from pdfdeal.file_tools import get_files
 from pdfdeal.Watch.config import curses_select
+import logging
 
 LANGUAGES = ["简体中文", "Enlish"]
 WORDS_CN = [
@@ -152,6 +153,11 @@ def main():
     language = None
     args = parser.parse_args()
     rpm = None
+
+    # logging set to info
+    logging.basicConfig(level=logging.INFO)
+    httpx_logger = logging.getLogger("httpx")
+    httpx_logger.setLevel(logging.WARNING)
 
     if args.clear:
         delete_one_global_setting("Doc2X_Key")

@@ -4,6 +4,7 @@ import httpx
 import os
 from ..Doc2X.Exception import nomal_retry
 import concurrent.futures
+import logging
 
 
 def get_imgcdnlink_list(text: str) -> Tuple[list, list]:
@@ -84,7 +85,7 @@ def md_replace_imgs(
 
     imglist, imgpath = get_imgcdnlink_list(content)
     if len(imglist) == 0:
-        print("No image links found in the markdown file.")
+        logging.warning("No image links found in the markdown file.")
         return True
 
     no_outputppath_flag = False
@@ -93,14 +94,14 @@ def md_replace_imgs(
         outputpath = os.path.splitext(mdfile)[0] + "_img"
     os.makedirs(outputpath, exist_ok=True)
 
-    print(f"Start to download images from file {mdfile}")
+    logging.info(f"Start to download images from file {mdfile}")
 
     def download_image(i, imgurl, outputpath, relative, mdfile):
         if not imgurl.startswith("http"):
-            print(f"Not a valid url: {imgurl}, Skip it.")
+            logging.info(f"Not a valid url: {imgurl}, Skip it.")
             return None
         elif skip and imgurl.startswith(skip):
-            print(f"Skip the image: {imgurl}, because it starts with {skip}.")
+            logging.info(f"Skip the image: {imgurl}, because it starts with {skip}.")
             return None
         try:
             savepath = f"{outputpath}/img{i}"
@@ -113,7 +114,7 @@ def md_replace_imgs(
                 savepath = os.path.abspath(savepath)
                 return (imglist[i], f"![{imgurl}](<{savepath}>)\n")
         except Exception as e:
-            print(
+            logging.warning(
                 f"Error to download the image: {imgurl}, continue to download the next image:\n {e}"
             )
             return None
@@ -141,7 +142,9 @@ def md_replace_imgs(
         content = content.replace(old, new)
 
     if len(replacements) < len(imglist):
-        print("Some images may not be downloaded successfully. Please check the log.")
+        logging.info(
+            "Some images may not be downloaded successfully. Please check the log."
+        )
         flag = False
 
     if isinstance(replace, Callable):
@@ -150,7 +153,7 @@ def md_replace_imgs(
         @nomal_retry()
         def upload_task(i, img_path, replace):
             if img_path.startswith("http://") or img_path.startswith("https://"):
-                print(f"Skip the image: {img_path}, because it is a url.")
+                logging.info(f"Skip the image: {img_path}, because it is a url.")
                 return None, None, None
             if os.path.isabs(img_path) is False:
                 img_path = os.path.join(os.path.dirname(mdfile), img_path)
@@ -161,12 +164,14 @@ def md_replace_imgs(
                     img_url = f"![{os.path.splitext(os.path.basename(mdfile))[0]}](<{new_url}>)\n"
                     return img_url, True, i
                 else:
-                    print(f"=====\nError to upload the image: {img_path}, {new_url}")
-                    print("Continue to upload the next image.")
+                    logging.error(
+                        f"Error to upload the image: {img_path}, {new_url}, continue to upload the next image."
+                    )
                     return new_url, False, i
-            except Exception as e:
-                print(f"=====\nError to upload the image: {img_path}, {e}")
-                print("Continue to upload the next image.")
+            except Exception:
+                logging.exception(
+                    f"=====\nError to upload the image: {img_path}, Continue to upload the next image:"
+                )
                 return new_url, False, i
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
@@ -181,8 +186,9 @@ def md_replace_imgs(
                 elif flag is None:
                     pass
                 else:
-                    print(f"=====\nError to upload the image: {imgpath[i]}, {new_url}")
-                    print("Continue to upload the next image.")
+                    logging.warning(
+                        f"=====\nError to upload the image: {imgpath[i]}, {new_url}, continue to upload the next image."
+                    )
                     flag = False
 
         if no_outputppath_flag:
@@ -194,12 +200,12 @@ def md_replace_imgs(
             try:
                 os.rmdir(outputpath)
             except Exception as e:
-                print(f"\nError to remove the folder: {outputpath}, {e}")
+                logging.error(f"\nError to remove the folder: {outputpath}, {e}")
 
     with open(mdfile, "w", encoding="utf-8") as file:
         file.write(content)
 
-    print(f"Finish to process images in file {mdfile}.")
+    logging.info(f"Finish to process images in file {mdfile}.")
     return flag
 
 
@@ -240,7 +246,7 @@ def mds_replace_imgs(
 
     mdfiles = gen_folder_list(path=path, mode="md", recursive=True)
     if len(mdfiles) == 0:
-        print("No markdown file found in the path.")
+        logging.warning("No markdown file found in the path.")
         return [], [], True
 
     import concurrent.futures
@@ -273,17 +279,18 @@ def mds_replace_imgs(
             if error:
                 Fail_flag = False
                 fail_files.append({"error": str(error), "path": mdfile})
-                print(f"Error to process the markdown file: {mdfile}, {error}")
-                print("Continue to process the next markdown file.")
+                logging.warning(
+                    f"Error to process the markdown file: {mdfile}, {error}, continue to process the next markdown file."
+                )
             else:
                 success_files.append(mdfile)
 
-    print(
+    logging.info(
         f"\n[MARKDOWN REPLACE] Successfully processed {len(success_files)}/{len(mdfiles)} markdown files."
     )
 
     if Fail_flag is False:
-        print("Some markdown files process failed.")
+        logging.info("Some markdown files process failed.")
         return success_files, fail_files, True
 
     return success_files, fail_files, False

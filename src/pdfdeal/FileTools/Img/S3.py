@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
+import logging
 
 
 class S3_Settings:
@@ -52,7 +53,7 @@ class S3_Settings:
                 True,
             )
         except (NoCredentialsError, ClientError) as e:
-            print(f"Error to upload the file: {local_file_path}, {e}")
+            logging.exception(f"Error to upload the file: {local_file_path}, {e}")
             return e, False
 
 

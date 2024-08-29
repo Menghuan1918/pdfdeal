@@ -1,9 +1,9 @@
 import asyncio
 from functools import wraps
 import time
-import traceback
 import sys
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
 
 class RateLimit(Exception):
@@ -41,42 +41,35 @@ def async_retry(max_retries=2, backoff_factor=2):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             retries = 0
-            while retries < max_retries:
+            while retries < max_retries + 1:
                 try:
                     return await func(*args, **kwargs)
                 except RateLimit:
                     raise RateLimit
                 except FileError as e:
-                    print(
-                        f"Error in function '{func.__name__}': {type(e).__name__} - {e}"
+                    logging.exception(
+                        f"Error in function '{func.__name__}': {type(e).__name__}:"
                     )
-                    print("Error details:\n")
-                    print(traceback.format_exc())
-                    print("===================")
                     raise FileError(e)
                 except RequestError as e:
-                    print(
-                        f"Error in function '{func.__name__}': {type(e).__name__} - {e}"
+                    logging.exception(
+                        f"Error in function '{func.__name__}': {type(e).__name__}:"
                     )
-                    print("Error details:\n")
-                    print(traceback.format_exc())
-                    print("===================")
                     raise RequestError(f"{e} \nThis usually means the file is broken.")
                 except Exception as e:
                     last_exception = e
+                    if retries == max_retries:
+                        logging.exception(
+                            f"Error in function '{func.__name__}': {type(e).__name__}:"
+                        )
+                        break
                     wait_time = backoff_factor**retries
-                    print("===================")
-                    print(
+                    logging.warning(
                         f"⚠️ Exception in function '{func.__name__}': {type(e).__name__} - {e}"
                     )
-                    print(f"⌛ Retrying in {wait_time} seconds.")
+                    logging.warning(f"⌛ Retrying in {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
                     retries += 1
-                    if retries == max_retries:
-                        print("===================")
-                        print("Error details:\n")
-                        print(traceback.format_exc())
-            print("===================")
             raise last_exception
 
         return wrapper
@@ -95,38 +88,30 @@ def nomal_retry(max_retries=3, backoff_factor=2):
         @wraps(func)
         def wrapper(*args, **kwargs):
             retries = 0
-            while retries < max_retries:
+            while retries < max_retries + 1:
                 try:
                     return func(*args, **kwargs)
                 except RateLimit:
                     raise RateLimit
                 except FileError as e:
-                    print(
-                        f"Error in function '{func.__name__}': {type(e).__name__} - {e}"
+                    logging.exception(
+                        f"Error in function '{func.__name__}': {type(e).__name__}:"
                     )
-                    print("===================")
-                    print("Error details:\n")
-                    print(traceback.format_exc())
-                    print("===================")
                     raise e
                 except Exception as e:
-                    print(
-                        f"Error in function '{func.__name__}': {type(e).__name__} - {e}"
-                    )
                     last_exception = e
+                    if retries == max_retries:
+                        logging.exception(
+                            f"Error in function '{func.__name__}': {type(e).__name__}:"
+                        )
+                        break
                     wait_time = backoff_factor**retries
-                    print("===================")
-                    print(
+                    logging.warning(
                         f"⚠️ Exception in function '{func.__name__}': {type(e).__name__} - {e}"
                     )
-                    print(f"⌛ Retrying in {wait_time} seconds.")
+                    logging.warning(f"⌛ Retrying in {wait_time} seconds.")
                     time.sleep(wait_time)
                     retries += 1
-                    if retries == max_retries:
-                        print("===================")
-                        print("Error details:\n")
-                        print(traceback.format_exc())
-            print("===================")
             raise last_exception
 
         return wrapper
