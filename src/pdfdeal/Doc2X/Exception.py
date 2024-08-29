@@ -64,10 +64,10 @@ def async_retry(max_retries=2, backoff_factor=2):
                         )
                         break
                     wait_time = backoff_factor**retries
-                    logging.warning(
-                        f"⚠️ Exception in function '{func.__name__}': {type(e).__name__} - {e}"
+                    logging.exception(
+                        f"Exception in function '{func.__name__}': {type(e).__name__} - {e}"
                     )
-                    logging.warning(f"⌛ Retrying in {wait_time} seconds.")
+                    logging.warning(f"Retrying in {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
                     retries += 1
             raise last_exception
@@ -106,10 +106,10 @@ def nomal_retry(max_retries=3, backoff_factor=2):
                         )
                         break
                     wait_time = backoff_factor**retries
-                    logging.warning(
-                        f"⚠️ Exception in function '{func.__name__}': {type(e).__name__} - {e}"
+                    logging.exception(
+                        f"Exception in function '{func.__name__}': {type(e).__name__} - {e}"
                     )
-                    logging.warning(f"⌛ Retrying in {wait_time} seconds.")
+                    logging.warning(f"Retrying in {wait_time} seconds.")
                     time.sleep(wait_time)
                     retries += 1
             raise last_exception

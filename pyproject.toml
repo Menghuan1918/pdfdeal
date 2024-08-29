@@ -1,6 +1,6 @@
 [project]
 name = "pdfdeal"
-version = "0.3.1"
+version = "0.3.2"
 authors = [{ name = "Menghuan1918", email = "menghuan@menghuan1918.com" }]
 description = "A python wrapper for the Doc2X API and comes with native PDF processing (to improve PDF recall in RAG)."
 readme = "README.md"
@@ -10,17 +10,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-    "emoji",
-    "pypdf",
-    "Pillow",
-    "reportlab",
-    "httpx",
-    "pytest",
-]
+dependencies = ["httpx"]
 
 [project.optional-dependencies]
-all = ["pytesseract", "easyocr"]
+all = ["pytesseract", "easyocr", "emoji", "pypdf", "Pillow", "reportlab"]
+rag = ["emoji", "pypdf", "Pillow", "reportlab"]
 pytesseract = ["pytesseract"]
 easyocr = ["easyocr"]
 
