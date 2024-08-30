@@ -52,9 +52,7 @@ def async_retry(max_retries=2, backoff_factor=2):
                     )
                     raise FileError(e)
                 except RequestError as e:
-                    logging.exception(
-                        f"Error in function '{func.__name__}': {type(e).__name__}:"
-                    )
+                    logging.error(f"'{func.__name__}' get error: {e}")
                     raise RequestError(f"{e} \nThis usually means the file is broken.")
                 except Exception as e:
                     last_exception = e
