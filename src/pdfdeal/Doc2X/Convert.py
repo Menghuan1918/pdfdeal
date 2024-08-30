@@ -4,6 +4,7 @@ import os
 import re
 from typing import Tuple, Literal
 from .Exception import RateLimit, FileError, RequestError, async_retry
+import logging
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
@@ -302,6 +303,9 @@ async def decode_data(datas: json, convert: bool) -> Tuple[list, list]:
     """
     texts = []
     locations = []
+    if not ("result" in datas and "pages" in datas["result"]):
+        logging.warning("Although parsed successfully, the content is empty!")
+        return [], []
     for data in datas["result"]["pages"]:
         try:
             text = data["md"]
@@ -426,6 +430,9 @@ async def uuid_status(
 
         elif datas["status"] == "pages limit exceeded":
             raise RuntimeError("Pages limit exceeded!")
+
+        elif datas["status"] == "failed":
+            raise RequestError(f"Failed to deal with file! {get_res.text}")
 
         else:
             raise RuntimeError(f"Unknown status! {get_res.text}")
