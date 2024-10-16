@@ -8,7 +8,7 @@ from .FileTools.file_tools import list_rename
 import uuid
 import logging
 
-from .Doc2X.Convert import (
+from .Doc2X.ConvertV1 import (
     refresh_key,
     get_limit,
     uuid2file,
