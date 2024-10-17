@@ -121,8 +121,6 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
             return uid
         else:
             raise RequestError(s3_res.text)
-    if post_res.status_code == 429:
-        raise RateLimit()
     if post_res.status_code == 400:
         raise RequestError(post_res.text)
     raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")

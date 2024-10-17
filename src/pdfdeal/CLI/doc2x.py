@@ -43,7 +43,7 @@ def set_doc2x_key(language):
     words, language = i18n(language)
     key = input(words[0])
     try:
-        Doc2X_Legacy(apikey=key)
+        Doc2X(apikey=key)
     except Exception as e:
         raise Exception(f"{words[1]}:\n {e}")
     RPM = input(words[2])
@@ -217,9 +217,9 @@ def main():
     equation = args.equation
 
     if api_key is None or api_key == "":
-        Client = Doc2X_Legacy()
+        Client = Doc2X()
     else:
-        Client = Doc2X_Legacy(apikey=api_key, thread=rpm)
+        Client = Doc2X(apikey=api_key, thread=rpm)
 
     if args.graphrag:
         assert format in [
