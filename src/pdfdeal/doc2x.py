@@ -11,7 +11,7 @@ from .Doc2X.ConvertV2 import (
 )
 from .Doc2X.Types import OutputFormat
 from .Doc2X.Exception import RequestError, RateLimit, run_async
-from FileTools.file_tools import get_files
+from .FileTools.file_tools import get_files
 
 
 async def pdf2file(
@@ -104,10 +104,6 @@ class Doc2X:
     ) -> Tuple[List[str], List[dict], bool]:
         limit = asyncio.Semaphore(self.thread)
         if isinstance(pdf_file, str):
-            if output_names is not None:
-                raise ValueError(
-                    "output_names can not provided when pdf_file is a string"
-                )
             if os.path.isdir(pdf_file):
                 pdf_file, output_names = get_files(
                     path=pdf_file, mode="pdf", out=output_format

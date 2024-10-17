@@ -1,3 +1,3 @@
-from .doc2x_legacy import Doc2X as Doc2X_Legacy
+from .doc2x import Doc2X
 
-__all__ = ["Doc2X_Legacy"]
+__all__ = ["Doc2X"]

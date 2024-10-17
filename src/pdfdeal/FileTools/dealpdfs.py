@@ -1,10 +1,6 @@
 import os
 from .file_tools import extract_text_and_images
 from .ocr import load_build_in_ocr, BUILD_IN_OCR
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-from reportlab.pdfbase import pdfmetrics
 from ..Doc2X.Types import RAG_OutputType
 import uuid
 from typing import Tuple, Callable
@@ -13,6 +9,11 @@ import logging
 
 
 def strore_pdf(pdf_path, Text):
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    from reportlab.pdfbase import pdfmetrics
+
     c = canvas.Canvas(pdf_path, pagesize=letter)
 
     pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
