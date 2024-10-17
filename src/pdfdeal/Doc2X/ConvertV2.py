@@ -3,41 +3,10 @@ import json
 import os
 import re
 from typing import Tuple
-from .Exception import RateLimit, FileError, RequestError, async_retry
+from .Exception import RateLimit, FileError, RequestError, async_retry, code_check
 import logging
 
 Base_URL = "https://v2.doc2x.noedgeai.com/api"
-
-
-@async_retry()
-async def get_limit(apikey: str) -> Tuple[int, int, int, int]:
-    """Get the quota information of the key
-
-    Args:
-        apikey (str): The key
-
-    Raises:
-        RuntimeError: The key is invalid or there's an error in the response
-
-    Returns:
-        Tuple[int, int, int, int]: A tuple containing (remain, quota, used_pages, free_pages)
-    """
-    url = f"{Base_URL}/v2/user/quota"
-    async with httpx.AsyncClient() as client:
-        get_res = await client.get(url, headers={"Authorization": f"Bearer {apikey}"})
-    if get_res.status_code != 200:
-        raise RuntimeError(
-            f"Get quota information error! {get_res.status_code}:{get_res.text}"
-        )
-    try:
-        data = get_res.json()["data"]
-        return tuple(
-            int(data[key]) for key in ["remain", "quota", "used_pages", "free_pages"]
-        )
-    except Exception as e:
-        raise RuntimeError(
-            f"Get quota information error with {e}! {get_res.status_code}:{get_res.text}"
-        )
 
 
 @async_retry()
@@ -59,9 +28,9 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
         str: The uid of the file
     """
     url = f"{Base_URL}/v2/parse/pdf"
-    if os.path.getsize(pdffile) >= 100 * 1024 * 1024:
-        logging.warning("Now not support PDF file > 100MB!")
-        raise FileError("Input file size is too large")
+    if os.path.getsize(pdffile) >= 300 * 1024 * 1024:
+        logging.warning("Now not support PDF file > 300MB!")
+        raise RequestError("parse_file_too_large")
         logging.warning(
             "File size is too large, will auto switch to S3 file upload way, this may take a while"
         )
@@ -86,8 +55,7 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
 
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
-        if response_data.get("code") == "parse_task_limit_exceeded":
-            raise RateLimit()
+        await code_check(response_data.get("code", response_data))
         return response_data["data"]["uid"]
 
     if post_res.status_code == 429:
@@ -137,8 +105,7 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
 
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
-        if response_data.get("code") != "ok":
-            raise RequestError(post_res.text)
+        await code_check(response_data.get("code", response_data))
 
         upload_data = response_data["data"]
         upload_url = upload_data["url"]
@@ -216,19 +183,22 @@ async def uid_status(
     """
     url = f"{Base_URL}/v2/parse/status?uid={uid}"
     async with httpx.AsyncClient(timeout=httpx.Timeout(30)) as client:
-        get_res = await client.get(url, headers={"Authorization": f"Bearer {apikey}"})
-    if get_res.status_code != 200:
-        raise Exception(f"Get status error! {get_res.status_code}:{get_res.text}")
-
-    try:
-        data = json.loads(get_res.content.decode("utf-8"))
-    except Exception as e:
+        response_data = await client.get(
+            url, headers={"Authorization": f"Bearer {apikey}"}
+        )
+    if response_data.status_code != 200:
         raise Exception(
-            f"Get status error with {e}! {get_res.status_code}:{get_res.text}"
+            f"Get status error! {response_data.status_code}:{response_data.text}"
         )
 
-    if data["code"] != "ok":
-        raise RequestError(f"Failed to get status: {data.get('msg', 'Unknown error')}")
+    try:
+        data = json.loads(response_data.content.decode("utf-8"))
+    except Exception as e:
+        raise Exception(
+            f"Get status error with {e}! {response_data.status_code}:{response_data.text}"
+        )
+
+    await code_check(data.get("code", response_data))
 
     progress, status = data["data"].get("progress", 0), data["data"].get("status", "")
     if status == "processing":
@@ -237,7 +207,99 @@ async def uid_status(
         texts, locations = await decode_data(data["data"], convert)
         return 100, "Success", texts, locations
     elif status == "failed":
-        raise RequestError(f"Failed to deal with file! {get_res.text}")
+        raise RequestError(f"Failed to deal with file! {response_data.text}")
     else:
         logging.warning(f"Unknown status: {status}")
         return progress, status, [], []
+
+
+@async_retry()
+async def convert_parse(
+    apikey: str, uid: str, to: str, filename: str = None
+) -> Tuple[str, str]:
+    """Convert parsed file to specified format
+
+    Args:
+        apikey (str): The API key
+        uid (str): The uid of the parsed file
+        to (str): Export format, supports: md|tex|docx
+        filename (str, optional): Output filename for md/tex (without extension). Defaults to None.
+
+    Raises:
+        ValueError: If 'to' is not a valid format
+        RequestError: If the conversion fails
+        Exception: For any other errors during the process
+
+    Returns:
+        Tuple[str, str]: A tuple containing the status and URL of the converted file
+    """
+    url = f"{Base_URL}/api/v2/convert/parse"
+
+    if to not in ["md", "tex", "docx"]:
+        raise ValueError("Invalid export format. Supported formats are: md, tex, docx")
+
+    payload = {"uid": uid, "to": to}
+    if filename and to in ["md", "tex"]:
+        payload["filename"] = filename
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30)) as client:
+        response_data = await client.post(
+            url, json=payload, headers={"Authorization": f"Bearer {apikey}"}
+        )
+
+    if response_data.status_code != 200:
+        raise Exception(
+            f"Conversion request failed: {response_data.status_code}:{response_data.text}"
+        )
+
+    data = response_data.json()
+    status = data["data"]["status"]
+    url = data["data"].get("url", "")
+
+    if status == "processing":
+        return "Processing", ""
+    elif status == "success":
+        return "Success", url
+    else:
+        raise RequestError(f"Conversion uid {uid} file failed: {data}")
+
+
+@async_retry()
+async def get_convert_result(apikey: str, uid: str) -> Tuple[str, str]:
+    """Get the result of a conversion task
+
+    Args:
+        apikey (str): The API key
+        uid (str): The uid of the conversion task
+
+    Raises:
+        RequestError: If the request fails
+        Exception: For any other errors during the process
+
+    Returns:
+        Tuple[str, str]: A tuple containing the status and URL of the converted file
+    """
+    url = f"{Base_URL}/api/v2/convert/parse/result"
+
+    params = {"uid": uid}
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30)) as client:
+        response = await client.get(
+            url, params=params, headers={"Authorization": f"Bearer {apikey}"}
+        )
+
+    if response.status_code != 200:
+        raise Exception(
+            f"Get conversion result failed: {response.status_code}:{response.text}"
+        )
+
+    data = response.json()
+    status = data["data"]["status"]
+    url = data["data"].get("url", "")
+
+    if status == "processing":
+        return "Processing", ""
+    elif status == "success":
+        return "Success", url
+    else:
+        raise RequestError(f"Get conversion result for uid {uid} failed: {data}")

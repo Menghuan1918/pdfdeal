@@ -6,6 +6,15 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 
 
+async def code_check(code: str):
+    if code == "parse_task_limit_exceeded":
+        raise RateLimit()
+    elif code in RequestError.ERROR_CODES:
+        raise RequestError(code)
+    elif code not in ["ok", "success"]:
+        raise Exception(f"Unknown error code: {code}")
+
+
 class RateLimit(Exception):
     """
     Error when rate limit is reached.
@@ -16,10 +25,39 @@ class RateLimit(Exception):
 
 class RequestError(Exception):
     """
-    Error when request is not successful, usually because of the file broken.
+    Error when request is not successful, with known status code.
     """
 
-    pass
+    ERROR_CODES = {
+        "parse_page_limit_exceeded": "可用的解析页数额度不足 (Insufficient page quota)",
+        "parse_create_task_error": "创建任务失败 (Failed to create task)",
+        "parse_file_too_large": "单个文件大小超过限制 (File size exceeds limit)",
+        "parse_file_page_limit": "单个文件页数超过限制 (File page count exceeds limit)",
+        "parse_file_lock": "文件解析失败 (File parsing failed)",
+        "parse_file_not_pdf": "传入的文件不是PDF文件 (File is not a PDF)",
+        "parse_file_not_image": "传入的文件不在支持的图片文件范围内 (File is not a supported image type)",
+    }
+
+    SOLUTIONS = {
+        "parse_page_limit_exceeded": "当前可用的页数不够 (Not enough available pages)",
+        "parse_create_task_error": "短暂等待后重试, 如果还出现报错则请联系负责人 (Retry after a short wait, contact support if error persists)",
+        "parse_file_too_large": "当前允许单个文件大小 <= 300M, 请拆分 pdf (File size must be <= 300MB, please split the PDF)",
+        "parse_file_page_limit": "当前允许单个文件页数 <= 1000页, 请拆分 pdf (File page count must be <= 1000 pages, please split the PDF)",
+        "parse_file_lock": "为了防止反复解析, 暂时锁定一天\n考虑PDF可能有兼容性问题, 重新打印后再尝试\n仍然失败请反馈request_id给负责人 (Locked for a day to prevent repeated parsing. Consider reprinting the PDF if compatibility issues persist. Report request_id if it still fails)",
+        "parse_file_not_pdf": "请解析后缀为.pdf的文件 (Please parse files with .pdf extension)",
+        "parse_file_not_image": "目前只支持 jpg/png 图片文件的解析 (Currently only jpg/png image files are supported)",
+    }
+
+    def __init__(self, error_code, message=None):
+        self.error_code = error_code
+        self.reason = self.ERROR_CODES.get(error_code, "未知错误 (Unknown error)")
+        self.solution = self.SOLUTIONS.get(
+            error_code, "请联系技术支持 (Please contact technical support)"
+        )
+        super().__init__(message or f"{self.error_code}: {self.reason}")
+
+    def __str__(self):
+        return f"{self.error_code}: {self.reason}\nYou can try to do:\n{self.solution}"
 
 
 class FileError(Exception):
@@ -40,35 +78,24 @@ def async_retry(max_retries=2, backoff_factor=2):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            retries = 0
-            while retries < max_retries + 1:
+            for retries in range(max_retries + 1):
                 try:
                     return await func(*args, **kwargs)
-                except RateLimit:
-                    raise RateLimit
-                except FileError as e:
-                    logging.exception(
-                        f"Error in function '{func.__name__}': {type(e).__name__}:"
-                    )
-                    raise FileError(e)
-                except RequestError as e:
-                    logging.error(f"'{func.__name__}' get error: {e}")
-                    raise RequestError(f"{e} \nThis usually means the file is broken.")
+                except (RateLimit, FileError, RequestError) as e:
+                    logging.exception(f"Error in '{func.__name__}': {type(e).__name__}")
+                    raise
                 except Exception as e:
-                    last_exception = e
                     if retries == max_retries:
                         logging.exception(
-                            f"Error in function '{func.__name__}': {type(e).__name__}:"
+                            f"Error in '{func.__name__}': {type(e).__name__}"
                         )
-                        break
+                        raise
                     wait_time = backoff_factor**retries
                     logging.exception(
-                        f"Exception in function '{func.__name__}': {type(e).__name__} - {e}"
+                        f"Exception in '{func.__name__}': {type(e).__name__} - {e}"
                     )
                     logging.warning(f"Retrying in {wait_time} seconds.")
                     await asyncio.sleep(wait_time)
-                    retries += 1
-            raise last_exception
 
         return wrapper
 
@@ -85,32 +112,25 @@ def nomal_retry(max_retries=3, backoff_factor=2):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            retries = 0
-            while retries < max_retries + 1:
+            for retries in range(max_retries + 1):
                 try:
                     return func(*args, **kwargs)
                 except RateLimit:
-                    raise RateLimit
+                    raise
                 except FileError as e:
-                    logging.exception(
-                        f"Error in function '{func.__name__}': {type(e).__name__}:"
-                    )
-                    raise e
+                    logging.exception(f"FileError in '{func.__name__}': {e}")
+                    raise
                 except Exception as e:
-                    last_exception = e
                     if retries == max_retries:
                         logging.exception(
-                            f"Error in function '{func.__name__}': {type(e).__name__}:"
+                            f"Max retries reached in '{func.__name__}': {e}"
                         )
-                        break
+                        raise
                     wait_time = backoff_factor**retries
-                    logging.exception(
-                        f"Exception in function '{func.__name__}': {type(e).__name__} - {e}"
+                    logging.warning(
+                        f"Retrying '{func.__name__}' in {wait_time} seconds. Error: {e}"
                     )
-                    logging.warning(f"Retrying in {wait_time} seconds.")
                     time.sleep(wait_time)
-                    retries += 1
-            raise last_exception
 
         return wrapper
 
