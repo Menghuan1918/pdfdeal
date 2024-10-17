@@ -20,14 +20,14 @@ def tool(path: str, options: dict) -> Tuple[list, list, bool]:
     """
     deal pdf file with Doc2X
     """
-    from pdfdeal import Doc2X
+    from pdfdeal import Doc2X_Legacy
 
     api_key = options["api_key"]
     rpm = options.get("rpm", None)
     if rpm is None:
-        Client = Doc2X(apikey=api_key)
+        Client = Doc2X_Legacy(apikey=api_key)
     else:
-        Client = Doc2X(apikey=api_key, thread=rpm)
+        Client = Doc2X_Legacy(apikey=api_key, thread=rpm)
 
     try:
         limit = Client.get_limit()
@@ -47,10 +47,10 @@ def config(language: str = None) -> dict:
         language = curses_select(LANGUAGES, "Please select the language:")
     words = WORDS[language]
     key = input(words[0])
-    from pdfdeal import Doc2X
+    from pdfdeal import Doc2X_Legacy
 
     try:
-        Doc2X(apikey=key)
+        Doc2X_Legacy(apikey=key)
     except Exception as e:
         raise Exception(f"{words[1]}:\n {e}")
     RPM = input(words[2])

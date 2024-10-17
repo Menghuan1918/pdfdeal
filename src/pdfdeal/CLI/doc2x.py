@@ -9,6 +9,7 @@ from pdfdeal import Doc2X
 from pdfdeal.file_tools import get_files
 from pdfdeal.Watch.config import curses_select
 import logging
+import sys
 
 LANGUAGES = ["简体中文", "Enlish"]
 WORDS_CN = [
@@ -42,7 +43,7 @@ def set_doc2x_key(language):
     words, language = i18n(language)
     key = input(words[0])
     try:
-        Doc2X(apikey=key)
+        Doc2X_Legacy(apikey=key)
     except Exception as e:
         raise Exception(f"{words[1]}:\n {e}")
     RPM = input(words[2])
@@ -75,6 +76,9 @@ def file_type(language):
 
 
 def main():
+    print("警告: Doc2X CLI 目前暂时不可用。")
+    print("Warning: Doc2X CLI is temporarily unavailable.")
+    sys.exit(1)
     parser = argparse.ArgumentParser(
         description="Using doc2x to deal with pictures or pdfs"
     )
@@ -213,9 +217,9 @@ def main():
     equation = args.equation
 
     if api_key is None or api_key == "":
-        Client = Doc2X()
+        Client = Doc2X_Legacy()
     else:
-        Client = Doc2X(apikey=api_key, thread=rpm)
+        Client = Doc2X_Legacy(apikey=api_key, thread=rpm)
 
     if args.graphrag:
         assert format in [
