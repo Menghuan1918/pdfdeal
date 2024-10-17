@@ -26,22 +26,21 @@ async def pdf2file(
     max_time: int,
     convert: bool,
 ) -> str:
-    """
-    Convert pdf file to specified file using V2 API
-    """
+    """Convert pdf file to specified file using V2 API"""
+
+    async def retry_upload():
+        for _ in range(maxretry):
+            try:
+                return await upload_pdf(apikey, pdf_path, ocr)
+            except RateLimit:
+                await asyncio.sleep(wait_time)
+        raise RequestError("Max retry reached for upload_pdf")
+
     try:
         logging.info(f"Uploading {pdf_path}...")
         uid = await upload_pdf(apikey, pdf_path, ocr)
     except RateLimit:
-        for _ in range(maxretry):
-            await asyncio.sleep(wait_time)
-            try:
-                uid = await upload_pdf(apikey, pdf_path, ocr)
-                break
-            except RateLimit:
-                continue
-        else:
-            raise RequestError("Max retry reached for upload_pdf")
+        uid = await retry_upload()
 
     for _ in range(max_time):
         progress, status, texts, locations = await uid_status(apikey, uid, convert)
@@ -50,29 +49,28 @@ async def pdf2file(
             if output_format == "texts":
                 return texts
             elif output_format == "detailed":
-                texts_detailed = []
-                for text, location in zip(texts, locations):
-                    texts_detailed.append({"text": text, "location": location})
-                    return texts_detailed
+                return [
+                    {"text": text, "location": loc}
+                    for text, loc in zip(texts, locations)
+                ]
             elif output_format in ["md", "md_dollar", "tex", "docx"]:
                 logging.info(f"Parsing {uid} to {output_format}...")
                 status, url = await convert_parse(apikey, uid, output_format)
-                retry_count = 0
-                while status == "Processing" and retry_count < max_time:
-                    await asyncio.sleep(1)
-                    status, url = await get_convert_result(apikey, uid)
-                    retry_count += 1
-                if status == "Processing":
-                    raise RequestError("Max time reached for get_convert_result")
-                if status == "Success":
-                    logging.info(f"Downloading {uid} to {output_path}...")
-                    output_name = output_name or uid
-                    return await download_file(
-                        url=url,
-                        file_type=output_format,
-                        target_folder=output_path,
-                        target_filename=output_name,
-                    )
+                for _ in range(max_time):
+                    if status == "Success":
+                        logging.info(f"Downloading {uid} to {output_path}...")
+                        return await download_file(
+                            url=url,
+                            file_type=output_format,
+                            target_folder=output_path,
+                            target_filename=output_name or uid,
+                        )
+                    elif status == "Processing":
+                        await asyncio.sleep(1)
+                        status, url = await get_convert_result(apikey, uid)
+                    else:
+                        raise RequestError(f"Unexpected status: {status}")
+                raise RequestError("Max time reached for get_convert_result")
             else:
                 raise ValueError(f"Unsupported output format: {output_format}")
         elif status == "Processing file":
@@ -109,23 +107,21 @@ class Doc2X:
     ) -> Tuple[List[str], List[dict], bool]:
         limit = asyncio.Semaphore(self.thread)
         if isinstance(pdf_file, str):
-            if os.path.isdir(pdf_file):
-                pdf_file, output_names = get_files(
-                    path=pdf_file, mode="pdf", out=output_format
-                )
-            else:
-                pdf_file = [pdf_file]
-        if output_names is None:
-            output_names = [None] * len(pdf_file)
-        else:
-            if len(pdf_file) != len(output_names):
-                raise ValueError(
-                    "The length of files and output_names should be the same."
-                )
+            pdf_file, output_names = (
+                get_files(path=pdf_file, mode="pdf", out=output_format)
+                if os.path.isdir(pdf_file)
+                else ([pdf_file], None)
+            )
 
-        output_format = OutputFormat(output_format)
-        if isinstance(output_format, OutputFormat):
-            output_format = output_format.value
+        output_names = output_names or [None] * len(pdf_file)
+        if len(pdf_file) != len(output_names):
+            raise ValueError("The length of files and output_names should be the same.")
+
+        output_format = (
+            OutputFormat(output_format).value
+            if isinstance(output_format, OutputFormat)
+            else output_format
+        )
 
         async def process_file(pdf, name):
             async with limit:
@@ -156,6 +152,13 @@ class Doc2X:
             for r, pdf in zip(results, pdf_file)
         ]
         has_error = any(not r[2] for r in results)
+
+        if has_error:
+            failed_count = sum(1 for fail in failed_files if fail["error"] != "")
+            logging.warning(f"{failed_count} file(s) failed to convert:")
+            for fail in failed_files:
+                if fail["error"] != "":
+                    logging.warning(f"Error: {fail['error']} in file {fail['path']}")
 
         return success_files, failed_files, has_error
 
