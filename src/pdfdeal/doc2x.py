@@ -155,10 +155,9 @@ class Doc2X:
 
         if has_error:
             failed_count = sum(1 for fail in failed_files if fail["error"] != "")
-            logging.warning(f"{failed_count} file(s) failed to convert:")
-            for fail in failed_files:
-                if fail["error"] != "":
-                    logging.warning(f"Error: {fail['error']} in file {fail['path']}")
+            logging.warning(
+                f"{failed_count} file(s) failed to convert, please check the log."
+            )
 
         return success_files, failed_files, has_error
 

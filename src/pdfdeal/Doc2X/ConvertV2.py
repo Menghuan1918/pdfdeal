@@ -56,8 +56,9 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
 
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
-        await code_check(response_data.get("code", response_data))
-        return response_data["data"]["uid"]
+        uid = response_data.get("data", {}).get("uid")
+        await code_check(code=response_data.get("code", response_data), uid=uid)
+        return uid
 
     if post_res.status_code == 429:
         raise RateLimit()
@@ -106,11 +107,11 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
 
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
-        await code_check(response_data.get("code", response_data))
+        uid = response_data["data"]["form"]["x-amz-meta-uid"]
+        await code_check(response_data.get("code", response_data), uid=uid)
 
         upload_data = response_data["data"]
         upload_url = upload_data["url"]
-        uid = upload_data["form"]["x-amz-meta-uid"]
 
         async with httpx.AsyncClient(timeout=timeout) as client:
             s3_res = await client.post(
@@ -197,7 +198,7 @@ async def uid_status(
             f"Get status error with {e}! {response_data.status_code}:{response_data.text}"
         )
 
-    await code_check(data.get("code", response_data))
+    await code_check(data.get("code", response_data),uid)
 
     progress, status = data["data"].get("progress", 0), data["data"].get("status", "")
     if status == "processing":
@@ -255,7 +256,7 @@ async def convert_parse(
         )
 
     data = response_data.json()
-    await code_check(data.get("code", response_data))
+    await code_check(data.get("code", response_data),uid)
     status = data["data"]["status"]
     url = data["data"].get("url", "")
 
@@ -297,6 +298,7 @@ async def get_convert_result(apikey: str, uid: str) -> Tuple[str, str]:
         )
 
     data = response.json()
+    await code_check(data.get("code", response), uid)
     status = data["data"]["status"]
     url = data["data"].get("url", "")
 

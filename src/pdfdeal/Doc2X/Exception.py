@@ -6,13 +6,13 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 
 
-async def code_check(code: str):
+async def code_check(code: str, uid: str = None):
     if code == "parse_task_limit_exceeded":
         raise RateLimit()
     elif code in RequestError.ERROR_CODES:
-        raise RequestError(code)
+        raise RequestError(code, uid=uid)
     elif code not in ["ok", "success"]:
-        raise Exception(f"Unknown error code: {code}")
+        raise Exception(f"Unknown error code: {code}, UID: {uid}")
 
 
 class RateLimit(Exception):
@@ -34,6 +34,7 @@ class RequestError(Exception):
         "parse_file_too_large": "单个文件大小超过限制 (File size exceeds limit)",
         "parse_file_page_limit": "单个文件页数超过限制 (File page count exceeds limit)",
         "parse_file_lock": "文件解析失败 (File parsing failed)",
+        "parse_pdf_invalid": "传入的文件不是有效的PDF文件 (File is not a valid PDF)",
         "parse_file_not_pdf": "传入的文件不是PDF文件 (File is not a PDF)",
         "parse_file_not_image": "传入的文件不在支持的图片文件范围内 (File is not a supported image type)",
         "internal_error": "内部错误 (Internal error)",
@@ -44,14 +45,16 @@ class RequestError(Exception):
         "parse_create_task_error": "短暂等待后重试, 如果还出现报错则请联系负责人 (Retry after a short wait, contact support if error persists)",
         "parse_file_too_large": "当前允许单个文件大小 <= 300M, 请拆分 pdf (File size must be <= 300MB, please split the PDF)",
         "parse_file_page_limit": "当前允许单个文件页数 <= 1000页, 请拆分 pdf (File page count must be <= 1000 pages, please split the PDF)",
-        "parse_file_lock": "为了防止反复解析, 暂时锁定一天\n考虑PDF可能有兼容性问题, 重新打印后再尝试\n仍然失败请反馈request_id给负责人 (Locked for a day to prevent repeated parsing. Consider reprinting the PDF if compatibility issues persist. Report request_id if it still fails)",
+        "parse_file_lock": "为了防止反复解析, 暂时锁定一天,考虑PDF可能有兼容性问题, 重新打印后再尝试。仍然失败请反馈request_id给负责人 (Locked for a day to prevent repeated parsing. Consider reprinting the PDF if compatibility issues persist. Report request_id if it still fails)",
+        "parse_pdf_invalid": "不是有效的PDF文件,考虑PDF可能有兼容性问题, 重新打印后再尝试。仍然失败请反馈request_id给负责人 (File is not a valid PDF. Consider reprinting the PDF if compatibility issues persist. Report request_id if it still fails)",
         "parse_file_not_pdf": "请解析后缀为.pdf的文件 (Please parse files with .pdf extension)",
         "parse_file_not_image": "目前只支持 jpg/png 图片文件的解析 (Currently only jpg/png image files are supported)",
         "internal_error": "请联系技术支持 (Please contact technical support)",
     }
 
-    def __init__(self, error_code, message=None):
+    def __init__(self, error_code, uid: str = None, message=None):
         self.error_code = error_code
+        self.uid = uid
         self.reason = self.ERROR_CODES.get(error_code, "未知错误 (Unknown error)")
         self.solution = self.SOLUTIONS.get(
             error_code, "请联系技术支持 (Please contact technical support)"
@@ -59,7 +62,8 @@ class RequestError(Exception):
         super().__init__(message or f"{self.error_code}: {self.reason}")
 
     def __str__(self):
-        return f"{self.error_code}: {self.reason}\nYou can try to do:\n{self.solution}"
+        self.uid = self.uid or "Failed to get uid"
+        return f"{self.error_code}: {self.reason}\nUID: {self.uid}\nYou can try to do:\n{self.solution}"
 
 
 class FileError(Exception):
@@ -84,7 +88,9 @@ def async_retry(max_retries=2, backoff_factor=2):
                 try:
                     return await func(*args, **kwargs)
                 except (RateLimit, FileError, RequestError) as e:
-                    logging.exception(f"Error in '{func.__name__}': {type(e).__name__}")
+                    logging.error(
+                        f"Error in '{func.__name__}': {type(e).__name__} - {e}"
+                    )
                     raise
                 except Exception as e:
                     if isinstance(e, RequestError):
@@ -94,7 +100,7 @@ def async_retry(max_retries=2, backoff_factor=2):
                         raise
                     elif retries == max_retries:
                         logging.exception(
-                            f"Error in '{func.__name__}': {type(e).__name__}"
+                            f"Error in '{func.__name__}': {type(e).__name__} - {e}"
                         )
                         raise
                     wait_time = backoff_factor**retries
