@@ -232,13 +232,13 @@ async def convert_parse(
     Returns:
         Tuple[str, str]: A tuple containing the status and URL of the converted file
     """
-    url = f"{Base_URL}/api/v2/convert/parse"
+    url = f"{Base_URL}/v2/convert/parse"
 
     to = OutputFormat(to)
     if isinstance(to, OutputFormat):
         to = to.value
 
-    payload = {"uid": uid, "to": to}
+    payload = {"uid": uid, "to": to, "formula_mode": "normal"}
     if filename and to in ["md", "md_dollar", "tex"]:
         payload["filename"] = filename
     if to == "md_dollar":
@@ -255,6 +255,7 @@ async def convert_parse(
         )
 
     data = response_data.json()
+    await code_check(data.get("code", response_data))
     status = data["data"]["status"]
     url = data["data"].get("url", "")
 
@@ -281,7 +282,7 @@ async def get_convert_result(apikey: str, uid: str) -> Tuple[str, str]:
     Returns:
         Tuple[str, str]: A tuple containing the status and URL of the converted file
     """
-    url = f"{Base_URL}/api/v2/convert/parse/result"
+    url = f"{Base_URL}/v2/convert/parse/result"
 
     params = {"uid": uid}
 

@@ -30,6 +30,7 @@ async def pdf2file(
     Convert pdf file to specified file using V2 API
     """
     try:
+        logging.info(f"Uploading {pdf_path}...")
         uid = await upload_pdf(apikey, pdf_path, ocr)
     except RateLimit:
         for _ in range(maxretry):
@@ -45,6 +46,7 @@ async def pdf2file(
     for _ in range(max_time):
         progress, status, texts, locations = await uid_status(apikey, uid, convert)
         if status == "Success":
+            logging.info(f"Conversion successful for {pdf_path} with uid {uid}")
             if output_format == "texts":
                 return texts
             elif output_format == "detailed":
@@ -53,6 +55,7 @@ async def pdf2file(
                     texts_detailed.append({"text": text, "location": location})
                     return texts_detailed
             elif output_format in ["md", "md_dollar", "tex", "docx"]:
+                logging.info(f"Parsing {uid} to {output_format}...")
                 status, url = await convert_parse(apikey, uid, output_format)
                 retry_count = 0
                 while status == "Processing" and retry_count < max_time:
@@ -62,6 +65,8 @@ async def pdf2file(
                 if status == "Processing":
                     raise RequestError("Max time reached for get_convert_result")
                 if status == "Success":
+                    logging.info(f"Downloading {uid} to {output_path}...")
+                    output_name = output_name or uid
                     return await download_file(
                         url=url,
                         file_type=output_format,
@@ -133,6 +138,8 @@ class Doc2X:
                         output_name=name,
                         ocr=ocr,
                         wait_time=15,
+                        max_time=self.max_time,
+                        maxretry=self.retry_time,
                         convert=convert,
                     )
                     return result, "", True

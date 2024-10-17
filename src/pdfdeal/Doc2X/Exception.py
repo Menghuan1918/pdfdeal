@@ -36,6 +36,7 @@ class RequestError(Exception):
         "parse_file_lock": "文件解析失败 (File parsing failed)",
         "parse_file_not_pdf": "传入的文件不是PDF文件 (File is not a PDF)",
         "parse_file_not_image": "传入的文件不在支持的图片文件范围内 (File is not a supported image type)",
+        "internal_error": "内部错误 (Internal error)",
     }
 
     SOLUTIONS = {
@@ -46,6 +47,7 @@ class RequestError(Exception):
         "parse_file_lock": "为了防止反复解析, 暂时锁定一天\n考虑PDF可能有兼容性问题, 重新打印后再尝试\n仍然失败请反馈request_id给负责人 (Locked for a day to prevent repeated parsing. Consider reprinting the PDF if compatibility issues persist. Report request_id if it still fails)",
         "parse_file_not_pdf": "请解析后缀为.pdf的文件 (Please parse files with .pdf extension)",
         "parse_file_not_image": "目前只支持 jpg/png 图片文件的解析 (Currently only jpg/png image files are supported)",
+        "internal_error": "请联系技术支持 (Please contact technical support)",
     }
 
     def __init__(self, error_code, message=None):
