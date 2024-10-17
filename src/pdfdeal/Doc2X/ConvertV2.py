@@ -5,6 +5,7 @@ import re
 from typing import Tuple
 from .Exception import RateLimit, FileError, RequestError, async_retry, code_check
 import logging
+from .Types import OutputFormat
 
 Base_URL = "https://v2.doc2x.noedgeai.com/api"
 
@@ -220,7 +221,7 @@ async def convert_parse(
     Args:
         apikey (str): The API key
         uid (str): The uid of the parsed file
-        to (str): Export format, supports: md|tex|docx
+        to (str): Export format, supports: md|tex|docx|md_dollar
         filename (str, optional): Output filename for md/tex (without extension). Defaults to None.
 
     Raises:
@@ -233,13 +234,16 @@ async def convert_parse(
     """
     url = f"{Base_URL}/api/v2/convert/parse"
 
-    if to not in ["md", "tex", "docx"]:
-        raise ValueError("Invalid export format. Supported formats are: md, tex, docx")
+    to = OutputFormat(to)
+    if isinstance(to, OutputFormat):
+        to = to.value
 
     payload = {"uid": uid, "to": to}
-    if filename and to in ["md", "tex"]:
+    if filename and to in ["md", "md_dollar", "tex"]:
         payload["filename"] = filename
-
+    if to == "md_dollar":
+        payload["formula_mode"] = "dollar"
+        to = "md"
     async with httpx.AsyncClient(timeout=httpx.Timeout(30)) as client:
         response_data = await client.post(
             url, json=payload, headers={"Authorization": f"Bearer {apikey}"}
@@ -301,3 +305,45 @@ async def get_convert_result(apikey: str, uid: str) -> Tuple[str, str]:
         return "Success", url
     else:
         raise RequestError(f"Get conversion result for uid {uid} failed: {data}")
+
+
+@async_retry()
+async def download_file(
+    url: str, file_type: str, target_folder: str, target_filename: str
+) -> str:
+    """
+    Download a file from the given URL to the specified target folder with the given filename.
+
+    Args:
+        url (str): The URL to download the file from.
+        file_type (str): The type of file being downloaded (e.g., 'zip', 'docx').
+        target_folder (str): The folder where the file should be saved.
+        target_filename (str): The desired filename for the downloaded file, can include subdirectories.
+
+    Raises:
+        Exception: If there's an error creating the target folder or downloading the file.
+
+    Returns:
+        str: The full path of the downloaded file.
+    """
+    target_path = os.path.join(target_folder, target_filename)
+    target_dir = os.path.dirname(target_path)
+    filename = os.path.basename(target_path)
+    os.makedirs(target_dir, exist_ok=True)
+
+    filename = os.path.splitext(filename)[0]
+    if file_type != "docx":
+        file_type = "zip"
+    file_path = os.path.join(target_dir, f"{filename}.{file_type}")
+    counter = 1
+    while os.path.exists(file_path):
+        file_path = os.path.join(target_dir, f"{filename}_{counter}.{file_type}")
+        counter += 1
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        with open(file_path, "wb") as f:
+            f.write(response.content)
+
+    return file_path

@@ -85,7 +85,12 @@ def async_retry(max_retries=2, backoff_factor=2):
                     logging.exception(f"Error in '{func.__name__}': {type(e).__name__}")
                     raise
                 except Exception as e:
-                    if retries == max_retries:
+                    if isinstance(e, RequestError):
+                        logging.error(str(e))
+                        raise
+                    elif isinstance(e, RateLimit):
+                        raise
+                    elif retries == max_retries:
                         logging.exception(
                             f"Error in '{func.__name__}': {type(e).__name__}"
                         )
