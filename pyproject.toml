@@ -2,7 +2,7 @@
 name = "pdfdeal"
 version = "0.4.0"
 authors = [{ name = "Menghuan1918", email = "menghuan@menghuan1918.com" }]
-description = "A python wrapper for the Doc2X API and comes with native PDF processing (to improve PDF recall in RAG)."
+description = "A python wrapper for the Doc2X API and comes with native texts processing (to improve texts recall in RAG)."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [

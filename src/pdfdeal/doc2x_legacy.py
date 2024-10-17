@@ -1,7 +1,8 @@
 import asyncio
 import os
 from .Doc2X.Exception import RateLimit, run_async
-from .Doc2X.Types import OutputFormat, RAG_OutputType
+from .Doc2X.Types import RAG_OutputType
+from .Doc2X.Types import OutputFormat_Legacy as OutputFormat
 from .FileTools.dealpdfs import strore_pdf
 from typing import Tuple
 from .FileTools.file_tools import list_rename

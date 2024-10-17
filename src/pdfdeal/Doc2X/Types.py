@@ -4,7 +4,25 @@ from enum import Enum
 class OutputFormat(str, Enum):
     DOCX = "docx"
     TXTS = "texts"
+    DETAILED = "detailed"
     LATEX = "tex"
+    MD = "md"
+    MD_DOLLAR = "md_dollar"
+
+    @classmethod
+    def _missing_(cls, value):
+        for member in cls:
+            if member.value.lower() == value.lower():
+                return member
+        raise ValueError(
+            f"{value} is not a valid {cls.__name__}, must be one of {', '.join([m.value for m in cls])}"
+        )
+
+
+class OutputFormat_Legacy(str, Enum):
+    DOCX = "docx"
+    TXTS = "texts"
+    LATEX = "latex"
     MD = "md"
     MD_DOLLAR = "md_dollar"
 
