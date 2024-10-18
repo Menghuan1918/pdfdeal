@@ -10,11 +10,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["httpx"]
+dependencies = ["httpx", "pypdf"]
 
 [project.optional-dependencies]
-all = ["emoji", "pypdf", "Pillow", "reportlab"]
-rag = ["emoji", "pypdf", "Pillow", "reportlab"]
+all = ["emoji", "Pillow", "reportlab"]
+rag = ["emoji", "Pillow", "reportlab"]
 
 [project.urls]
 Issues = "https://github.com/Menghuan1918/pdfdeal/issues"

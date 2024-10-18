@@ -198,7 +198,7 @@ async def uid_status(
             f"Get status error with {e}! {response_data.status_code}:{response_data.text}"
         )
 
-    await code_check(data.get("code", response_data),uid)
+    await code_check(data.get("code", response_data), uid)
 
     progress, status = data["data"].get("progress", 0), data["data"].get("status", "")
     if status == "processing":
@@ -244,7 +244,7 @@ async def convert_parse(
         payload["filename"] = filename
     if to == "md_dollar":
         payload["formula_mode"] = "dollar"
-        to = "md"
+        payload["to"] = "md"
     async with httpx.AsyncClient(timeout=httpx.Timeout(30)) as client:
         response_data = await client.post(
             url, json=payload, headers={"Authorization": f"Bearer {apikey}"}
@@ -256,7 +256,7 @@ async def convert_parse(
         )
 
     data = response_data.json()
-    await code_check(data.get("code", response_data),uid)
+    await code_check(data.get("code", response_data), uid)
     status = data["data"]["status"]
     url = data["data"].get("url", "")
 
