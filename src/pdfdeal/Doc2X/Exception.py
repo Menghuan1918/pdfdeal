@@ -62,7 +62,7 @@ class RequestError(Exception):
         super().__init__(message or f"{self.error_code}: {self.reason}")
 
     def __str__(self):
-        self.uid = self.uid or "Failed to get uid"
+        self.uid = self.uid or "Failed to get uid! Please set DEBUG mode to check the failed file path."
         return f"{self.error_code}: {self.reason}\nUID: {self.uid}\nYou can try to do:\n{self.solution}"
 
 
@@ -107,7 +107,7 @@ def async_retry(max_retries=2, backoff_factor=2):
                     logging.exception(
                         f"Exception in '{func.__name__}': {type(e).__name__} - {e}"
                     )
-                    logging.warning(f"Retrying in {wait_time} seconds.")
+                    logging.warning(f"Will retrying in {wait_time} seconds...")
                     await asyncio.sleep(wait_time)
 
         return wrapper
