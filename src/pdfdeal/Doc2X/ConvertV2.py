@@ -11,6 +11,7 @@ Base_URL = "https://v2.doc2x.noedgeai.com/api"
 
 logger = logging.getLogger("pdfdeal.convertV2")
 
+
 @async_retry()
 async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
     """Upload pdf file to server and return the uid of the file
@@ -58,7 +59,10 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
         uid = response_data.get("data", {}).get("uid")
-        await code_check(code=response_data.get("code", response_data), uid=uid)
+        trace_id = post_res.headers.get("trace-id")
+        await code_check(
+            code=response_data.get("code", response_data), uid=uid, trace_id=trace_id
+        )
         return uid
 
     if post_res.status_code == 429:
@@ -109,7 +113,10 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
         uid = response_data["data"]["form"]["x-amz-meta-uid"]
-        await code_check(response_data.get("code", response_data), uid=uid)
+        trace_id = post_res.headers.get("trace-id")
+        await code_check(
+            response_data.get("code", response_data), uid=uid, trace_id=trace_id
+        )
 
         upload_data = response_data["data"]
         upload_url = upload_data["url"]
@@ -199,7 +206,8 @@ async def uid_status(
             f"Get status error with {e}! {response_data.status_code}:{response_data.text}"
         )
 
-    await code_check(data.get("code", response_data), uid)
+    trace_id = response_data.headers.get("trace-id")
+    await code_check(data.get("code", response_data), uid, trace_id=trace_id)
 
     progress, status = data["data"].get("progress", 0), data["data"].get("status", "")
     if status == "processing":
@@ -257,7 +265,8 @@ async def convert_parse(
         )
 
     data = response_data.json()
-    await code_check(data.get("code", response_data), uid)
+    trace_id = response_data.headers.get("trace-id")
+    await code_check(data.get("code", response_data), uid, trace_id=trace_id)
     status = data["data"]["status"]
     url = data["data"].get("url", "")
 
@@ -299,7 +308,8 @@ async def get_convert_result(apikey: str, uid: str) -> Tuple[str, str]:
         )
 
     data = response.json()
-    await code_check(data.get("code", response), uid)
+    trace_id = response.headers.get("trace-id")
+    await code_check(data.get("code", response), uid, trace_id=trace_id)
     status = data["data"]["status"]
     url = data["data"].get("url", "")
 

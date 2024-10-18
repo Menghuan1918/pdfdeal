@@ -63,7 +63,9 @@ async def pdf2file(
                 status, url = await convert_parse(apikey, uid, output_format)
                 for _ in range(max_time):
                     if status == "Success":
-                        logger.info(f"Downloading {uid} {output_format} file to {output_path}...")
+                        logger.info(
+                            f"Downloading {uid} {output_format} file to {output_path}..."
+                        )
                         return await download_file(
                             url=url,
                             file_type=output_format,

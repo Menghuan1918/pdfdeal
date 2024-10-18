@@ -13,8 +13,8 @@ classifiers = [
 dependencies = ["httpx", "pypdf"]
 
 [project.optional-dependencies]
-all = ["emoji", "Pillow", "reportlab"]
 rag = ["emoji", "Pillow", "reportlab"]
+dev = ["pytest", "emoji", "Pillow", "reportlab"]
 
 [project.urls]
 Issues = "https://github.com/Menghuan1918/pdfdeal/issues"

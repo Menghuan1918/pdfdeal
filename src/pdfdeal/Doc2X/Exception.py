@@ -6,13 +6,13 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 
 
-async def code_check(code: str, uid: str = None):
+async def code_check(code: str, uid: str = None, trace_id: str = None):
     if code in ["parse_task_limit_exceeded", "parse_concurrency_limit"]:
         raise RateLimit()
     if code in RequestError.ERROR_CODES:
-        raise RequestError(code, uid=uid)
+        raise RequestError(code, uid=uid, trace_id=trace_id)
     if code not in ["ok", "success"]:
-        raise Exception(f"Unknown error code: {code}, UID: {uid}")
+        raise Exception(f"Unknown error code: {code}, UID: {uid}, Trace ID: {trace_id}")
 
 
 class RateLimit(Exception):
@@ -54,7 +54,7 @@ class RequestError(Exception):
         "parse_concurrency_limit": "短暂等待后重试, 当前解析的PDF页数超出上限 (Retry after a short wait, concurrent PDF page parsing limit exceeded)",
     }
 
-    def __init__(self, error_code, uid: str = None, message=None):
+    def __init__(self, error_code, uid: str = None, trace_id: str = None, message=None):
         self.error_code = error_code
         self.uid = uid
         self.reason = self.ERROR_CODES.get(error_code, "未知错误 (Unknown error)")
@@ -68,7 +68,7 @@ class RequestError(Exception):
             self.uid
             or "Failed to get uid! Please set DEBUG mode to check the failed file path."
         )
-        return f"{self.error_code}: {self.reason}\nUID: {self.uid}\nYou can try to do:\n{self.solution}"
+        return f"{self.error_code}: {self.reason}\nUID: {self.uid}\nTrace ID: {self.trace_id}\nYou can try to do:\n{self.solution}"
 
 
 class FileError(Exception):
@@ -112,7 +112,9 @@ def async_retry(max_retries=2, backoff_factor=2):
                     logging.exception(
                         f"Exception in '{func.__name__}': {type(e).__name__} - {e}"
                     )
-                    logging.warning(f"Will retrying in {wait_time} seconds...")
+                    logging.warning(
+                        f"Errors detected that may be resolved by retrying, will retrying in {wait_time} seconds..."
+                    )
                     await asyncio.sleep(wait_time)
 
         return wrapper
