@@ -4,6 +4,7 @@ from enum import Enum
 class OutputFormat(str, Enum):
     DOCX = "docx"
     TXTS = "texts"
+    TXT = "text"
     DETAILED = "detailed"
     LATEX = "tex"
     MD = "md"

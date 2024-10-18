@@ -7,11 +7,11 @@ import logging
 
 
 async def code_check(code: str, uid: str = None):
-    if code == "parse_task_limit_exceeded":
+    if code in ["parse_task_limit_exceeded", "parse_concurrency_limit"]:
         raise RateLimit()
-    elif code in RequestError.ERROR_CODES:
+    if code in RequestError.ERROR_CODES:
         raise RequestError(code, uid=uid)
-    elif code not in ["ok", "success"]:
+    if code not in ["ok", "success"]:
         raise Exception(f"Unknown error code: {code}, UID: {uid}")
 
 
@@ -38,6 +38,7 @@ class RequestError(Exception):
         "parse_file_not_pdf": "传入的文件不是PDF文件 (File is not a PDF)",
         "parse_file_not_image": "传入的文件不在支持的图片文件范围内 (File is not a supported image type)",
         "internal_error": "内部错误 (Internal error)",
+        "parse_concurrency_limit": "同时解析的PDF页数超出上限 (Concurrent PDF page parsing limit exceeded)",
     }
 
     SOLUTIONS = {
@@ -50,6 +51,7 @@ class RequestError(Exception):
         "parse_file_not_pdf": "请解析后缀为.pdf的文件 (Please parse files with .pdf extension)",
         "parse_file_not_image": "目前只支持 jpg/png 图片文件的解析 (Currently only jpg/png image files are supported)",
         "internal_error": "请联系技术支持 (Please contact technical support)",
+        "parse_concurrency_limit": "短暂等待后重试, 当前解析的PDF页数超出上限 (Retry after a short wait, concurrent PDF page parsing limit exceeded)",
     }
 
     def __init__(self, error_code, uid: str = None, message=None):
@@ -62,7 +64,10 @@ class RequestError(Exception):
         super().__init__(message or f"{self.error_code}: {self.reason}")
 
     def __str__(self):
-        self.uid = self.uid or "Failed to get uid! Please set DEBUG mode to check the failed file path."
+        self.uid = (
+            self.uid
+            or "Failed to get uid! Please set DEBUG mode to check the failed file path."
+        )
         return f"{self.error_code}: {self.reason}\nUID: {self.uid}\nYou can try to do:\n{self.solution}"
 
 
@@ -87,7 +92,7 @@ def async_retry(max_retries=2, backoff_factor=2):
             for retries in range(max_retries + 1):
                 try:
                     return await func(*args, **kwargs)
-                except (RateLimit, FileError, RequestError) as e:
+                except (RateLimit, FileError, RequestError, FileNotFoundError) as e:
                     logging.error(
                         f"Error in '{func.__name__}': {type(e).__name__} - {e}"
                     )

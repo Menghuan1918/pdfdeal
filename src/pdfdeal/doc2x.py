@@ -13,9 +13,9 @@ from .Doc2X.Types import OutputFormat
 from .Doc2X.Pages import get_pdf_page_count
 from .Doc2X.Exception import RequestError, RateLimit, run_async
 from .FileTools.file_tools import get_files
-import warnings
 
 logger = logging.getLogger(name="pdfdeal.doc2x")
+
 
 async def pdf2file(
     apikey: str,
@@ -51,6 +51,8 @@ async def pdf2file(
             logger.info(f"Conversion successful for {pdf_path} with uid {uid}")
             if output_format == "texts":
                 return texts
+            elif output_format == "text":
+                return "\n".join(texts)
             elif output_format == "detailed":
                 return [
                     {"text": text, "location": loc}
@@ -61,7 +63,7 @@ async def pdf2file(
                 status, url = await convert_parse(apikey, uid, output_format)
                 for _ in range(max_time):
                     if status == "Success":
-                        logger.info(f"Downloading {uid} to {output_path}...")
+                        logger.info(f"Downloading {uid} {output_format} file to {output_path}...")
                         return await download_file(
                             url=url,
                             file_type=output_format,
@@ -88,7 +90,7 @@ class Doc2X:
     def __init__(
         self,
         apikey: str = None,
-        thread: int = 1,
+        thread: int = 5,
         max_pages: int = 1000,
         retry_time: int = 15,
         max_time: int = 90,
@@ -99,21 +101,20 @@ class Doc2X:
             raise ValueError("No apikey found")
         self.retry_time = retry_time
         self.max_time = max_time
-        if thread != 1:
-            warnings.warn(
-                "The 'thread' parameter is deprecated. Now only the maximum total pages `max_pages` processed simultaneously can be specified.",
-                DeprecationWarning,
-            )
+        self.thread = thread
         self.max_pages = max_pages
 
         handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         handler.setFormatter(formatter)
         logger.handlers.clear()
         logger.addHandler(handler)
         logger.propagate = False
         if debug:
             logging.getLogger("pdfdeal").setLevel(logging.DEBUG)
+        self.debug = debug
 
     async def pdf2file_back(
         self,
@@ -142,48 +143,50 @@ class Doc2X:
         )
 
         semaphore = asyncio.Semaphore(self.max_pages)
+        thread_semaphore = asyncio.Semaphore(self.thread)
 
         async def process_file(pdf, name):
-            try:
-                page_count = get_pdf_page_count(pdf)
-            except Exception as e:
-                logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
-                page_count = self.max_pages  #! Assume the worst case
-            if page_count > self.max_pages:
-                logger.warning(f"File {pdf} has too many pages, skipping.")
-                raise ValueError(f"File {pdf} has too many pages.")
-
-            async def acquire_semaphore():
-                for _ in range(page_count):
-                    await semaphore.acquire()
-
-            try:
-                await acquire_semaphore()
+            async with thread_semaphore:
                 try:
-                    result = await asyncio.wait_for(
-                        pdf2file(
-                            apikey=self.apikey,
-                            pdf_path=pdf,
-                            output_path=os.path.join(output_path),
-                            output_format=output_format,
-                            output_name=name,
-                            ocr=ocr,
-                            wait_time=15,
-                            max_time=self.max_time,
-                            maxretry=self.retry_time,
-                            convert=convert,
-                        ),
-                        timeout=self.max_time * 2,
-                    )
-                    return result, "", True
-                except asyncio.TimeoutError:
-                    return "", "Operation timed out", False
+                    page_count = get_pdf_page_count(pdf)
                 except Exception as e:
-                    return "", str(e), False
-            finally:
-                #! Assuming that the semaphore release should be done regardless of the outcome
-                for _ in range(page_count):
-                    semaphore.release()
+                    logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
+                    page_count = self.max_pages  #! Assume the worst case
+                if page_count > self.max_pages:
+                    logger.warning(f"File {pdf} has too many pages, skipping.")
+                    raise ValueError(f"File {pdf} has too many pages.")
+
+                async def acquire_semaphore():
+                    for _ in range(page_count):
+                        await semaphore.acquire()
+
+                try:
+                    await acquire_semaphore()
+                    try:
+                        result = await asyncio.wait_for(
+                            pdf2file(
+                                apikey=self.apikey,
+                                pdf_path=pdf,
+                                output_path=os.path.join(output_path),
+                                output_format=output_format,
+                                output_name=name,
+                                ocr=ocr,
+                                wait_time=15,
+                                max_time=self.max_time,
+                                maxretry=self.retry_time,
+                                convert=convert,
+                            ),
+                            timeout=self.max_time * 2,
+                        )
+                        return result, "", True
+                    except asyncio.TimeoutError:
+                        return "", "Operation timed out", False
+                    except Exception as e:
+                        return "", str(e), False
+                finally:
+                    #! Assuming that the semaphore release should be done regardless of the outcome
+                    for _ in range(page_count):
+                        semaphore.release()
 
         results = await asyncio.gather(
             *[process_file(pdf, name) for pdf, name in zip(pdf_file, output_names)]
@@ -198,10 +201,16 @@ class Doc2X:
 
         if has_error:
             failed_count = sum(1 for fail in failed_files if fail["error"] != "")
-            logger.warning(
-                f"{failed_count} file(s) failed to convert, please check the log."
+            logger.error(
+                f"{failed_count} file(s) failed to convert, please check the log or the output variable."
             )
-
+            if not self.debug:
+                for fail in failed_files:
+                    if fail["error"] != "":
+                        logger.warning(
+                            f"Failed to convert {fail['path']}: {fail['error']}"
+                        )
+        logger.info(f"Successfully converted {len(success_files)} file(s).")
         return success_files, failed_files, has_error
 
     def pdf2file(self, *args, **kwargs):
