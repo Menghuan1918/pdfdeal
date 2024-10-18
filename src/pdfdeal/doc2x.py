@@ -98,6 +98,31 @@ class Doc2X:
         max_time: int = 90,
         debug: bool = False,
     ) -> None:
+        """
+        Initialize a Doc2X client.
+
+        Args:
+            apikey (str, optional): The API key for Doc2X. If not provided, it will try to get from environment variable 'DOC2X_APIKEY'.
+            thread (int, optional): The maximum number of concurrent threads. Defaults to 5.
+            max_pages (int, optional): The maximum number of pages to process. Defaults to 1000.
+            retry_time (int, optional): The number of retry attempts. Defaults to 15.
+            max_time (int, optional): The maximum time (in seconds) to wait for a response. Defaults to 90.
+            debug (bool, optional): Whether to enable debug logging. Defaults to False.
+
+        Raises:
+            ValueError: If no API key is found.
+
+        Attributes:
+            apikey (str): The API key for Doc2X.
+            retry_time (int): The number of retry attempts.
+            max_time (int): The maximum time to wait for a response.
+            thread (int): The maximum number of concurrent threads.
+            max_pages (int): The maximum number of pages to process.
+            debug (bool): Whether debug logging is enabled.
+
+        Note:
+            If debug is set to True, it will set the logging level of 'pdfdeal' logger to DEBUG.
+        """
         self.apikey = apikey or os.environ.get("DOC2X_APIKEY", "")
         if not self.apikey:
             raise ValueError("No apikey found")
@@ -215,5 +240,48 @@ class Doc2X:
         logger.info(f"Successfully converted {len(success_files)} file(s).")
         return success_files, failed_files, has_error
 
-    def pdf2file(self, *args, **kwargs):
-        return run_async(self.pdf2file_back(*args, **kwargs))
+    def pdf2file(
+        self,
+        pdf_file,
+        output_names: List[str] = None,
+        output_path: str = "./Output",
+        output_format: str = "md_dollar",
+        ocr: bool = True,
+        convert: bool = False,
+    ) -> Tuple[List[str], List[dict], bool]:
+        """Convert PDF files to the specified format.
+
+        Args:
+            pdf_file (str | List[str]): Path to a single PDF file or a list of PDF file paths.
+            output_names (List[str], optional): List of output file names. Defaults to None.
+            output_path (str, optional): Directory path for output files. Defaults to "./Output".
+            output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, support output variable: `txt`|`txts`|`detailed`
+
+            ocr (bool, optional): Whether to use OCR. Defaults to True.
+            convert (bool, optional): Whether to convert the PDF. If False, only performs OCR. Defaults to False.
+
+        Returns:
+            Tuple[List[str], List[dict], bool]: A tuple containing:
+
+                1. A list of successfully converted file paths or content.
+                2. A list of dictionaries containing error information for failed conversions.
+                3. A boolean indicating whether any errors occurred during the conversion process.
+
+        Raises:
+            Any exceptions raised by pdf2file_back or run_async.
+
+        Note:
+            This method provides a convenient synchronous interface for the asynchronous
+            PDF conversion functionality. It handles all the necessary setup for running
+            the asynchronous code in a synchronous context.
+        """
+        return run_async(
+            self.pdf2file_back(
+                pdf_file=pdf_file,
+                output_names=output_names,
+                output_path=output_path,
+                output_format=output_format,
+                ocr=ocr,
+                convert=convert,
+            )
+        )
