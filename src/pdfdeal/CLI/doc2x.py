@@ -9,6 +9,7 @@ from pdfdeal import Doc2X
 from pdfdeal.file_tools import get_files
 from pdfdeal.Watch.config import curses_select
 import logging
+import sys
 
 LANGUAGES = ["简体中文", "Enlish"]
 WORDS_CN = [
@@ -75,6 +76,9 @@ def file_type(language):
 
 
 def main():
+    print("警告: Doc2X CLI 目前暂时不可用。")
+    print("Warning: Doc2X CLI is temporarily unavailable.")
+    sys.exit(1)
     parser = argparse.ArgumentParser(
         description="Using doc2x to deal with pictures or pdfs"
     )

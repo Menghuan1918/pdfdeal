@@ -1,600 +1,289 @@
 import asyncio
 import os
-from .Doc2X.Exception import RateLimit, run_async
-from .Doc2X.Types import OutputFormat, RAG_OutputType
-from .FileTools.dealpdfs import strore_pdf
-from typing import Tuple
-from .FileTools.file_tools import list_rename
-import uuid
+from typing import Tuple, List
 import logging
-
-from .Doc2X.Convert import (
-    refresh_key,
-    get_limit,
-    uuid2file,
+from .Doc2X.ConvertV2 import (
     upload_pdf,
-    upload_img,
-    uuid_status,
-    check_folder,
-    process_status,
+    uid_status,
+    convert_parse,
+    get_convert_result,
+    download_file,
 )
+from .Doc2X.Types import OutputFormat
+from .Doc2X.Pages import get_pdf_page_count
+from .Doc2X.Exception import RequestError, RateLimit, run_async
+from .FileTools.file_tools import get_files
+
+logger = logging.getLogger(name="pdfdeal.doc2x")
 
 
-async def get_key(apikey: str) -> str:
-    """Get apikey from environment variable or input
-
-    Args:
-        apikey (str): The apikey, or get from environment variable `DOC2X_APIKEY`
-
-    Raises:
-        ValueError: If no apikey found
-
-    Returns:
-        str: Your real apikey
-    """
-    if apikey is None:
-        apikey = os.environ.get("DOC2X_APIKEY", "")
-    if apikey == "":
-        raise ValueError("No apikey found")
-    if not apikey.startswith("sk-"):
-        apikey = await refresh_key(apikey)
-    return apikey
-
-
-async def pdf2file_v1(
+async def pdf2file(
     apikey: str,
     pdf_path: str,
     output_path: str,
     output_format: str,
+    output_name: str,
     ocr: bool,
     maxretry: int,
-    rpm: int,
-    convert: bool,
-    translate: bool = False,
-    language: str = "zh",
-    model: str = "deepseek",
-):
-    """
-    Convert pdf file to specified file,
-    """
-    # Upload the file and get uuid
-    try:
-        uuid = await upload_pdf(
-            apikey=apikey,
-            pdffile=pdf_path,
-            ocr=ocr,
-            translate=translate,
-            language=language,
-            model=model,
-        )
-    except RateLimit:
-        while True:
-            logging.warning("Reach the rate limit, wait for 25 seconds")
-            await asyncio.sleep(25)
-            try:
-                uuid = await upload_pdf(
-                    apikey=apikey,
-                    pdffile=pdf_path,
-                    ocr=ocr,
-                    translate=translate,
-                    language=language,
-                    model=model,
-                )
-                break
-            except RateLimit:
-                continue
-    # Wait for the process to finish
-    while True:
-        status_process, status_str, texts, other = await uuid_status(
-            apikey=apikey, uuid=uuid, convert=convert, translate=translate
-        )
-        if status_process == 100 and status_str == "Success" and not translate:
-            # If output_format is texts, return texts directly
-            if output_format == "texts":
-                return texts
-            logging.info(
-                f"{status_str} - Exporting document: {status_process}%    -- uuid: {uuid}"
-            )
-            break
-        # If translate is True, return texts and other(texts location inside)
-        elif status_process == 100 and status_str == "Translate success":
-            final = {"texts": texts, "location": other}
-            return final
-        logging.info(f"{status_str}: {status_process}%    -- uuid: {uuid}")
-        await asyncio.sleep(1)
-    # Convert uuid to file
-    return await uuid2file(
-        apikey=apikey, uuid=uuid, output_path=output_path, output_format=output_format
-    )
-
-
-async def img2file_v1(
-    apikey: str,
-    img_path: str,
-    output_path: str,
-    output_format: str,
-    formula: bool,
-    img_correction: bool,
-    maxretry: int,
-    rpm: int,
+    wait_time: int,
+    max_time: int,
     convert: bool,
 ) -> str:
-    """
-    Convert image file to specified file
-    """
-    try:
-        uuid = await upload_img(
-            apikey=apikey,
-            imgfile=img_path,
-            formula=formula,
-            img_correction=img_correction,
-        )
-    except RateLimit:
-        # Retry according to maxretry and current rpm
-        while True:
-            logging.warning("Reach the rate limit, wait for 25 seconds")
-            await asyncio.sleep(25)
+    """Convert pdf file to specified file using V2 API"""
+
+    async def retry_upload():
+        for _ in range(maxretry):
             try:
-                uuid = await upload_img(
-                    apikey=apikey,
-                    imgfile=img_path,
-                    formula=formula,
-                    img_correction=img_correction,
-                )
-                break
+                return await upload_pdf(apikey, pdf_path, ocr)
             except RateLimit:
-                continue
-    # Wait for the process to finish
-    while True:
-        status_process, status_str, texts, other = await uuid_status(
-            apikey=apikey, uuid=uuid, convert=convert
-        )
-        if status_process == 100 and status_str == "Success":
-            # If output_format is texts, return texts directly
+                logger.warning("Rate limit reached, retrying...")
+                await asyncio.sleep(wait_time)
+        raise RequestError("Max retry reached for upload_pdf")
+
+    logger.info(f"Uploading {pdf_path}...")
+    try:
+        uid = await upload_pdf(apikey, pdf_path, ocr)
+    except RateLimit:
+        uid = await retry_upload()
+
+    for _ in range(max_time):
+        progress, status, texts, locations = await uid_status(apikey, uid, convert)
+        if status == "Success":
+            logger.info(f"Conversion successful for {pdf_path} with uid {uid}")
             if output_format == "texts":
                 return texts
-            logging.info(f"{status_str}: {status_process}%    -- uuid: {uuid}")
-            break
-        logging.info(f"{status_str}: {status_process}%    -- uuid: {uuid}")
-        await asyncio.sleep(1)
-    return await uuid2file(
-        apikey=apikey, uuid=uuid, output_path=output_path, output_format=output_format
-    )
+            elif output_format == "text":
+                return "\n".join(texts)
+            elif output_format == "detailed":
+                return [
+                    {"text": text, "location": loc}
+                    for text, loc in zip(texts, locations)
+                ]
+            elif output_format in ["md", "md_dollar", "tex", "docx"]:
+                logger.info(f"Parsing {uid} to {output_format}...")
+                status, url = await convert_parse(apikey, uid, output_format)
+                for _ in range(max_time):
+                    if status == "Success":
+                        logger.info(
+                            f"Downloading {uid} {output_format} file to {output_path}..."
+                        )
+                        return await download_file(
+                            url=url,
+                            file_type=output_format,
+                            target_folder=output_path,
+                            target_filename=output_name or uid,
+                        )
+                    elif status == "Processing":
+                        await asyncio.sleep(1)
+                        status, url = await get_convert_result(apikey, uid)
+                    else:
+                        raise RequestError(f"Unexpected status: {status}")
+                raise RequestError("Max time reached for get_convert_result")
+            else:
+                raise ValueError(f"Unsupported output format: {output_format}")
+        elif status == "Processing file":
+            logger.info(f"Processing {uid} : {progress}%")
+            await asyncio.sleep(1)
+        else:
+            raise RequestError(f"Unexpected status: {status}")
+    raise RequestError("Max time reached for uid_status")
 
 
 class Doc2X:
-    """Init the Doc2X class(V1)"""
-
     def __init__(
         self,
         apikey: str = None,
-        rpm: int = None,
-        thread: int = None,
+        thread: int = 5,
+        max_pages: int = 1000,
+        retry_time: int = 15,
+        max_time: int = 90,
+        debug: bool = False,
     ) -> None:
-        """Init the Doc2X class
+        """
+        Initialize a Doc2X client.
 
         Args:
-            apikey (str, optional): Your doc2x apikey. Defaults to read from environment variable `DOC2X_APIKEY`.
-            rpm (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey. Please use `thread` instead of `rpm`.
-            thread (int, optional): The rate of concurrent processing. Defaults will be auto set according to the apikey.
-        """
-        self.apikey = run_async(get_key(apikey))
-        if rpm is not None and thread is not None:
-            raise ValueError(
-                "Please use `rpm` or `thread`, not both. Suggest to use `thread`."
-            )
-        elif thread is not None:
-            self.rpm = thread
-        elif rpm is not None:
-            import warnings
-
-            warnings.warn(
-                "The `rpm` parameter is deprecated and will be removed in the future. Please use the `thread` parameter instead.",
-            )
-            self.rpm = rpm
-        else:
-            if self.apikey.startswith("sk-"):
-                self.rpm = 10
-            else:
-                self.rpm = 1
-        self.maxretry = None
-
-    async def pic2file_back(
-        self,
-        image_file: list,
-        output_path: str = "./Output",
-        output_format: str = "md_dollar",
-        img_correction: bool = True,
-        equation=False,
-        convert: bool = False,
-    ) -> str:
-        """
-        Convert image file to specified file, with rate/thread limit
-        input refers to `pic2file` function
-        """
-        limit = asyncio.Semaphore(self.rpm)
-
-        async def limited_img2file_v1(img):
-            try:
-                await limit.acquire()
-                return await img2file_v1(
-                    apikey=self.apikey,
-                    img_path=img,
-                    output_path=output_path,
-                    output_format=output_format,
-                    formula=equation,
-                    img_correction=img_correction,
-                    maxretry=self.maxretry,
-                    rpm=self.rpm,
-                    convert=convert,
-                )
-            except Exception as e:
-                return f"Error {e}"
-            finally:
-                limit.release()
-
-        task = [limited_img2file_v1(img) for img in image_file]
-        completed_tasks = await asyncio.gather(*task)
-        return await process_status(image_file, completed_tasks)
-
-    def pic2file(
-        self,
-        image_file,
-        output_path: str = "./Output",
-        output_names: list = None,
-        output_format: str = "md_dollar",
-        img_correction: bool = True,
-        equation: bool = False,
-        convert: bool = False,
-    ) -> Tuple[list, list, bool]:
-        """Convert image file to specified file
-
-        Args:
-            image_file (str or list): Image file path, or a list of image file path
-            output_path (str, optional): Output folder path. Defaults to "./Output".
-            output_names (list, optional): Custom Output File Names, must be the same length as `image_file`. Defaults to None.
-            output_format (str, optional): Output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`. Defaults to `md_dollar`.
-            img_correction (bool, optional): The image correction. Defaults to True.
-            equation (bool, optional): Whether the image is an equation. Defaults to False.
-            convert (bool, optional): Whether to convert `[` to `$` and `[[` to `$$`. Defaults to False.
+            apikey (str, optional): The API key for Doc2X. If not provided, it will try to get from environment variable 'DOC2X_APIKEY'.
+            thread (int, optional): The maximum number of concurrent threads. Defaults to 5.
+            max_pages (int, optional): The maximum number of pages to process. Defaults to 1000.
+            retry_time (int, optional): The number of retry attempts. Defaults to 15.
+            max_time (int, optional): The maximum time (in seconds) to wait for a response. Defaults to 90.
+            debug (bool, optional): Whether to enable debug logging. Defaults to False.
 
         Raises:
-            ValueError: The length of files and output_names should be the same.
+            ValueError: If no API key is found.
 
-        Returns:
-            tuple[list,list,str]:
-            will return `list1`,`list2`,`bool`
-                `list1`: list of successful files path, if some files are failed, its path will be empty string
-                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
-                `bool`: True means that at least one file process failed
+        Attributes:
+            apikey (str): The API key for Doc2X.
+            retry_time (int): The number of retry attempts.
+            max_time (int): The maximum time to wait for a response.
+            thread (int): The maximum number of concurrent threads.
+            max_pages (int): The maximum number of pages to process.
+            debug (bool): Whether debug logging is enabled.
+
+        Note:
+            If debug is set to True, it will set the logging level of 'pdfdeal' logger to DEBUG.
         """
-        output_format = OutputFormat(output_format)
-        if isinstance(output_format, OutputFormat):
-            output_format = output_format.value
+        self.apikey = apikey or os.environ.get("DOC2X_APIKEY", "")
+        if not self.apikey:
+            raise ValueError("No apikey found")
+        self.retry_time = retry_time
+        self.max_time = max_time
+        self.thread = thread
+        self.max_pages = max_pages
 
-        if isinstance(image_file, str):
-            image_file = [image_file]
-
-        if output_names is not None:
-            if len(image_file) != len(output_names):
-                raise ValueError(
-                    "The length of files and output_names should be the same."
-                )
-
-        success, failed, flag = run_async(
-            self.pic2file_back(
-                image_file,
-                output_path,
-                output_format,
-                img_correction,
-                equation,
-                convert,
-            )
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
-
-        logging.info(
-            f"IMG Progress: {sum(1 for s in success if s != '')}/{len(image_file)} files successfully processed."
-        )
-        if flag:
-            for failed_file in failed:
-                if failed_file["error"] != "":
-                    logging.error(
-                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
-                    )
-
-        if output_names is not None:
-            success = list_rename(success, output_names)
-
-        return success, failed, flag
+        handler.setFormatter(formatter)
+        logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.propagate = False
+        if debug:
+            logging.getLogger("pdfdeal").setLevel(logging.DEBUG)
+        self.debug = debug
 
     async def pdf2file_back(
         self,
-        pdf_file: list,
+        pdf_file,
+        output_names: List[str] = None,
         output_path: str = "./Output",
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-        translate: bool = False,
-        language: str = "zh",
-        model: str = "deepseek",
-    ) -> str:
-        """
-        Convert pdf file to specified file, with rate/thread limit, async version
-        input refers to `pdf2file` function
-        """
-        limit = asyncio.Semaphore(self.rpm)
+    ) -> Tuple[List[str], List[dict], bool]:
+        if isinstance(pdf_file, str):
+            pdf_file, output_names = (
+                get_files(path=pdf_file, mode="pdf", out=output_format)
+                if os.path.isdir(pdf_file)
+                else ([pdf_file], None)
+            )
 
-        async def limited_pdf2file_v1(pdf):
-            try:
-                await limit.acquire()
-                return await pdf2file_v1(
-                    apikey=self.apikey,
-                    pdf_path=pdf,
-                    output_path=output_path,
-                    output_format=output_format,
-                    ocr=ocr,
-                    maxretry=self.maxretry,
-                    rpm=self.rpm,
-                    convert=convert,
-                    translate=translate,
-                    language=language,
-                    model=model,
-                )
-            except Exception as e:
-                return f"Error {e}"
-            finally:
-                limit.release()
+        output_names = output_names or [None] * len(pdf_file)
+        if len(pdf_file) != len(output_names):
+            raise ValueError("The length of files and output_names should be the same.")
 
-        tasks = [limited_pdf2file_v1(pdf) for pdf in pdf_file]
-        completed_tasks = await asyncio.gather(*tasks)
-        return await process_status(pdf_file, completed_tasks)
+        output_format = (
+            OutputFormat(output_format).value
+            if isinstance(output_format, OutputFormat)
+            else output_format
+        )
+
+        semaphore = asyncio.Semaphore(self.max_pages)
+        thread_semaphore = asyncio.Semaphore(self.thread)
+
+        async def process_file(pdf, name):
+            async with thread_semaphore:
+                try:
+                    page_count = get_pdf_page_count(pdf)
+                except Exception as e:
+                    logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
+                    page_count = self.max_pages  #! Assume the worst case
+                if page_count > self.max_pages:
+                    logger.warning(f"File {pdf} has too many pages, skipping.")
+                    raise ValueError(f"File {pdf} has too many pages.")
+
+                async def acquire_semaphore():
+                    for _ in range(page_count):
+                        await semaphore.acquire()
+
+                try:
+                    await acquire_semaphore()
+                    try:
+                        result = await asyncio.wait_for(
+                            pdf2file(
+                                apikey=self.apikey,
+                                pdf_path=pdf,
+                                output_path=os.path.join(output_path),
+                                output_format=output_format,
+                                output_name=name,
+                                ocr=ocr,
+                                wait_time=15,
+                                max_time=self.max_time,
+                                maxretry=self.retry_time,
+                                convert=convert,
+                            ),
+                            timeout=self.max_time * 2,
+                        )
+                        return result, "", True
+                    except asyncio.TimeoutError:
+                        return "", "Operation timed out", False
+                    except Exception as e:
+                        return "", str(e), False
+                finally:
+                    #! Assuming that the semaphore release should be done regardless of the outcome
+                    for _ in range(page_count):
+                        semaphore.release()
+
+        results = await asyncio.gather(
+            *[process_file(pdf, name) for pdf, name in zip(pdf_file, output_names)]
+        )
+
+        success_files = [r[0] if r[2] else "" for r in results]
+        failed_files = [
+            {"error": r[1], "path": pdf} if not r[2] else {"error": "", "path": ""}
+            for r, pdf in zip(results, pdf_file)
+        ]
+        has_error = any(not r[2] for r in results)
+
+        if has_error:
+            failed_count = sum(1 for fail in failed_files if fail["error"] != "")
+            logger.error(
+                f"{failed_count} file(s) failed to convert, please enable DEBUG mod to check or read the output variable."
+            )
+            if self.debug:
+                for fail in failed_files:
+                    if fail["error"] != "":
+                        print("====================================")
+                        print(f"Failed to convert {fail['path']}: {fail['error']}")
+        logger.info(
+            f"Successfully converted {sum(1 for file in success_files if file)} file(s)."
+        )
+        return success_files, failed_files, has_error
 
     def pdf2file(
         self,
         pdf_file,
+        output_names: List[str] = None,
         output_path: str = "./Output",
-        output_names: list = None,
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-    ) -> Tuple[list, list, bool]:
-        """Convert pdf file to specified file
+    ) -> Tuple[List[str], List[dict], bool]:
+        """Convert PDF files to the specified format.
 
         Args:
-            pdf_file (str or list): pdf file path, or a list of pdf file path
-            output_path (str, optional): output folder path. Defaults to "./Output".
-            output_names (list, optional): Custom Output File Names, must be the same length as `pdf_file`. Defaults to None.
-            output_format (str, optional): output format, accept `texts`, `md`, `md_dollar`, `latex`, `docx`. Defaults to `md_dollar`.
-            ocr (bool, optional): whether to use OCR. Defaults to True.
-            convert (bool, optional): whether to convert `[` to `$` and `[[` to `$$`. Defaults to False.
+            pdf_file (str | List[str]): Path to a single PDF file or a list of PDF file paths.
+            output_names (List[str], optional): List of output file names. Defaults to None.
+            output_path (str, optional): Directory path for output files. Defaults to "./Output".
+            output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, support output variable: `txt`|`txts`|`detailed`
+
+            ocr (bool, optional): Whether to use OCR. Defaults to True.
+            convert (bool, optional): Whether to convert the PDF. If False, only performs OCR. Defaults to False.
+
+        Returns:
+            Tuple[List[str], List[dict], bool]: A tuple containing:
+
+                1. A list of successfully converted file paths or content.
+                2. A list of dictionaries containing error information for failed conversions.
+                3. A boolean indicating whether any errors occurred during the conversion process.
 
         Raises:
-            ValueError: The length of files and output_names should be the same.
+            Any exceptions raised by pdf2file_back or run_async.
 
-        Returns:
-            tuple[list,list,str]:
-            will return `list1`,`list2`,`bool`
-                `list1`: list of successful files path, if some files are failed, its path will be empty string
-                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
-                `bool`: True means that at least one file process failed
+        Note:
+            This method provides a convenient synchronous interface for the asynchronous
+            PDF conversion functionality. It handles all the necessary setup for running
+            the asynchronous code in a synchronous context.
         """
-        output_format = OutputFormat(output_format)
-        if isinstance(output_format, OutputFormat):
-            output_format = output_format.value
-
-        if isinstance(pdf_file, str):
-            pdf_file = [pdf_file]
-
-        if output_names is not None:
-            if len(pdf_file) != len(output_names):
-                raise ValueError(
-                    "The length of files and output_names should be the same."
-                )
-
-        success, failed, flag = run_async(
-            self.pdf2file_back(
-                pdf_file, output_path, output_format, ocr, convert, False
-            )
-        )
-        logging.info(
-            f"PDF Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
-        )
-        if flag:
-            for failed_file in failed:
-                if failed_file["error"] != "":
-                    logging.error(
-                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
-                    )
-
-        if output_names is not None:
-            success = list_rename(success, output_names)
-
-        return success, failed, flag
-
-    def get_limit(self) -> int:
-        """Get the rate limit of the apikey
-
-        Returns:
-            int: The rate limit of the apikey
-        """
-        return run_async(get_limit(self.apikey))
-
-    async def pdfdeal_back(
-        self,
-        input: str,
-        output: str,
-        path: str,
-        convert: bool,
-        limit: asyncio.Semaphore,
-    ):
-        """
-        Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
-        async version function
-        """
-        try:
-            await limit.acquire()
-            texts = await pdf2file_v1(
-                apikey=self.apikey,
-                pdf_path=input,
-                output_path=output,
-                output_format="texts",
-                ocr=True,
-                maxretry=self.maxretry,
-                rpm=self.rpm,
-                convert=convert,
-                translate=False,
-            )
-            await check_folder(path)
-            file_name = os.path.basename(input).replace(
-                ".pdf", f"_{uuid.uuid4()}.{output}"
-            )
-            output_path = os.path.join(path, file_name)
-            if output == "pdf":
-                strore_pdf(output_path, texts)
-            elif output == "texts":
-                return texts, "", True
-            else:
-                md_text = "\n".join(texts) + "\n"
-                with open(output_path, "w", encoding="utf-8") as f:
-                    f.write(md_text)
-            return output_path, "", True
-        except Exception as e:
-            return input, e, False
-        finally:
-            limit.release()
-
-    async def pdfdeals(
-        self,
-        pdf_files: list,
-        output_path: str = "./Output",
-        output_format: str = "pdf",
-        convert: bool = True,
-    ) -> list:
-        """
-        Convert pdf files into recognisable pdfs, significantly improving their effectiveness in RAG systems
-        async version function, input refers to `pdfdeal` function
-        """
-        limit = asyncio.Semaphore(self.rpm)
-        tasks = [
-            self.pdfdeal_back(pdf_file, output_format, output_path, convert, limit)
-            for pdf_file in pdf_files
-        ]
-        completed_tasks = await asyncio.gather(*tasks)
-        success_file = []
-        error_file = []
-        error_flag = False
-        for temp in completed_tasks:
-            path = temp[0]
-            error = temp[1]
-            flag = temp[2]
-            if flag:
-                success_file.append(path)
-                error_file.append({"error": "", "path": ""})
-            else:
-                success_file.append("")
-                error_file.append({"error": error, "path": path})
-                error_flag = True
-        return success_file, error_file, error_flag
-
-    def pdfdeal(
-        self,
-        pdf_file,
-        output_format: str = "pdf",
-        output_names: list = None,
-        output_path: str = "./Output",
-        convert: bool = True,
-    ) -> Tuple[list, list, bool]:
-        """Deal with pdf file, convert it to specified format for RAG system
-
-        Args:
-            pdf_file (str or list): input file path, or a list of input file path
-            output_format (str, optional): output format, accept 'pdf', 'md' or 'texts'. Defaults to "pdf".
-            output_names (list, optional): Custom Output File Names, must be the same length as `image_file`. Defaults to None.
-            output_path (str, optional): output path. Defaults to "./Output".
-            convert (bool, optional): Whether to convert "[" to "$" and "[[" to "$$". Defaults to True.
-
-        Returns:
-            tuple[list,list,str]:
-            will return `list1`,`list2`,`bool`
-                `list1`: list of successful files path, if some files are failed, its path will be empty string
-                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
-                `bool`: True means that at least one file process failed
-        """
-        output_format = RAG_OutputType(output_format)
-        if isinstance(output_format, RAG_OutputType):
-            output_format = output_format.value
-
-        if isinstance(pdf_file, str):
-            pdf_file = [pdf_file]
-
-        success, failed, flag = run_async(
-            self.pdfdeals(pdf_file, output_path, output_format, convert)
-        )
-        logging.info(
-            f"PDFDEAL Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
-        )
-        if flag:
-            for failed_file in failed:
-                if failed_file["error"] != "":
-                    logging.error(
-                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
-                    )
-
-        if output_names is not None:
-            success = list_rename(success, output_names)
-
-        return success, failed, flag
-
-    def pdf_translate(
-        self,
-        pdf_file,
-        output_path: str = "./Output",
-        convert: bool = False,
-        language: str = "zh",
-        model: str = "deepseek",
-    ) -> Tuple[list, list, bool]:
-        """
-        Translate pdf file to specified file
-
-        Args:
-            pdf_file: pdf file path, or a list of pdf file path
-            output_path: output folder path, default is "./Output"
-            ocr: whether to use OCR, default is True
-            convert: whether to convert "[" to "$" and "[[" to "$$", default is False
-            language: the language to translate, default is "zh". Support languages: "en", "zh", "ja", "fr", "ru", "pt", "es", "de", "ko", "ar"
-            model: the model to translate, default is "deepseek". Support models: "deepseek", "glm4"
-
-        Returns:
-            will return `list1`,`list2`,`bool`
-                `list1`: list of translated texts and list of translated texts location, if some files are failed, its place will be empty string
-                `list2`: list of failed files's error message and its original file path, id some files are successful, its error message will be empty string
-                `bool`: True means that at least one file process failed
-        """
-        if self.apikey.startswith("sk-"):
-            raise RuntimeError(
-                "Your secret key does not have access to the translation function! Please use your personal key."
-            )
-        if isinstance(pdf_file, str):
-            pdf_file = [pdf_file]
-        success, failed, flag = run_async(
+        return run_async(
             self.pdf2file_back(
                 pdf_file=pdf_file,
+                output_names=output_names,
                 output_path=output_path,
-                output_format="texts",
-                ocr=True,
+                output_format=output_format,
+                ocr=ocr,
                 convert=convert,
-                translate=True,
-                language=language,
-                model=model,
             )
         )
-        logging.info(
-            f"TRANSLATE Progress: {sum(1 for s in success if s != '')}/{len(pdf_file)} files successfully processed."
-        )
-        if flag:
-            for failed_file in failed:
-                if failed_file["error"] != "":
-                    logging.error(
-                        f"-----\nFailed deal with {failed_file['path']} with error:\n{failed_file['error']}\n-----"
-                    )
-        return success, failed, flag

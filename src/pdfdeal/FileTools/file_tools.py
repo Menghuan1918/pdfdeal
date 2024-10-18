@@ -1,8 +1,5 @@
 import io
-from PIL import Image
-from pypdf import PdfReader
 import re
-import emoji
 import unicodedata
 import os
 import zipfile
@@ -17,6 +14,7 @@ def clean_text(text):
     """
     Clean the text
     """
+    import emoji
     # remove extra whitespaces
     text = re.sub(r"\n\s*\n", "\n\n", text)
 
@@ -62,6 +60,8 @@ def extract_text_and_images(pdf_path, ocr, language=["ch_sim", "en"], GPU=False)
     """
     Extract text and images from a PDF file
     """
+    from pypdf import PdfReader
+    from PIL import Image
     Text = []
 
     # Open the PDF file

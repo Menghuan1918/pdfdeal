@@ -5,9 +5,16 @@ import re
 from typing import Tuple, Literal
 from .Exception import RateLimit, FileError, RequestError, async_retry
 import logging
+import warnings
 
 Base_URL = "https://api.doc2x.noedgeai.com/api"
 
+warnings.warn(
+    "V1 API is deprecated and will be removed in a future version. "
+    "Use V2 API instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 @async_retry()
 async def refresh_key(key: str) -> str:

@@ -2,11 +2,6 @@
 <h1 aligh="center">
 <img src="https://github.com/Menghuan1918/pdfdeal/assets/122662527/837cfd7f-4546-4b44-a199-d826d78784fc" width="45">  pdfdeal
 </h1>
-
-**Better RAG Effect!**
-
-<br>
-
 <a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml">
   <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml/badge.svg?branch=main" alt="Package tests on Ubuntu">
 </a>
@@ -16,6 +11,7 @@
 <a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml">
   <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml/badge.svg?branch=main" alt="Package tests on MacOS">
 </a>
+
 
 <br>
 
@@ -32,7 +28,7 @@
 Handle PDF more easily and simply, utilizing Doc2X's powerful document conversion capabilities for retained format file conversion/RAG enhancement.
 
 <div align=center>
-<img src="https://github.com/user-attachments/assets/f008bed2-9314-4e45-a5cb-08b667b4b204" width="500px">
+<img src="https://github.com/user-attachments/assets/3db3c682-84f1-4712-bd70-47422616f393" width="500px">
 </div>
 
 ## Introduction
@@ -61,12 +57,10 @@ See [how to use it with graphrag](https://menghuan1918.github.io/pdfdeal-docs/de
 
 Or for knowledge base applications, you can use `pdfdeal`'s built-in variety of enhancements to documents, such as uploading images to remote storage services, adding breaks by paragraph, etc. See [Integration with RAG applications](https://menghuan1918.github.io/pdfdeal-docs/demo/RAG_pre.html).
 
+<div align=center>
 <img src="https://github.com/user-attachments/assets/034d3eb0-d77e-4f7d-a707-9be08a092a9a" width="450px">
 <img src="https://github.com/user-attachments/assets/6078e585-7c06-485f-bcd3-9fac84eb7301" width="450px">
-
-### RAG system plug-in integration
-
-- You can find Doc2X plugin in [FastGPT 4.8.9 and later](https://github.com/labring/FastGPT/releases/tag/v4.8.9) which supports PDF/image conversion.
+</div>
 
 ## Documentation
 
@@ -80,53 +74,49 @@ For details, please refer to the [documentation](https://menghuan1918.github.io/
 
 ### Installation
 
-Install from PyPI:
+Install using pip:
 
 ```bash
 pip install --upgrade pdfdeal
-
 ```
 
-### Using Doc2X as PDF deal tool
+If you need [document processing tools](https://menghuan1918.github.io/pdfdeal-docs/guide/Tools/):
+
+```bash
+pip install --upgrade "pdfdeal[rag]"
+```
+
+### Use the Doc2X PDF API to process all PDF files in a specified folder
 
 ```python
 from pdfdeal import Doc2X
-from pdfdeal import get_files
 
-client = Doc2X()
-file_list, rename = get_files(path="tests/pdf", mode="pdf", out="pdf")
-success, failed, flag = client.pdfdeal(
-    pdf_file=file_list,
-    output_path="./Output/test/multiple/pdfdeal",
-    output_names=rename,
+client = Doc2X(apikey="Your API key",debug=True)
+success, failed, flag = client.pdf2file(
+    pdf_file="tests/pdf",
+    output_path="./Output",
+    output_format="docx",
 )
 print(success)
 print(failed)
 print(flag)
 ```
 
-### Using pytesseract as an OCR engine
-
-When using "pytesseract", make sure that [tesseract](https://github.com/tesseract-ocr/tesseract) is installed first:
-
-```bash
-pip install 'pdfdeal[pytesseract]'
-```
+### Use the Doc2X PDF API to process the specified PDF file and specify the name of the exported file
 
 ```python
-from pdfdeal import deal_pdf, get_files
+from pdfdeal import Doc2X
 
-files, rename = get_files("tests/pdf", "pdf", "md")
-output_path, failed, flag = deal_pdf(
-    pdf_file=files,
-    output_format="md",
-    ocr="pytesseract",
-    language=["eng"],
-    output_path="Output",
-    output_names=rename,
+client = Doc2X(apikey="Your API key",debug=True)
+success, failed, flag = client.pdf2file(
+    pdf_file="tests/pdf/sample.pdf",
+    output_path="./Output/test/single/pdf2file",
+    output_names=["sample1.zip"],
+    output_format="md_dollor",
 )
-for f in output_path:
-    print(f"Save processed file to {f}")
+print(success)
+print(failed)
+print(flag)
 ```
 
 See the online documentation for details.
