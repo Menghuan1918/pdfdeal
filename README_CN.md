@@ -1,7 +1,7 @@
 <div align=center>
 <h1 aligh="center">
 <img src="https://github.com/Menghuan1918/pdfdeal/assets/122662527/837cfd7f-4546-4b44-a199-d826d78784fc" width="45">  pdfdeal
-
+</h1>
 <a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml">
   <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml/badge.svg?branch=main" alt="Package tests on Ubuntu">
 </a>
@@ -27,7 +27,7 @@
 更轻松简单地处理 PDF，利用 Doc2X 强大的文档转换能力，进行保留格式文件转换/RAG 增强。
 
 <div align=center>
-<img src="https://github.com/user-attachments/assets/f008bed2-9314-4e45-a5cb-08b667b4b204" width="500px">
+<img src="https://github.com/user-attachments/assets/3db3c682-84f1-4712-bd70-47422616f393" width="500px">
 </div>
 
 ## 简介
