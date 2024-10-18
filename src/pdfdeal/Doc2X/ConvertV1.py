@@ -13,8 +13,9 @@ warnings.warn(
     "V1 API is deprecated and will be removed in a future version. "
     "Use V2 API instead.",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
+
 
 @async_retry()
 async def refresh_key(key: str) -> str:
