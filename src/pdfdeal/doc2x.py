@@ -10,8 +10,10 @@ from .Doc2X.ConvertV2 import (
     download_file,
 )
 from .Doc2X.Types import OutputFormat
+from .Doc2X.Pages import get_pdf_page_count
 from .Doc2X.Exception import RequestError, RateLimit, run_async
 from .FileTools.file_tools import get_files
+import warnings
 
 
 async def pdf2file(
@@ -86,15 +88,21 @@ class Doc2X:
         self,
         apikey: str = None,
         thread: int = 1,
+        max_pages: int = 1000,
         retry_time: int = 15,
-        max_time: int = 120,
+        max_time: int = 90,
     ) -> None:
         self.apikey = apikey or os.environ.get("DOC2X_APIKEY", "")
         if not self.apikey:
             raise ValueError("No apikey found")
         self.retry_time = retry_time
         self.max_time = max_time
-        self.thread = thread
+        if thread != 1:
+            warnings.warn(
+                "The 'thread' parameter is deprecated. Now only the maximum total pages `max_pages` processed simultaneously can be specified.",
+                DeprecationWarning,
+            )
+        self.max_pages = max_pages
 
     async def pdf2file_back(
         self,
@@ -105,7 +113,6 @@ class Doc2X:
         ocr: bool = True,
         convert: bool = False,
     ) -> Tuple[List[str], List[dict], bool]:
-        limit = asyncio.Semaphore(self.thread)
         if isinstance(pdf_file, str):
             pdf_file, output_names = (
                 get_files(path=pdf_file, mode="pdf", out=output_format)
@@ -123,24 +130,46 @@ class Doc2X:
             else output_format
         )
 
+        semaphore = asyncio.Semaphore(self.max_pages)
+
         async def process_file(pdf, name):
-            async with limit:
+            try:
+                page_count = get_pdf_page_count(pdf)
+            except Exception as e:
+                logging.warning(f"Failed to get page count for {pdf}: {str(e)}")
+                page_count = self.max_pages  #! Assume the worst case
+
+            async def acquire_semaphore():
+                for _ in range(page_count):
+                    await semaphore.acquire()
+
+            try:
+                await acquire_semaphore()
                 try:
-                    result = await pdf2file(
-                        apikey=self.apikey,
-                        pdf_path=pdf,
-                        output_path=os.path.join(output_path),
-                        output_format=output_format,
-                        output_name=name,
-                        ocr=ocr,
-                        wait_time=15,
-                        max_time=self.max_time,
-                        maxretry=self.retry_time,
-                        convert=convert,
+                    result = await asyncio.wait_for(
+                        pdf2file(
+                            apikey=self.apikey,
+                            pdf_path=pdf,
+                            output_path=os.path.join(output_path),
+                            output_format=output_format,
+                            output_name=name,
+                            ocr=ocr,
+                            wait_time=15,
+                            max_time=self.max_time,
+                            maxretry=self.retry_time,
+                            convert=convert,
+                        ),
+                        timeout=self.max_time * 2,
                     )
                     return result, "", True
+                except asyncio.TimeoutError:
+                    return "", "Operation timed out", False
                 except Exception as e:
                     return "", str(e), False
+            finally:
+                #! Assuming that the semaphore release should be done regardless of the outcome
+                for _ in range(page_count):
+                    semaphore.release()
 
         results = await asyncio.gather(
             *[process_file(pdf, name) for pdf, name in zip(pdf_file, output_names)]
