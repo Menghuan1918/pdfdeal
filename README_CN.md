@@ -109,7 +109,7 @@ success, failed, flag = client.pdf2file(
     pdf_file="tests/pdf/sample.pdf",
     output_path="./Output/test/single/pdf2file",
     output_names=["sample1.zip"],
-    output_format="md_dollor",
+    output_format="md_dollar",
 )
 print(success)
 print(failed)
