@@ -15,6 +15,7 @@ from .Doc2X.Exception import RequestError, RateLimit, run_async
 from .FileTools.file_tools import get_files
 import warnings
 
+logger = logging.getLogger(name="pdfdeal.doc2x")
 
 async def pdf2file(
     apikey: str,
@@ -39,7 +40,7 @@ async def pdf2file(
         raise RequestError("Max retry reached for upload_pdf")
 
     try:
-        logging.info(f"Uploading {pdf_path}...")
+        logger.info(f"Uploading {pdf_path}...")
         uid = await upload_pdf(apikey, pdf_path, ocr)
     except RateLimit:
         uid = await retry_upload()
@@ -47,7 +48,7 @@ async def pdf2file(
     for _ in range(max_time):
         progress, status, texts, locations = await uid_status(apikey, uid, convert)
         if status == "Success":
-            logging.info(f"Conversion successful for {pdf_path} with uid {uid}")
+            logger.info(f"Conversion successful for {pdf_path} with uid {uid}")
             if output_format == "texts":
                 return texts
             elif output_format == "detailed":
@@ -56,11 +57,11 @@ async def pdf2file(
                     for text, loc in zip(texts, locations)
                 ]
             elif output_format in ["md", "md_dollar", "tex", "docx"]:
-                logging.info(f"Parsing {uid} to {output_format}...")
+                logger.info(f"Parsing {uid} to {output_format}...")
                 status, url = await convert_parse(apikey, uid, output_format)
                 for _ in range(max_time):
                     if status == "Success":
-                        logging.info(f"Downloading {uid} to {output_path}...")
+                        logger.info(f"Downloading {uid} to {output_path}...")
                         return await download_file(
                             url=url,
                             file_type=output_format,
@@ -76,7 +77,7 @@ async def pdf2file(
             else:
                 raise ValueError(f"Unsupported output format: {output_format}")
         elif status == "Processing file":
-            logging.info(f"Processing {uid} : {progress}%")
+            logger.info(f"Processing {uid} : {progress}%")
             await asyncio.sleep(1)
         else:
             raise RequestError(f"Unexpected status: {status}")
@@ -91,6 +92,7 @@ class Doc2X:
         max_pages: int = 1000,
         retry_time: int = 15,
         max_time: int = 90,
+        debug: bool = False,
     ) -> None:
         self.apikey = apikey or os.environ.get("DOC2X_APIKEY", "")
         if not self.apikey:
@@ -103,6 +105,15 @@ class Doc2X:
                 DeprecationWarning,
             )
         self.max_pages = max_pages
+
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.propagate = False
+        if debug:
+            logging.getLogger("pdfdeal").setLevel(logging.DEBUG)
 
     async def pdf2file_back(
         self,
@@ -136,8 +147,11 @@ class Doc2X:
             try:
                 page_count = get_pdf_page_count(pdf)
             except Exception as e:
-                logging.warning(f"Failed to get page count for {pdf}: {str(e)}")
+                logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
                 page_count = self.max_pages  #! Assume the worst case
+            if page_count > self.max_pages:
+                logger.warning(f"File {pdf} has too many pages, skipping.")
+                raise ValueError(f"File {pdf} has too many pages.")
 
             async def acquire_semaphore():
                 for _ in range(page_count):
@@ -184,7 +198,7 @@ class Doc2X:
 
         if has_error:
             failed_count = sum(1 for fail in failed_files if fail["error"] != "")
-            logging.warning(
+            logger.warning(
                 f"{failed_count} file(s) failed to convert, please check the log."
             )
 

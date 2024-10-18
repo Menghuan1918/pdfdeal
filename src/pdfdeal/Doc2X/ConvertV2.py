@@ -9,6 +9,7 @@ from .Types import OutputFormat
 
 Base_URL = "https://v2.doc2x.noedgeai.com/api"
 
+logger = logging.getLogger("pdfdeal.convertV2")
 
 @async_retry()
 async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
@@ -30,9 +31,9 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
     """
     url = f"{Base_URL}/v2/parse/pdf"
     if os.path.getsize(pdffile) >= 300 * 1024 * 1024:
-        logging.warning("Now not support PDF file > 300MB!")
+        logger.warning("Now not support PDF file > 300MB!")
         raise RequestError("parse_file_too_large")
-        logging.warning(
+        logger.warning(
             "File size is too large, will auto switch to S3 file upload way, this may take a while"
         )
         return await upload_pdf_big(apikey, pdffile, ocr)
@@ -141,7 +142,7 @@ async def decode_data(data: dict, convert: bool) -> Tuple[list, list]:
     texts = []
     locations = []
     if "result" not in data or "pages" not in data["result"]:
-        logging.warning("Although parsed successfully, the content is empty!")
+        logger.warning("Although parsed successfully, the content is empty!")
         return [], []
     texts, locations = [], []
     for page in data["result"]["pages"]:
@@ -209,7 +210,7 @@ async def uid_status(
     elif status == "failed":
         raise RequestError(f"Failed to deal with file! {response_data.text}")
     else:
-        logging.warning(f"Unknown status: {status}")
+        logger.warning(f"Unknown status: {status}")
         return progress, status, [], []
 
 
