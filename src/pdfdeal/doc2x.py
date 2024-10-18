@@ -36,11 +36,12 @@ async def pdf2file(
             try:
                 return await upload_pdf(apikey, pdf_path, ocr)
             except RateLimit:
+                logger.warning("Rate limit reached, retrying...")
                 await asyncio.sleep(wait_time)
         raise RequestError("Max retry reached for upload_pdf")
 
+    logger.info(f"Uploading {pdf_path}...")
     try:
-        logger.info(f"Uploading {pdf_path}...")
         uid = await upload_pdf(apikey, pdf_path, ocr)
     except RateLimit:
         uid = await retry_upload()
@@ -229,15 +230,16 @@ class Doc2X:
         if has_error:
             failed_count = sum(1 for fail in failed_files if fail["error"] != "")
             logger.error(
-                f"{failed_count} file(s) failed to convert, please check the log or the output variable."
+                f"{failed_count} file(s) failed to convert, please enable DEBUG mod to check or read the output variable."
             )
-            if not self.debug:
+            if self.debug:
                 for fail in failed_files:
                     if fail["error"] != "":
-                        logger.warning(
-                            f"Failed to convert {fail['path']}: {fail['error']}"
-                        )
-        logger.info(f"Successfully converted {len(success_files)} file(s).")
+                        print("====================================")
+                        print(f"Failed to convert {fail['path']}: {fail['error']}")
+        logger.info(
+            f"Successfully converted {sum(1 for file in success_files if file)} file(s)."
+        )
         return success_files, failed_files, has_error
 
     def pdf2file(

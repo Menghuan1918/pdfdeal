@@ -20,7 +20,7 @@
 
 [📄 在线文档](https://menghuan1918.github.io/pdfdeal-docs/zh/)
 
-[ENGLISH](<(README.md)>) | 🗺️ 简体中文
+[ENGLISH](README.md) | 🗺️ 简体中文
 
 </div>
 

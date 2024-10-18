@@ -57,6 +57,7 @@ class RequestError(Exception):
     def __init__(self, error_code, uid: str = None, trace_id: str = None, message=None):
         self.error_code = error_code
         self.uid = uid
+        self.trace_id = trace_id
         self.reason = self.ERROR_CODES.get(error_code, "未知错误 (Unknown error)")
         self.solution = self.SOLUTIONS.get(
             error_code, "请联系技术支持 (Please contact technical support)"
