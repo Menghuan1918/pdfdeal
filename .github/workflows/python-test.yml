@@ -1,4 +1,4 @@
-name: Package testing on Python 3.8-3.13 on Win/Linux/macOS
+name: Package test on Python 3.8-3.13 on Win/Linux/macOS
 
 on:
   workflow_dispatch:
