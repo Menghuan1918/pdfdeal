@@ -157,7 +157,7 @@ class Doc2X:
             pdf_file, output_names = (
                 get_files(path=pdf_file, mode="pdf", out=output_format)
                 if os.path.isdir(pdf_file)
-                else ([pdf_file], None)
+                else ([pdf_file], output_names)
             )
 
         output_names = output_names or [None] * len(pdf_file)
