@@ -4,7 +4,7 @@ import pytest
 
 
 def test_single_pdf2file():
-    client = Doc2X(debug=True)
+    client = Doc2X(debug=True, thread=1)
     filepath, _, _ = client.pdf2file(
         pdf_file="tests/pdf/sample.pdf",
         output_path="./Output/test/single/pdf2file",
@@ -19,7 +19,7 @@ def test_single_pdf2file():
 
 
 def test_error_input_pdf2file():
-    client = Doc2X(debug=True)
+    client = Doc2X(debug=True, thread=1)
     with pytest.raises(ValueError):
         client.pdf2file(
             pdf_file="tests/pdf/sample.pdf",
@@ -30,7 +30,7 @@ def test_error_input_pdf2file():
 
 
 def test_multiple_pdf2file():
-    client = Doc2X(debug=True)
+    client = Doc2X(debug=True, thread=1)
     success, failed, flag = client.pdf2file(
         pdf_file="tests/pdf",
         output_path="./Output/test/multiple/pdf2file",
