@@ -354,7 +354,7 @@ async def download_file(
         file_path = os.path.join(target_dir, f"{filename}_{counter}.{file_type}")
         counter += 1
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(60)) as client:
         response = await client.get(url)
         response.raise_for_status()
         with open(file_path, "wb") as f:
