@@ -1,10 +1,6 @@
 from pdfdeal import Doc2X
 import os
-import logging
-
-httpx_logger = logging.getLogger("httpx")
-httpx_logger.setLevel(logging.WARNING)
-logging.basicConfig(level=logging.INFO)
+import pytest
 
 
 def test_single_pdf2file():
@@ -12,14 +8,25 @@ def test_single_pdf2file():
     filepath, _, _ = client.pdf2file(
         pdf_file="tests/pdf/sample.pdf",
         output_path="./Output/test/single/pdf2file",
-        output_names=["sample1.zip"],
+        output_names=["Test.zip"],
         output_format="md_dollar",
     )
     if filepath[0] != "":
         assert os.path.exists(filepath[0])
         assert os.path.isfile(filepath[0])
         assert filepath[0].endswith(".zip")
-        assert os.path.basename(filepath[0]) == "sample1.zip"
+        assert os.path.basename(filepath[0]) == "Test.zip"
+
+
+def test_error_input_pdf2file():
+    client = Doc2X(debug=True)
+    with pytest.raises(ValueError):
+        client.pdf2file(
+            pdf_file="tests/pdf/sample.pdf",
+            output_path="./Output/test/single/pdf2file",
+            output_names=["sample1.zip"],
+            output_format="md_dallar",
+        )
 
 
 def test_multiple_pdf2file():
