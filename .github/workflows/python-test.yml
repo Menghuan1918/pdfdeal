@@ -22,7 +22,7 @@ jobs:
             python-version: "3.12"
           - os: macos-13
             python-version: "3.13"
-      max-parallel: 5
+      max-parallel: 3
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
