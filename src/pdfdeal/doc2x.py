@@ -154,21 +154,23 @@ class Doc2X:
         convert: bool = False,
     ) -> Tuple[List[str], List[dict], bool]:
         if isinstance(pdf_file, str):
-            pdf_file, output_names = (
-                get_files(path=pdf_file, mode="pdf", out=output_format)
-                if os.path.isdir(pdf_file)
-                else ([pdf_file], None)
-            )
+            if os.path.isdir(pdf_file):
+                pdf_file, output_names = get_files(path=pdf_file, mode="pdf", out=output_format)
+            else:
+                pdf_file = [pdf_file]
+                if output_names is None:
+                    output_names = [os.path.basename(pdf_file[0])]
 
         output_names = output_names or [None] * len(pdf_file)
         if len(pdf_file) != len(output_names):
             raise ValueError("The length of files and output_names should be the same.")
 
-        output_format = (
-            OutputFormat(output_format).value
-            if isinstance(output_format, OutputFormat)
-            else output_format
-        )
+        try:
+            output_format = OutputFormat(output_format)
+        except ValueError as e:
+            raise ValueError(f"Invalid output format: {e}")
+
+        output_format = output_format.value
 
         semaphore = asyncio.Semaphore(self.max_pages)
         thread_semaphore = asyncio.Semaphore(self.thread)
@@ -250,6 +252,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
+        retry: bool = False,
     ) -> Tuple[List[str], List[dict], bool]:
         """Convert PDF files to the specified format.
 
@@ -258,13 +261,12 @@ class Doc2X:
             output_names (List[str], optional): List of output file names. Defaults to None.
             output_path (str, optional): Directory path for output files. Defaults to "./Output".
             output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, support output variable: `txt`|`txts`|`detailed`
-
             ocr (bool, optional): Whether to use OCR. Defaults to True.
             convert (bool, optional): Whether to convert the PDF. If False, only performs OCR. Defaults to False.
+            retry (bool, optional): Whether to retry failed conversions. Defaults to False.
 
         Returns:
             Tuple[List[str], List[dict], bool]: A tuple containing:
-
                 1. A list of successfully converted file paths or content.
                 2. A list of dictionaries containing error information for failed conversions.
                 3. A boolean indicating whether any errors occurred during the conversion process.
@@ -277,7 +279,7 @@ class Doc2X:
             PDF conversion functionality. It handles all the necessary setup for running
             the asynchronous code in a synchronous context.
         """
-        return run_async(
+        success_files, failed_files, has_error = run_async(
             self.pdf2file_back(
                 pdf_file=pdf_file,
                 output_names=output_names,
@@ -287,3 +289,45 @@ class Doc2X:
                 convert=convert,
             )
         )
+
+        if retry and has_error:
+            logger.warning(
+                "Detected failed conversions, retrying... If your file was parsed incorrectly, there will be no additional charges"
+            )
+            logger.warning(
+                "Warning: If your file was exported in error, this may incur an additional charge!"
+            )
+            retry_pdf_files = [f["path"] for f in failed_files if f["path"]]
+            retry_output_names = [os.path.basename(f) for f in retry_pdf_files]
+            retry_success, retry_failed, retry_has_error = run_async(
+                self.pdf2file_back(
+                    pdf_file=retry_pdf_files,
+                    output_names=retry_output_names,
+                    output_path=output_path,
+                    output_format=output_format,
+                    ocr=ocr,
+                    convert=convert,
+                )
+            )
+
+            # Merge retry results with original results
+            for i, retry_file in enumerate(retry_pdf_files):
+                original_index = next(
+                    index
+                    for index, f in enumerate(failed_files)
+                    if f["path"] == retry_file
+                )
+                if retry_success[i]:
+                    success_files.insert(original_index, retry_success[i])
+                else:
+                    failed_files[original_index] = retry_failed[i]
+
+            failed_files = [
+                f
+                for f in failed_files
+                if f["path"] not in retry_pdf_files
+                or not retry_success[retry_pdf_files.index(f["path"])]
+            ]
+            has_error = any(f["error"] for f in failed_files)
+
+        return success_files, failed_files, has_error

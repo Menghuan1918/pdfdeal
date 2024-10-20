@@ -18,7 +18,7 @@
 
 <br>
 
-[📄 在线文档](https://menghuan1918.github.io/pdfdeal-docs/zh/)
+[📄 在线文档](https://menghuan1918.github.io/pdfdeal-docs/zh/guide/)
 
 [ENGLISH](README.md) | 🗺️ 简体中文
 
@@ -108,7 +108,7 @@ client = Doc2X(apikey="Your API key",debug=True)
 success, failed, flag = client.pdf2file(
     pdf_file="tests/pdf/sample.pdf",
     output_path="./Output/test/single/pdf2file",
-    output_names=["sample1.zip"],
+    output_names=["NAME.zip"],
     output_format="md_dollar",
 )
 print(success)
