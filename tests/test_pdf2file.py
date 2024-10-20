@@ -13,7 +13,7 @@ def test_single_pdf2file():
         pdf_file="tests/pdf/sample.pdf",
         output_path="./Output/test/single/pdf2file",
         output_names=["sample1.zip"],
-        output_format="md_dollor",
+        output_format="md_dollar",
     )
     if filepath[0] != "":
         assert os.path.exists(filepath[0])

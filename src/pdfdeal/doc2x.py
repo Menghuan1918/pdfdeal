@@ -164,11 +164,12 @@ class Doc2X:
         if len(pdf_file) != len(output_names):
             raise ValueError("The length of files and output_names should be the same.")
 
-        output_format = (
-            OutputFormat(output_format).value
-            if isinstance(output_format, OutputFormat)
-            else output_format
-        )
+        try:
+            output_format = OutputFormat(output_format)
+        except ValueError as e:
+            raise ValueError(f"Invalid output format: {e}")
+
+        output_format = output_format.value
 
         semaphore = asyncio.Semaphore(self.max_pages)
         thread_semaphore = asyncio.Semaphore(self.thread)
