@@ -262,7 +262,7 @@ class Doc2X:
             output_path (str, optional): Directory path for output files. Defaults to "./Output".
             output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, support output variable: `txt`|`txts`|`detailed`
             ocr (bool, optional): Whether to use OCR. Defaults to True.
-            convert (bool, optional): Whether to convert the PDF. If False, only performs OCR. Defaults to False.
+            convert (bool, optional): Whether to convert Convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
             retry (bool, optional): Whether to retry failed conversions. Defaults to False.
 
         Returns:
