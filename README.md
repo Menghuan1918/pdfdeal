@@ -2,17 +2,11 @@
 <h1 aligh="center">
 <img src="https://github.com/Menghuan1918/pdfdeal/assets/122662527/837cfd7f-4546-4b44-a199-d826d78784fc" width="45">  pdfdeal
 </h1>
-<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml">
-  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-linux.yml/badge.svg?branch=main" alt="Package tests on Ubuntu">
+<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml">
+  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test.yml/badge.svg" 
+  alt="Package Testing on Python 3.8-3.13 on Win/Linux/macOS">
 </a>
-<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml">
-  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-win.yml/badge.svg?branch=main" alt="Package tests on Windows">
-</a>
-<a href="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml">
-  <img src="https://github.com/Menghuan1918/pdfdeal/actions/workflows/python-test-mac.yml/badge.svg?branch=main" alt="Package tests on MacOS">
-</a>
-
-
+<br>
 <br>
 
 [![Downloads](https://static.pepy.tech/badge/pdfdeal)](https://pepy.tech/project/pdfdeal) ![GitHub License](https://img.shields.io/github/license/Menghuan1918/pdfdeal) ![PyPI - Version](https://img.shields.io/pypi/v/pdfdeal) ![GitHub Repo stars](https://img.shields.io/github/stars/Menghuan1918/pdfdeal)
@@ -20,6 +14,8 @@
 <br>
 
 [📄Documentation](https://menghuan1918.github.io/pdfdeal-docs/guide/)
+
+<br>
 
 🗺️ ENGLISH | [简体中文](README_CN.md)
 
