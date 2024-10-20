@@ -19,7 +19,7 @@
 
 <br>
 
-[📄Documentation](https://menghuan1918.github.io/pdfdeal-docs/)
+[📄Documentation](https://menghuan1918.github.io/pdfdeal-docs/guide/)
 
 🗺️ ENGLISH | [简体中文](README_CN.md)
 
