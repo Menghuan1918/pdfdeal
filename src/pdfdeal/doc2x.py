@@ -155,7 +155,9 @@ class Doc2X:
     ) -> Tuple[List[str], List[dict], bool]:
         if isinstance(pdf_file, str):
             if os.path.isdir(pdf_file):
-                pdf_file, output_names = get_files(path=pdf_file, mode="pdf", out=output_format)
+                pdf_file, output_names = get_files(
+                    path=pdf_file, mode="pdf", out=output_format
+                )
             else:
                 pdf_file = [pdf_file]
                 if output_names is None:
@@ -181,7 +183,7 @@ class Doc2X:
                     page_count = get_pdf_page_count(pdf)
                 except Exception as e:
                     logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
-                    page_count = self.max_pages  #! Assume the worst case
+                    page_count = self.max_pages - 1  #! Assume the worst case
                 if page_count > self.max_pages:
                     logger.warning(f"File {pdf} has too many pages, skipping.")
                     raise ValueError(f"File {pdf} has too many pages.")
