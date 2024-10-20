@@ -154,11 +154,12 @@ class Doc2X:
         convert: bool = False,
     ) -> Tuple[List[str], List[dict], bool]:
         if isinstance(pdf_file, str):
-            pdf_file, output_names = (
-                get_files(path=pdf_file, mode="pdf", out=output_format)
-                if os.path.isdir(pdf_file)
-                else ([pdf_file], output_names)
-            )
+            if os.path.isdir(pdf_file):
+                pdf_file, output_names = get_files(path=pdf_file, mode="pdf", out=output_format)
+            else:
+                pdf_file = [pdf_file]
+                if output_names is None:
+                    output_names = [os.path.basename(pdf_file[0])]
 
         output_names = output_names or [None] * len(pdf_file)
         if len(pdf_file) != len(output_names):
