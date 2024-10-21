@@ -95,7 +95,7 @@ class Doc2X:
         apikey: str = None,
         thread: int = 5,
         max_pages: int = 1000,
-        retry_time: int = 15,
+        retry_time: int = 2,
         max_time: int = 90,
         debug: bool = False,
     ) -> None:
@@ -106,7 +106,7 @@ class Doc2X:
             apikey (str, optional): The API key for Doc2X. If not provided, it will try to get from environment variable 'DOC2X_APIKEY'.
             thread (int, optional): The maximum number of concurrent threads. Defaults to 5.
             max_pages (int, optional): The maximum number of pages to process. Defaults to 1000.
-            retry_time (int, optional): The number of retry attempts. Defaults to 15.
+            retry_time (int, optional): The number of retry attempts. Defaults to 2.
             max_time (int, optional): The maximum time (in seconds) to wait for a response. Defaults to 90.
             debug (bool, optional): Whether to enable debug logging. Defaults to False.
 
