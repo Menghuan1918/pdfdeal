@@ -95,7 +95,7 @@ class Doc2X:
         apikey: str = None,
         thread: int = 5,
         max_pages: int = 1000,
-        retry_time: int = 2,
+        retry_time: int = 3,
         max_time: int = 90,
         debug: bool = False,
     ) -> None:
