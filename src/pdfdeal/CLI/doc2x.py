@@ -39,9 +39,9 @@ def main():
     parser.add_argument(
         "-f",
         "--format",
-        help="The output format of the result, accept md、md_dollar、latex、docx, default is md_dollar",
+        help="The output format of the result, accept md、md_dollar、tex、docx, default is md_dollar",
         required=False,
-        choices=["md", "md_dollar", "latex", "docx"],
+        choices=["md", "md_dollar", "tex", "docx"],
     )
     parser.add_argument(
         "--graphrag",
