@@ -80,11 +80,12 @@ class FileError(Exception):
     pass
 
 
-def async_retry(max_retries=2, backoff_factor=2):
+def async_retry(max_retries=2, backoff_factor=2, timeout=60):
     """
     Decorator to retry an async function when an exception is raised.
     `max_retries`: Maximum number of retries.
     `backoff_factor`: Factor to increase the wait time between retries.
+    `timeout`: Timeout in seconds for each function call.
     """
 
     def decorator(func):
@@ -92,7 +93,18 @@ def async_retry(max_retries=2, backoff_factor=2):
         async def wrapper(*args, **kwargs):
             for retries in range(max_retries + 1):
                 try:
-                    return await func(*args, **kwargs)
+                    return await asyncio.wait_for(
+                        func(*args, **kwargs), timeout=timeout
+                    )
+                except asyncio.TimeoutError:
+                    if retries == max_retries:
+                        logging.exception(
+                            f"Function '{func.__name__}' timed out after {timeout} seconds"
+                        )
+                        raise
+                    logging.warning(
+                        f"Function '{func.__name__}' timed out, retrying..."
+                    )
                 except (RateLimit, FileError, RequestError, FileNotFoundError) as e:
                     logging.error(
                         f"Error in '{func.__name__}': {type(e).__name__} - {e}"
