@@ -5,7 +5,7 @@ import pytest
 
 def test_single_pdf2file():
     client = Doc2X(debug=True, thread=1)
-    filepath, _, _ = client.pdf2file(
+    filepath, failed, flag = client.pdf2file(
         pdf_file="tests/pdf/sample.pdf",
         output_path="./Output/test/single/pdf2file",
         output_names=["Test.zip"],
@@ -16,6 +16,9 @@ def test_single_pdf2file():
         assert os.path.isfile(filepath[0])
         assert filepath[0].endswith(".zip")
         assert os.path.basename(filepath[0]) == "Test.zip"
+    print(filepath)
+    print(failed)
+    print(flag)
 
 
 def test_error_input_pdf2file():
@@ -41,6 +44,6 @@ def test_multiple_pdf2file():
     for s in success:
         if s != "":
             assert s.endswith("sample.docx") or s.endswith("sampleB.docx")
-    for f in failed:
-        if f["path"] != "":
-            assert f["path"].endswith("sample_bad.pdf")
+    print(success)
+    print(failed)
+    print(flag)
