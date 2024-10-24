@@ -171,9 +171,9 @@ class Doc2X:
         parse_semaphore = asyncio.Semaphore(self.parse_thread)
         convert_semaphore = asyncio.Semaphore(self.convert_thread)
         page_semaphore = asyncio.Semaphore(self.max_pages)
+        page_lock = asyncio.Lock()
 
         async def process_file(pdf, name):
-            await asyncio.sleep(self.request_interval)
             try:
                 page_count = get_pdf_page_count(pdf)
             except Exception as e:
@@ -184,13 +184,15 @@ class Doc2X:
                 raise ValueError(f"File {pdf} has too many pages.")
 
             async def acquire_page_semaphore():
-                for _ in range(page_count):
-                    await page_semaphore.acquire()
+                async with page_lock:
+                    for _ in range(page_count):
+                        await page_semaphore.acquire()
 
             try:
                 await acquire_page_semaphore()
                 try:
                     async with parse_semaphore:
+                        await asyncio.sleep(self.request_interval)
                         uid, texts, locations = await parse_pdf(
                             apikey=self.apikey,
                             pdf_path=pdf,
@@ -203,6 +205,7 @@ class Doc2X:
 
                     if output_format in ["md", "md_dollar", "tex", "docx"]:
                         async with convert_semaphore:
+                            await asyncio.sleep(self.request_interval)
                             result = await convert_to_format(
                                 apikey=self.apikey,
                                 uid=uid,
