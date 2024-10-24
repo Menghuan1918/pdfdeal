@@ -10,7 +10,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["httpx>=0.23.0, <1", "pypdf"]
+dependencies = ["httpx>=0.23.1, <1", "pypdf"]
 
 [project.optional-dependencies]
 rag = ["emoji", "Pillow", "reportlab", "oss2", "boto3"]

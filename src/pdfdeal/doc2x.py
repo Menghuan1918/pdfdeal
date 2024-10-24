@@ -54,8 +54,8 @@ async def parse_pdf(
             logger.info(f"Processing {uid} : {progress}%")
             await asyncio.sleep(1)
         else:
-            raise RequestError(f"Unexpected status: {status}")
-    raise RequestError("Max time reached for uid_status")
+            raise RequestError(f"Unexpected status: {status} with uid: {uid}")
+    raise RequestError(f"Max time reached for uid_status with uid: {uid}")
 
 
 async def convert_to_format(
@@ -84,8 +84,8 @@ async def convert_to_format(
             await asyncio.sleep(1)
             status, url = await get_convert_result(apikey, uid)
         else:
-            raise RequestError(f"Unexpected status: {status}")
-    raise RequestError("Max time reached for get_convert_result")
+            raise RequestError(f"Unexpected status: {status} with uid: {uid}")
+    raise RequestError(f"Max time reached for get_convert_result with uid: {uid}")
 
 
 class Doc2X:
@@ -97,7 +97,6 @@ class Doc2X:
         retry_time: int = 5,
         max_time: int = 90,
         debug: bool = False,
-        request_interval: float = 0.25,
     ) -> None:
         """
         Initialize a Doc2X client.
@@ -126,7 +125,7 @@ class Doc2X:
         self.parse_thread = thread
         self.convert_thread = thread
         self.max_pages = max_pages
-        self.request_interval = request_interval
+        self.request_interval = 0.2
 
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
