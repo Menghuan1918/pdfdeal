@@ -44,6 +44,7 @@ async def parse_pdf(
     except RateLimit:
         uid = await retry_upload()
 
+    logger.info(f"Uploading successful for {pdf_path} with uid {uid}")
     for _ in range(max_time):
         progress, status, texts, locations = await uid_status(apikey, uid, convert)
         if status == "Success":
@@ -173,8 +174,8 @@ class Doc2X:
         total_pages = 0
         last_request_time = 0
         page_lock = asyncio.Lock()
-        parse_tasks = []
-        convert_tasks = []
+        parse_tasks = set()
+        convert_tasks = set()
         results = [None] * len(pdf_file)
         parse_results = [None] * len(pdf_file)
 
@@ -215,11 +216,14 @@ class Doc2X:
                         pdf_path=pdf,
                         ocr=ocr,
                         maxretry=self.retry_time,
-                        wait_time=15,
+                        wait_time=5,
                         max_time=self.max_time,
                         convert=convert,
                     )
                     parse_results[index] = (uid, texts, locations)
+                    # Create convert task as soon as parse is complete
+                    task = asyncio.create_task(convert_file(index, name))
+                    convert_tasks.add(task)
 
                 except asyncio.TimeoutError:
                     results[index] = ("", "Operation timed out", False)
@@ -236,6 +240,7 @@ class Doc2X:
             uid, texts, locations = parse_results[index]
             try:
                 if output_format in ["md", "md_dollar", "tex", "docx"]:
+                    nonlocal last_request_time
                     # Wait for request interval
                     current_time = time.time()
                     if current_time - last_request_time < self.request_interval:
@@ -244,7 +249,6 @@ class Doc2X:
                         )
 
                     async with page_lock:
-                        nonlocal last_request_time
                         last_request_time = time.time()
 
                     result = await convert_to_format(
@@ -282,21 +286,11 @@ class Doc2X:
                 )
 
             task = asyncio.create_task(process_file(i, pdf, name))
-            parse_tasks.append(task)
+            parse_tasks.add(task)
 
         # Wait for remaining parse tasks
         if parse_tasks:
             await asyncio.wait(parse_tasks)
-
-        # Create and run convert tasks with controlled concurrency
-        for i, name in enumerate(output_names):
-            while len(convert_tasks) >= self.convert_thread:
-                done, convert_tasks = await asyncio.wait(
-                    convert_tasks, return_when=asyncio.FIRST_COMPLETED
-                )
-
-            task = asyncio.create_task(convert_file(i, name))
-            convert_tasks.append(task)
 
         # Wait for remaining convert tasks
         if convert_tasks:
