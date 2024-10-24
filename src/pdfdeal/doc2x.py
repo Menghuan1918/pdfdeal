@@ -94,22 +94,22 @@ class Doc2X:
         apikey: str = None,
         thread: int = 5,
         max_pages: int = 1000,
-        retry_time: int = 3,
+        retry_time: int = 5,
         max_time: int = 90,
         debug: bool = False,
-        request_interval: float = 0.1,
+        request_interval: float = 0.25,
     ) -> None:
         """
         Initialize a Doc2X client.
 
         Args:
             apikey (str, optional): The API key for Doc2X. If not provided, it will try to get from environment variable 'DOC2X_APIKEY'.
-            thread (int, optional): The maximum number of concurrent threads. Defaults to 5.
-            max_pages (int, optional): The maximum number of pages to process. Defaults to 1000.
-            retry_time (int, optional): The number of retry attempts. Defaults to 2.
+            thread (int, optional): The maximum number of concurrent threads at same time. Defaults to 5.
+            max_pages (int, optional): The maximum number of pages to process at same time. Defaults to 1000.
+            retry_time (int, optional): The number of retry attempts. Defaults to 5.
             max_time (int, optional): The maximum time (in seconds) to wait for a response. Defaults to 90.
             debug (bool, optional): Whether to enable debug logging. Defaults to False.
-            request_interval (float, optional): Interval between requests in seconds. Defaults to 0.1.
+            request_interval (float, optional): Interval between requests in seconds. Defaults to 0.25.
 
         Raises:
             ValueError: If no API key is found.
@@ -326,7 +326,6 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-        retry: bool = True,
     ) -> Tuple[List[str], List[dict], bool]:
         """Convert PDF files to the specified format.
 
@@ -337,7 +336,6 @@ class Doc2X:
             output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, support output variable: `txt`|`txts`|`detailed`
             ocr (bool, optional): Whether to use OCR. Defaults to True.
             convert (bool, optional): Whether to convert Convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
-            retry (bool, optional): Whether to retry failed conversions. Defaults to True.
 
         Returns:
             Tuple[List[str], List[dict], bool]: A tuple containing:

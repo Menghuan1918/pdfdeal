@@ -7,7 +7,7 @@ import logging
 
 
 async def code_check(code: str, uid: str = None, trace_id: str = None):
-    if code in ["parse_task_limit_exceeded", "parse_concurrency_limit"]:
+    if code in ["parse_page_limit_exceeded", "parse_concurrency_limit"]:
         raise RateLimit()
     if code in RequestError.ERROR_CODES:
         raise RequestError(code, uid=uid, trace_id=trace_id)
@@ -30,7 +30,7 @@ class RequestError(Exception):
     """
 
     ERROR_CODES = {
-        "parse_page_limit_exceeded": "可用的解析页数额度不足 (Insufficient page quota)",
+        "parse_quota_limit": "可用的解析页数额度不足 (Insufficient parsing quota)",
         "parse_create_task_error": "创建任务失败 (Failed to create task)",
         "parse_file_too_large": "单个文件大小超过限制 (File size exceeds limit)",
         "parse_file_page_limit": "单个文件页数超过限制 (File page count exceeds limit)",
@@ -43,7 +43,7 @@ class RequestError(Exception):
     }
 
     SOLUTIONS = {
-        "parse_page_limit_exceeded": "当前可用的页数不够 (Not enough available pages)",
+        "parse_quota_limit": "当前可用的页数不足，请检查余额或联系负责人 (Insufficient parsing quota, check balance or contact support)",
         "parse_create_task_error": "短暂等待后重试, 如果还出现报错则请联系负责人 (Retry after a short wait, contact support if error persists)",
         "parse_file_too_large": "当前允许单个文件大小 <= 300M, 请拆分 pdf (File size must be <= 300MB, please split the PDF)",
         "parse_file_page_limit": "当前允许单个文件页数 <= 1000页, 请拆分 pdf (File page count must be <= 1000 pages, please split the PDF)",

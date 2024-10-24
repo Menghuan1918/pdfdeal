@@ -1,6 +1,6 @@
 [project]
 name = "pdfdeal"
-version = "0.4.2"
+version = "0.4.3"
 authors = [{ name = "Menghuan1918", email = "menghuan@menghuan1918.com" }]
 description = "A python wrapper for the Doc2X API and comes with native texts processing (to improve texts recall in RAG)."
 readme = "README.md"
@@ -10,7 +10,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["httpx<=0.25.2", "pypdf"]
+dependencies = ["httpx>=0.23.0, <1", "pypdf"]
 
 [project.optional-dependencies]
 rag = ["emoji", "Pillow", "reportlab", "oss2", "boto3"]
