@@ -13,6 +13,7 @@ from .Doc2X.Types import OutputFormat
 from .Doc2X.Pages import get_pdf_page_count
 from .Doc2X.Exception import RequestError, RateLimit, run_async
 from .FileTools.file_tools import get_files
+import time
 
 logger = logging.getLogger(name="pdfdeal.doc2x")
 
@@ -168,12 +169,16 @@ class Doc2X:
 
         output_format = output_format.value
 
-        parse_semaphore = asyncio.Semaphore(self.parse_thread)
-        convert_semaphore = asyncio.Semaphore(self.convert_thread)
-        page_semaphore = asyncio.Semaphore(self.max_pages)
+        # Track total pages and last request time
+        total_pages = 0
+        last_request_time = 0
         page_lock = asyncio.Lock()
+        parse_tasks = []
+        convert_tasks = []
+        results = [None] * len(pdf_file)
+        parse_results = [None] * len(pdf_file)
 
-        async def process_file(pdf, name):
+        async def process_file(index, pdf, name):
             try:
                 page_count = get_pdf_page_count(pdf)
             except Exception as e:
@@ -183,64 +188,119 @@ class Doc2X:
                 logger.warning(f"File {pdf} has too many pages, skipping.")
                 raise ValueError(f"File {pdf} has too many pages.")
 
-            async def acquire_page_semaphore():
-                async with page_lock:
-                    for _ in range(page_count):
-                        await page_semaphore.acquire()
+            nonlocal total_pages, last_request_time
 
             try:
-                await acquire_page_semaphore()
-                try:
-                    async with parse_semaphore:
-                        await asyncio.sleep(self.request_interval)
-                        uid, texts, locations = await parse_pdf(
-                            apikey=self.apikey,
-                            pdf_path=pdf,
-                            ocr=ocr,
-                            maxretry=self.retry_time,
-                            wait_time=15,
-                            max_time=self.max_time,
-                            convert=convert,
+                # Check if we can start new task
+                async with page_lock:
+                    if total_pages + page_count > self.max_pages:
+                        # Wait for some tasks to complete
+                        while total_pages + page_count > self.max_pages:
+                            await asyncio.sleep(0.1)
+
+                    # Ensure minimum interval between requests
+                    current_time = time.time()
+                    if current_time - last_request_time < self.request_interval:
+                        await asyncio.sleep(
+                            self.request_interval - (current_time - last_request_time)
                         )
 
-                    if output_format in ["md", "md_dollar", "tex", "docx"]:
-                        async with convert_semaphore:
-                            await asyncio.sleep(self.request_interval)
-                            result = await convert_to_format(
-                                apikey=self.apikey,
-                                uid=uid,
-                                output_format=output_format,
-                                output_path=output_path,
-                                output_name=name,
-                                max_time=self.max_time,
-                            )
-                    else:
-                        if output_format == "texts":
-                            result = texts
-                        elif output_format == "text":
-                            result = "\n".join(texts)
-                        elif output_format == "detailed":
-                            result = [
-                                {"text": text, "location": loc}
-                                for text, loc in zip(texts, locations)
-                            ]
-                        else:
-                            raise ValueError(
-                                f"Unsupported output format: {output_format}"
-                            )
+                    total_pages += page_count
+                    last_request_time = time.time()
 
-                    return result, "", True
+                # Process the file
+                try:
+                    uid, texts, locations = await parse_pdf(
+                        apikey=self.apikey,
+                        pdf_path=pdf,
+                        ocr=ocr,
+                        maxretry=self.retry_time,
+                        wait_time=15,
+                        max_time=self.max_time,
+                        convert=convert,
+                    )
+                    parse_results[index] = (uid, texts, locations)
+
                 except asyncio.TimeoutError:
-                    return "", "Operation timed out", False
+                    results[index] = ("", "Operation timed out", False)
                 except Exception as e:
-                    return "", str(e), False
+                    results[index] = ("", str(e), False)
             finally:
-                for _ in range(page_count):
-                    page_semaphore.release()
+                async with page_lock:
+                    total_pages -= page_count
 
-        results = await asyncio.gather(
-            *[process_file(pdf, name) for pdf, name in zip(pdf_file, output_names)]
-        )
+        async def convert_file(index, name):
+            if parse_results[index] is None:
+                return
+
+            uid, texts, locations = parse_results[index]
+            try:
+                if output_format in ["md", "md_dollar", "tex", "docx"]:
+                    # Wait for request interval
+                    current_time = time.time()
+                    if current_time - last_request_time < self.request_interval:
+                        await asyncio.sleep(
+                            self.request_interval - (current_time - last_request_time)
+                        )
+
+                    async with page_lock:
+                        nonlocal last_request_time
+                        last_request_time = time.time()
+
+                    result = await convert_to_format(
+                        apikey=self.apikey,
+                        uid=uid,
+                        output_format=output_format,
+                        output_path=output_path,
+                        output_name=name,
+                        max_time=self.max_time,
+                    )
+                else:
+                    if output_format == "texts":
+                        result = texts
+                    elif output_format == "text":
+                        result = "\n".join(texts)
+                    elif output_format == "detailed":
+                        result = [
+                            {"text": text, "location": loc}
+                            for text, loc in zip(texts, locations)
+                        ]
+                    else:
+                        raise ValueError(f"Unsupported output format: {output_format}")
+
+                results[index] = (result, "", True)
+            except asyncio.TimeoutError:
+                results[index] = ("", "Operation timed out", False)
+            except Exception as e:
+                results[index] = ("", str(e), False)
+
+        # Create and run parse tasks with controlled concurrency
+        for i, (pdf, name) in enumerate(zip(pdf_file, output_names)):
+            while len(parse_tasks) >= self.parse_thread:
+                done, parse_tasks = await asyncio.wait(
+                    parse_tasks, return_when=asyncio.FIRST_COMPLETED
+                )
+
+            task = asyncio.create_task(process_file(i, pdf, name))
+            parse_tasks.append(task)
+
+        # Wait for remaining parse tasks
+        if parse_tasks:
+            await asyncio.wait(parse_tasks)
+
+        # Create and run convert tasks with controlled concurrency
+        for i, name in enumerate(output_names):
+            while len(convert_tasks) >= self.convert_thread:
+                done, convert_tasks = await asyncio.wait(
+                    convert_tasks, return_when=asyncio.FIRST_COMPLETED
+                )
+
+            task = asyncio.create_task(convert_file(i, name))
+            convert_tasks.append(task)
+
+        # Wait for remaining convert tasks
+        if convert_tasks:
+            await asyncio.wait(convert_tasks)
 
         success_files = [r[0] if r[2] else "" for r in results]
         failed_files = [
@@ -272,7 +332,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-        retry: bool = False,
+        retry: bool = True,
     ) -> Tuple[List[str], List[dict], bool]:
         """Convert PDF files to the specified format.
 
@@ -283,7 +343,7 @@ class Doc2X:
             output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, support output variable: `txt`|`txts`|`detailed`
             ocr (bool, optional): Whether to use OCR. Defaults to True.
             convert (bool, optional): Whether to convert Convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
-            retry (bool, optional): Whether to retry failed conversions. Defaults to False.
+            retry (bool, optional): Whether to retry failed conversions. Defaults to True.
 
         Returns:
             Tuple[List[str], List[dict], bool]: A tuple containing:
@@ -299,7 +359,7 @@ class Doc2X:
             PDF conversion functionality. It handles all the necessary setup for running
             the asynchronous code in a synchronous context.
         """
-        success_files, failed_files, has_error = run_async(
+        return run_async(
             self.pdf2file_back(
                 pdf_file=pdf_file,
                 output_names=output_names,
@@ -309,45 +369,3 @@ class Doc2X:
                 convert=convert,
             )
         )
-
-        if retry and has_error:
-            logger.warning(
-                "Detected failed conversions, retrying... If your file was parsed incorrectly, there will be no additional charges"
-            )
-            logger.warning(
-                "Warning: If your file was exported in error, this may incur an additional charge!"
-            )
-            retry_pdf_files = [f["path"] for f in failed_files if f["path"]]
-            retry_output_names = [os.path.basename(f) for f in retry_pdf_files]
-            retry_success, retry_failed, retry_has_error = run_async(
-                self.pdf2file_back(
-                    pdf_file=retry_pdf_files,
-                    output_names=retry_output_names,
-                    output_path=output_path,
-                    output_format=output_format,
-                    ocr=ocr,
-                    convert=convert,
-                )
-            )
-
-            # Merge retry results with original results
-            for i, retry_file in enumerate(retry_pdf_files):
-                original_index = next(
-                    index
-                    for index, f in enumerate(failed_files)
-                    if f["path"] == retry_file
-                )
-                if retry_success[i]:
-                    success_files.insert(original_index, retry_success[i])
-                else:
-                    failed_files[original_index] = retry_failed[i]
-
-            failed_files = [
-                f
-                for f in failed_files
-                if f["path"] not in retry_pdf_files
-                or not retry_success[retry_pdf_files.index(f["path"])]
-            ]
-            has_error = any(f["error"] for f in failed_files)
-
-        return success_files, failed_files, has_error
