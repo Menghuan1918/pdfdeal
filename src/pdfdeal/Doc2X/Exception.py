@@ -20,7 +20,8 @@ class RateLimit(Exception):
     Error when rate limit is reached.
     """
 
-    pass
+    def __str__(self):
+        return "Rate limit reached. Please wait a moment and try again. (速率限制，请稍后重试)"
 
 
 class RequestError(Exception):
