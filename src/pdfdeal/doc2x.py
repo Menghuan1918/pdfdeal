@@ -181,12 +181,16 @@ class Doc2X:
         async def process_file(index, pdf, name):
             try:
                 page_count = get_pdf_page_count(pdf)
+            except RequestError as e:
+                results[index] = ("", str(e), False)
+                logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
+                return
             except Exception as e:
                 logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
                 page_count = self.max_pages - 1  #! Assume the worst case
             if page_count > self.max_pages:
                 logger.warning(f"File {pdf} has too many pages, skipping.")
-                raise ValueError(f"File {pdf} has too many pages.")
+                results[index] = ("", "File has too many pages", False)
 
             nonlocal total_pages, last_request_time
 
@@ -312,6 +316,7 @@ class Doc2X:
                     if fail["error"] != "":
                         print("====================================")
                         print(f"Failed to convert {fail['path']}: {fail['error']}")
+                        print("====================================")
         logger.info(
             f"Successfully converted {sum(1 for file in success_files if file)} file(s)."
         )
