@@ -45,14 +45,14 @@ async def parse_pdf(
         uid = await retry_upload()
 
     logger.info(f"Uploading successful for {pdf_path} with uid {uid}")
-    for _ in range(max_time):
+    for _ in range(max_time / 3):
         progress, status, texts, locations = await uid_status(apikey, uid, convert)
         if status == "Success":
             logger.info(f"Parsing successful for {pdf_path} with uid {uid}")
             return uid, texts, locations
         elif status == "Processing file":
             logger.info(f"Processing {uid} : {progress}%")
-            await asyncio.sleep(1)
+            await asyncio.sleep(3)
         else:
             raise RequestError(f"Unexpected status: {status} with uid: {uid}")
     raise RequestError(f"Max time reached for uid_status with uid: {uid}")
@@ -71,7 +71,7 @@ async def convert_to_format(
     logger.info(f"Converting {uid} to {output_format}...")
     status, url = await convert_parse(apikey, uid, output_format)
 
-    for _ in range(max_time):
+    for _ in range(max_time / 3):
         if status == "Success":
             logger.info(f"Downloading {uid} {output_format} file to {output_path}...")
             return await download_file(
@@ -81,7 +81,7 @@ async def convert_to_format(
                 target_filename=output_name or uid,
             )
         elif status == "Processing":
-            await asyncio.sleep(1)
+            await asyncio.sleep(3)
             status, url = await get_convert_result(apikey, uid)
         else:
             raise RequestError(f"Unexpected status: {status} with uid: {uid}")
