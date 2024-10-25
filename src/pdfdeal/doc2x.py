@@ -45,7 +45,7 @@ async def parse_pdf(
         uid = await retry_upload()
 
     logger.info(f"Uploading successful for {pdf_path} with uid {uid}")
-    for _ in range(max_time / 3):
+    for _ in range(max_time // 3):
         progress, status, texts, locations = await uid_status(apikey, uid, convert)
         if status == "Success":
             logger.info(f"Parsing successful for {pdf_path} with uid {uid}")
@@ -71,7 +71,7 @@ async def convert_to_format(
     logger.info(f"Converting {uid} to {output_format}...")
     status, url = await convert_parse(apikey, uid, output_format)
 
-    for _ in range(max_time / 3):
+    for _ in range(max_time // 3):
         if status == "Success":
             logger.info(f"Downloading {uid} {output_format} file to {output_path}...")
             return await download_file(
