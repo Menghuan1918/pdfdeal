@@ -375,9 +375,9 @@ class Doc2X:
             pdf_file (str | List[str]): Path to a single PDF file or a list of PDF file paths.
             output_names (List[str], optional): List of output file names. Defaults to None.
             output_path (str, optional): Directory path for output files. Defaults to "./Output".
-            output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, support output variable: `txt`|`txts`|`detailed`
+            output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, will return the path of files, support output variable: `text`|`texts`|`detailed`(it means `string in md format`, `list of strings split by page`, `list of strings split by page (including detailed page information)`)
             ocr (bool, optional): Whether to use OCR. Defaults to True.
-            convert (bool, optional): Whether to convert Convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
+            convert (bool, optional): Whether to convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
 
         Returns:
             Tuple[List[str], List[dict], bool]: A tuple containing:
