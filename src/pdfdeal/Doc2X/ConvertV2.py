@@ -55,22 +55,24 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
             },
             content=file,
         )
-
+    trace_id = post_res.headers.get("trace-id", "Failed to get trace-id ")
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
         uid = response_data.get("data", {}).get("uid")
-        trace_id = post_res.headers.get("trace-id")
+
         await code_check(
             code=response_data.get("code", response_data), uid=uid, trace_id=trace_id
         )
         return uid
 
     if post_res.status_code == 429:
-        raise RateLimit()
+        raise RateLimit(trace_id=trace_id)
     if post_res.status_code == 400:
-        raise RequestError(post_res.text)
+        raise RequestError(error_code=post_res.text, trace_id=trace_id)
 
-    raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
+    raise Exception(
+        f"Upload file error,trace_id{trace_id}:{post_res.status_code}:{post_res.text}"
+    )
 
 
 @async_retry()
@@ -194,19 +196,19 @@ async def uid_status(
         response_data = await client.get(
             url, headers={"Authorization": f"Bearer {apikey}"}
         )
+    trace_id = response_data.headers.get("trace-id", "Failed to get trace-id ")
     if response_data.status_code != 200:
         raise Exception(
-            f"Get status error! {response_data.status_code}:{response_data.text}"
+            f"Get status error! Trace-id:{trace_id}:{response_data.status_code}:{response_data.text}"
         )
 
     try:
         data = json.loads(response_data.content.decode("utf-8"))
     except Exception as e:
         raise Exception(
-            f"Get status error with {e}! {response_data.status_code}:{response_data.text}"
+            f"Get status error with {e}! Trace-id:{trace_id}:{response_data.status_code}:{response_data.text}"
         )
 
-    trace_id = response_data.headers.get("trace-id")
     await code_check(data.get("code", response_data), uid, trace_id=trace_id)
 
     progress, status = data["data"].get("progress", 0), data["data"].get("status", "")
@@ -216,9 +218,13 @@ async def uid_status(
         texts, locations = await decode_data(data["data"], convert)
         return 100, "Success", texts, locations
     elif status == "failed":
-        raise RequestError(f"Failed to deal with file! {response_data.text}")
+        raise RequestError(
+            f"Failed to deal with file uid {uid}! Trace-id:{trace_id}:{response_data.text}"
+        )
     else:
-        logger.warning(f"Unknown status: {status}")
+        logger.warning(
+            f"Unknown status: {status} in uid {uid} file! Trace-id:{trace_id}:{response_data.text}"
+        )
         return progress, status, [], []
 
 
@@ -258,14 +264,14 @@ async def convert_parse(
         response_data = await client.post(
             url, json=payload, headers={"Authorization": f"Bearer {apikey}"}
         )
-
+    trace_id = response_data.headers.get("trace-id", "Failed to get trace-id ")
     if response_data.status_code != 200:
         raise Exception(
-            f"Conversion request failed: {response_data.status_code}:{response_data.text}"
+            f"Conversion request failed: Trace-id:{trace_id}:{response_data.status_code}:{response_data.text}"
         )
 
     data = response_data.json()
-    trace_id = response_data.headers.get("trace-id")
+
     await code_check(data.get("code", response_data), uid, trace_id=trace_id)
     status = data["data"]["status"]
     url = data["data"].get("url", "")
@@ -275,7 +281,9 @@ async def convert_parse(
     elif status == "success":
         return "Success", url
     else:
-        raise RequestError(f"Conversion uid {uid} file failed: {data}")
+        raise RequestError(
+            f"Conversion uid {uid} file failed in Trace-id:{trace_id}:{data}"
+        )
 
 
 @async_retry()
@@ -301,14 +309,13 @@ async def get_convert_result(apikey: str, uid: str) -> Tuple[str, str]:
         response = await client.get(
             url, params=params, headers={"Authorization": f"Bearer {apikey}"}
         )
-
+    trace_id = response.headers.get("trace-id", "Failed to get trace-id ")
     if response.status_code != 200:
         raise Exception(
-            f"Get conversion result failed: {response.status_code}:{response.text}"
+            f"Get conversion result failed: Trace-id:{trace_id}:{response.status_code}:{response.text}"
         )
 
     data = response.json()
-    trace_id = response.headers.get("trace-id")
     await code_check(data.get("code", response), uid, trace_id=trace_id)
     status = data["data"]["status"]
     url = data["data"].get("url", "")
@@ -318,7 +325,9 @@ async def get_convert_result(apikey: str, uid: str) -> Tuple[str, str]:
     elif status == "success":
         return "Success", url
     else:
-        raise RequestError(f"Get conversion result for uid {uid} failed: {data}")
+        raise RequestError(
+            f"Get conversion result for uid {uid} failed:Trace-id:{trace_id}:{data}"
+        )
 
 
 @async_retry()
