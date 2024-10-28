@@ -8,7 +8,7 @@ import logging
 
 async def code_check(code: str, uid: str = None, trace_id: str = None):
     if code in ["parse_page_limit_exceeded", "parse_concurrency_limit"]:
-        raise RateLimit()
+        raise RateLimit(trace_id=trace_id)
     if code in RequestError.ERROR_CODES:
         raise RequestError(code, uid=uid, trace_id=trace_id)
     if code not in ["ok", "success"]:
@@ -20,8 +20,13 @@ class RateLimit(Exception):
     Error when rate limit is reached.
     """
 
+    def __init__(self, trace_id: str = None):
+        self.trace_id = trace_id
+        super().__init__()
+
     def __str__(self):
-        return "Rate limit reached. Please wait a moment and try again. (速率限制，请稍后重试)"
+        trace_msg = f" (Trace ID: {self.trace_id})" if self.trace_id else ""
+        return f"Rate limit reached. Please wait a moment and try again. (速率限制，请稍后重试){trace_msg}"
 
 
 class RequestError(Exception):

@@ -28,15 +28,30 @@ async def parse_pdf(
     convert: bool,
 ) -> Tuple[str, List[str], List[dict]]:
     """Parse PDF file and return uid and extracted text"""
+    thread_lock = False
 
     async def retry_upload():
         for _ in range(maxretry):
             try:
                 return await upload_pdf(apikey, pdf_path, ocr)
             except RateLimit:
+                global limit_lock, get_max_limit, max_threads, full_speed, thread_min
+                nonlocal thread_lock
+                if full_speed:
+                    if not get_max_limit and not thread_lock:
+                        thread_lock = True
+                        get_max_limit = True
+                        async with limit_lock:
+                            max_threads = max(thread_min, max_threads - 1)
+                    else:
+                        if not thread_lock:
+                            max_threads = max(thread_min, max_threads - 1)
+                            thread_lock = True
                 logger.warning("Rate limit reached, retrying...")
                 await asyncio.sleep(wait_time)
-        raise RequestError("Max retry reached for upload_pdf")
+        raise RequestError(
+            "Max retry reached for upload_pdf, this may be a rate limit issue, try to reduce the number of threads."
+        )
 
     logger.info(f"Uploading {pdf_path}...")
     try:
@@ -81,6 +96,7 @@ async def convert_to_format(
                 target_filename=output_name or uid,
             )
         elif status == "Processing":
+            logger.info(f"Converting {uid} {output_format} file...")
             await asyncio.sleep(3)
             status, url = await get_convert_result(apikey, uid)
         else:
@@ -97,6 +113,7 @@ class Doc2X:
         retry_time: int = 5,
         max_time: int = 90,
         debug: bool = False,
+        full_speed: bool = False,
     ) -> None:
         """
         Initialize a Doc2X client.
@@ -108,7 +125,7 @@ class Doc2X:
             retry_time (int, optional): The number of retry attempts. Defaults to 5.
             max_time (int, optional): The maximum time (in seconds) to wait for a response. Defaults to 90.
             debug (bool, optional): Whether to enable debug logging. Defaults to False.
-            request_interval (float, optional): Interval between requests in seconds. Defaults to 0.25.
+            full_speed (bool, optional): **Experimental function**. Whether to enable automatic sniffing of the concurrency limit. Defaults to False.
 
         Raises:
             ValueError: If no API key is found.
@@ -122,10 +139,9 @@ class Doc2X:
         self.retry_time = retry_time
         self.max_time = max_time
         self.thread = thread
-        self.parse_thread = thread
-        self.convert_thread = thread
         self.max_pages = max_pages
-        self.request_interval = 0.2
+        self.request_interval = 0.1
+        self.full_speed = full_speed
 
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
@@ -177,6 +193,16 @@ class Doc2X:
         convert_tasks = set()
         results = [None] * len(pdf_file)
         parse_results = [None] * len(pdf_file)
+        global limit_lock, get_max_limit, max_threads, full_speed, thread_min
+        thread_min = self.thread
+        full_speed = self.full_speed
+        limit_lock = asyncio.Lock()
+        get_max_limit = False
+        max_threads = self.thread
+
+        if full_speed:
+            self.max_time = 180
+            self.retry_time = 10
 
         async def process_file(index, pdf, name):
             try:
@@ -229,7 +255,11 @@ class Doc2X:
                     convert_tasks.add(task)
 
                 except asyncio.TimeoutError:
-                    results[index] = ("", "Operation timed out", False)
+                    results[index] = (
+                        "",
+                        "Operation timed out, this may be a rate limit issue or network issue, try to reduce the number of threads.",
+                        False,
+                    )
                 except Exception as e:
                     results[index] = ("", str(e), False)
             finally:
@@ -277,17 +307,24 @@ class Doc2X:
 
                 results[index] = (result, "", True)
             except asyncio.TimeoutError:
-                results[index] = ("", "Operation timed out", False)
+                results[index] = (
+                    "",
+                    "Operation timed out, this may be a rate limit issue or network issue, try to reduce the number of threads.",
+                    False,
+                )
             except Exception as e:
                 results[index] = ("", str(e), False)
 
         # Create and run parse tasks with controlled concurrency
         for i, (pdf, name) in enumerate(zip(pdf_file, output_names)):
-            while len(parse_tasks) >= self.parse_thread:
+            while len(parse_tasks) >= max_threads:
                 done, parse_tasks = await asyncio.wait(
                     parse_tasks, return_when=asyncio.FIRST_COMPLETED
                 )
-
+                if full_speed:
+                    async with limit_lock:
+                        if not get_max_limit:
+                            max_threads = max_threads + 1
             task = asyncio.create_task(process_file(i, pdf, name))
             parse_tasks.add(task)
 
@@ -298,7 +335,8 @@ class Doc2X:
         # Wait for remaining convert tasks
         if convert_tasks:
             await asyncio.wait(convert_tasks)
-
+        if full_speed:
+            logger.info(f"Convert tasks done with {max_threads} threads.")
         success_files = [r[0] if r[2] else "" for r in results]
         failed_files = [
             {"error": r[1], "path": pdf} if not r[2] else {"error": "", "path": ""}
