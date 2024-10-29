@@ -13,7 +13,9 @@ logger = logging.getLogger("pdfdeal.convertV2")
 
 
 @async_retry()
-async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
+async def upload_pdf(
+    apikey: str, pdffile: str, ocr: bool = True, oss_choose: bool = True
+) -> str:
     """Upload pdf file to server and return the uid of the file
 
     Args:
@@ -31,12 +33,7 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
         str: The uid of the file
     """
     url = f"{Base_URL}/v2/parse/pdf"
-    if os.path.getsize(pdffile) >= 300 * 1024 * 1024:
-        logger.warning("Now not support PDF file > 300MB!")
-        raise RequestError("parse_file_too_large")
-        logger.warning(
-            "File size is too large, will auto switch to S3 file upload way, this may take a while"
-        )
+    if oss_choose or os.path.getsize(pdffile) >= 100 * 1024 * 1024:
         return await upload_pdf_big(apikey, pdffile, ocr)
 
     try:
@@ -45,7 +42,7 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
     except Exception as e:
         raise FileError(f"Open file error! {e}")
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(120)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(120), http2=True) as client:
         post_res = await client.post(
             url,
             params={"ocr": str(ocr).lower()},
@@ -77,7 +74,7 @@ async def upload_pdf(apikey: str, pdffile: str, ocr: bool = True) -> str:
 
 @async_retry()
 async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
-    """Upload big pdf file(>100m) to server and return the uid of the file
+    """Upload big pdf file to server and return the uid of the file
 
     Args:
         apikey (str): The key
@@ -93,49 +90,47 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
     Returns:
         str: The uid of the file
     """
-    if os.path.getsize(pdffile) < 100 * 1024 * 1024:
-        raise FileError("PDF file size should be bigger than 100MB!")
-
+    if os.path.getsize(pdffile) >= 1024 * 1024 * 1024:
+        logger.warning("Not support PDF file > 1GB!")
+        raise RequestError("parse_file_too_large")
     try:
         file = {"file": open(pdffile, "rb")}
     except Exception as e:
         raise FileError(f"Open file error! {e}")
 
     url = f"{Base_URL}/v2/parse/preupload"
-    filename = os.path.basename(pdffile)[:20]
-    timeout = httpx.Timeout(120)
+    filename = os.path.basename(pdffile)
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30), http2=True) as client:
         post_res = await client.post(
             url,
             headers={"Authorization": f"Bearer {apikey}"},
             json={"file_name": filename, "ocr": ocr},
         )
-
+    trace_id = post_res.headers.get("trace-id")
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
-        uid = response_data["data"]["form"]["x-amz-meta-uid"]
-        trace_id = post_res.headers.get("trace-id")
-        await code_check(
-            response_data.get("code", response_data), uid=uid, trace_id=trace_id
-        )
-
         upload_data = response_data["data"]
         upload_url = upload_data["url"]
+        uid = upload_data["uid"]
+        await code_check(
+            code=response_data.get("code", response_data), uid=uid, trace_id=trace_id
+        )
 
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            s3_res = await client.post(
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120), http2=True) as client:
+            s3_res = await client.put(
                 url=upload_url,
-                data=upload_data["form"],
                 files=file,
             )
         if s3_res.status_code == 204:
             return uid
         else:
-            raise RequestError(s3_res.text)
+            raise Exception(f"Upload file to OSS error! {s3_res.text}")
     if post_res.status_code == 400:
-        raise RequestError(post_res.text)
-    raise Exception(f"Upload file error! {post_res.status_code}:{post_res.text}")
+        raise RequestError(error_code=post_res.text, trace_id=trace_id)
+    raise Exception(
+        f"Upload file error! trace_ID:{trace_id}:{post_res.status_code}:{post_res.text}"
+    )
 
 
 async def decode_data(data: dict, convert: bool) -> Tuple[list, list]:
@@ -192,7 +187,7 @@ async def uid_status(
         Tuple[int, str, list, list]: The progress, status, texts and locations
     """
     url = f"{Base_URL}/v2/parse/status?uid={uid}"
-    async with httpx.AsyncClient(timeout=httpx.Timeout(30)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30), http2=True) as client:
         response_data = await client.get(
             url, headers={"Authorization": f"Bearer {apikey}"}
         )
@@ -260,7 +255,7 @@ async def convert_parse(
     if to == "md_dollar":
         payload["formula_mode"] = "dollar"
         payload["to"] = "md"
-    async with httpx.AsyncClient(timeout=httpx.Timeout(30)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30), http2=True) as client:
         response_data = await client.post(
             url, json=payload, headers={"Authorization": f"Bearer {apikey}"}
         )
@@ -305,7 +300,7 @@ async def get_convert_result(apikey: str, uid: str) -> Tuple[str, str]:
 
     params = {"uid": uid}
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(30)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30), http2=True) as client:
         response = await client.get(
             url, params=params, headers={"Authorization": f"Bearer {apikey}"}
         )
@@ -363,7 +358,7 @@ async def download_file(
         file_path = os.path.join(target_dir, f"{filename}_{counter}.{file_type}")
         counter += 1
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(60)) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(60), http2=True) as client:
         response = await client.get(url)
         response.raise_for_status()
         with open(file_path, "wb") as f:
