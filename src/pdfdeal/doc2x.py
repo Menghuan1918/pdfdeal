@@ -26,6 +26,7 @@ async def parse_pdf(
     wait_time: int,
     max_time: int,
     convert: bool,
+    oss_choose: bool = True,
 ) -> Tuple[str, List[str], List[dict]]:
     """Parse PDF file and return uid and extracted text"""
     thread_lock = False
@@ -33,7 +34,7 @@ async def parse_pdf(
     async def retry_upload():
         for _ in range(maxretry):
             try:
-                return await upload_pdf(apikey, pdf_path, ocr)
+                return await upload_pdf(apikey, pdf_path, ocr, oss_choose)
             except RateLimit:
                 global limit_lock, get_max_limit, max_threads, full_speed, thread_min
                 nonlocal thread_lock
@@ -55,7 +56,7 @@ async def parse_pdf(
 
     logger.info(f"Uploading {pdf_path}...")
     try:
-        uid = await upload_pdf(apikey, pdf_path, ocr)
+        uid = await upload_pdf(apikey, pdf_path, ocr, oss_choose)
     except RateLimit:
         uid = await retry_upload()
 
@@ -163,6 +164,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
+        oss_choose: bool = True,
     ) -> Tuple[List[str], List[dict], bool]:
         if isinstance(pdf_file, str):
             if os.path.isdir(pdf_file):
@@ -248,6 +250,7 @@ class Doc2X:
                         wait_time=5,
                         max_time=self.max_time,
                         convert=convert,
+                        oss_choose=oss_choose,
                     )
                     parse_results[index] = (uid, texts, locations)
                     # Create convert task as soon as parse is complete
@@ -368,6 +371,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
+        oss_choose: bool = True,
     ) -> Tuple[List[str], List[dict], bool]:
         """Convert PDF files to the specified format.
 
@@ -378,6 +382,7 @@ class Doc2X:
             output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, will return the path of files, support output variable: `text`|`texts`|`detailed`(it means `string in md format`, `list of strings split by page`, `list of strings split by page (including detailed page information)`)
             ocr (bool, optional): Whether to use OCR. Defaults to True.
             convert (bool, optional): Whether to convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
+            oss_choose (bool, optional): Prioritize the use of OSS uploads for all size files, or will only use OSS uploads when the file size exceeds 100MB. Defaults to True.
 
         Returns:
             Tuple[List[str], List[dict], bool]: A tuple containing:
@@ -401,5 +406,6 @@ class Doc2X:
                 output_format=output_format,
                 ocr=ocr,
                 convert=convert,
+                oss_choose=oss_choose,
             )
         )

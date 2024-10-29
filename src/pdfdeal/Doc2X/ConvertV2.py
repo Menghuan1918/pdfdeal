@@ -12,7 +12,7 @@ Base_URL = "https://v2.doc2x.noedgeai.com/api"
 logger = logging.getLogger("pdfdeal.convertV2")
 
 
-@async_retry()
+@async_retry(timeout=200)
 async def upload_pdf(
     apikey: str, pdffile: str, ocr: bool = True, oss_choose: bool = True
 ) -> str:
@@ -22,6 +22,7 @@ async def upload_pdf(
         apikey (str): The key
         pdffile (str): The pdf file path
         ocr (bool, optional): Do OCR or not. Defaults to True.
+        oss_choose (bool, optional): Prioritize the use of OSS uploads for all size files, or will only use OSS uploads when the file size exceeds 100MB. Defaults to True.
 
     Raises:
         FileError: Input file size is too large
@@ -72,7 +73,6 @@ async def upload_pdf(
     )
 
 
-@async_retry()
 async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
     """Upload big pdf file to server and return the uid of the file
 
@@ -101,7 +101,7 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
     url = f"{Base_URL}/v2/parse/preupload"
     filename = os.path.basename(pdffile)
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(30), http2=True) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(15), http2=True) as client:
         post_res = await client.post(
             url,
             headers={"Authorization": f"Bearer {apikey}"},
@@ -117,12 +117,12 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
             code=response_data.get("code", response_data), uid=uid, trace_id=trace_id
         )
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120), http2=True) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(180), http2=True) as client:
             s3_res = await client.put(
                 url=upload_url,
                 files=file,
             )
-        if s3_res.status_code == 204:
+        if s3_res.status_code == 200:
             return uid
         else:
             raise Exception(f"Upload file to OSS error! {s3_res.text}")
