@@ -227,6 +227,7 @@ class Doc2X:
             if page_count > self.max_pages:
                 logger.warning(f"File {pdf} has too many pages, skipping.")
                 results[index] = ("", "File has too many pages", False)
+                return
 
             nonlocal total_pages, last_request_time
 
@@ -346,14 +347,17 @@ class Doc2X:
         # Wait for remaining convert tasks
         if convert_tasks:
             await asyncio.wait(convert_tasks)
+        else:
+            logger.warning("No successful parse tasks, skipping conversion.")
+
         if full_speed:
             logger.info(f"Convert tasks done with {max_threads} threads.")
-        success_files = [r[0] if r[2] else "" for r in results]
+        success_files = [r[0] if r and r[2] else "" for r in results]
         failed_files = [
-            {"error": r[1], "path": pdf} if not r[2] else {"error": "", "path": ""}
+            {"error": r[1] if r else "Unknown error", "path": pdf} if not (r and r[2]) else {"error": "", "path": ""}
             for r, pdf in zip(results, pdf_file)
         ]
-        has_error = any(not r[2] for r in results)
+        has_error = any(not (r and r[2]) for r in results)
 
         if has_error:
             failed_count = sum(1 for fail in failed_files if fail["error"] != "")

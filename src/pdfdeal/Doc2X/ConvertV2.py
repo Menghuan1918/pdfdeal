@@ -71,7 +71,8 @@ async def upload_pdf(
         raise RateLimit(trace_id=trace_id)
     if post_res.status_code == 400:
         raise RequestError(error_code=post_res.text, trace_id=trace_id)
-
+    elif post_res.status_code == 401:
+        raise ValueError("API key is unauthorized. (认证失败，请检测API key是否正确)")
     raise Exception(
         f"Upload file error,trace_id{trace_id}:{post_res.status_code}:{post_res.text}"
     )
@@ -132,6 +133,8 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
             raise Exception(f"Upload file to OSS error! {s3_res.text}")
     if post_res.status_code == 400:
         raise RequestError(error_code=post_res.text, trace_id=trace_id)
+    elif post_res.status_code == 401:
+        raise ValueError("API key is unauthorized. (认证失败，请检测API key是否正确)")
     raise Exception(
         f"Upload file error! trace_ID:{trace_id}:{post_res.status_code}:{post_res.text}"
     )

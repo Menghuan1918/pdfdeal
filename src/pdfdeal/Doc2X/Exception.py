@@ -11,6 +11,8 @@ async def code_check(code: str, uid: str = None, trace_id: str = None):
         raise RateLimit(trace_id=trace_id)
     if code in RequestError.ERROR_CODES:
         raise RequestError(code, uid=uid, trace_id=trace_id)
+    if code == "unauthorized":
+        raise ValueError("API key is unauthorized. (认证失败，请检测API key是否正确)")
     if code not in ["ok", "success"]:
         raise Exception(f"Unknown error code: {code}, UID: {uid}, Trace ID: {trace_id}")
 
@@ -111,7 +113,13 @@ def async_retry(max_retries=2, backoff_factor=2, timeout=60):
                     logging.warning(
                         f"Function '{func.__name__}' timed out, retrying..."
                     )
-                except (RateLimit, FileError, RequestError, FileNotFoundError) as e:
+                except (
+                    RateLimit,
+                    FileError,
+                    RequestError,
+                    FileNotFoundError,
+                    ValueError,
+                ) as e:
                     logging.error(
                         f"Error in '{func.__name__}': {type(e).__name__} - {e}"
                     )
