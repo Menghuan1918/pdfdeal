@@ -26,7 +26,7 @@ async def parse_pdf(
     wait_time: int,
     max_time: int,
     convert: bool,
-    oss_choose: bool = True,
+    oss_choose: str = "auto",
 ) -> Tuple[str, List[str], List[dict]]:
     """Parse PDF file and return uid and extracted text"""
     thread_lock = False
@@ -164,7 +164,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-        oss_choose: bool = True,
+        oss_choose: str = "auto",
     ) -> Tuple[List[str], List[dict], bool]:
         if isinstance(pdf_file, str):
             if os.path.isdir(pdf_file):
@@ -371,7 +371,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
-        oss_choose: bool = True,
+        oss_choose: str = "auto",
     ) -> Tuple[List[str], List[dict], bool]:
         """Convert PDF files to the specified format.
 
@@ -382,7 +382,7 @@ class Doc2X:
             output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, will return the path of files, support output variable: `text`|`texts`|`detailed`(it means `string in md format`, `list of strings split by page`, `list of strings split by page (including detailed page information)`)
             ocr (bool, optional): Whether to use OCR. Defaults to True.
             convert (bool, optional): Whether to convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
-            oss_choose (bool, optional): Prioritize the use of OSS uploads for all size files, or will only use OSS uploads when the file size exceeds 100MB. Defaults to True.
+            oss_choose (str, optional): OSS upload preference. "always" for always using OSS, "auto" for using OSS only when the file size exceeds 100MB, "never" for never using OSS. Defaults to "auto".
 
         Returns:
             Tuple[List[str], List[dict], bool]: A tuple containing:

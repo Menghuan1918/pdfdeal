@@ -14,7 +14,7 @@ logger = logging.getLogger("pdfdeal.convertV2")
 
 @async_retry(timeout=200)
 async def upload_pdf(
-    apikey: str, pdffile: str, ocr: bool = True, oss_choose: bool = True
+    apikey: str, pdffile: str, ocr: bool = True, oss_choose: str = "auto"
 ) -> str:
     """Upload pdf file to server and return the uid of the file
 
@@ -22,7 +22,7 @@ async def upload_pdf(
         apikey (str): The key
         pdffile (str): The pdf file path
         ocr (bool, optional): Do OCR or not. Defaults to True.
-        oss_choose (bool, optional): Prioritize the use of OSS uploads for all size files, or will only use OSS uploads when the file size exceeds 100MB. Defaults to True.
+        oss_choose (str, optional): OSS upload preference. "always" for always using OSS, "auto" for using OSS only when the file size exceeds 100MB, "never" for never using OSS. Defaults to "auto".
 
     Raises:
         FileError: Input file size is too large
@@ -34,9 +34,13 @@ async def upload_pdf(
         str: The uid of the file
     """
     url = f"{Base_URL}/v2/parse/pdf"
-    if oss_choose or os.path.getsize(pdffile) >= 100 * 1024 * 1024:
+    if oss_choose == "always" or (
+        oss_choose == "auto" and os.path.getsize(pdffile) >= 100 * 1024 * 1024
+    ):
         return await upload_pdf_big(apikey, pdffile, ocr)
-
+    elif oss_choose == "none" and os.path.getsize(pdffile) >= 100 * 1024 * 1024:
+        logger.warning("Now not support PDF file > 300MB!")
+        raise RequestError("parse_file_too_large")
     try:
         with open(pdffile, "rb") as f:
             file = f.read()
