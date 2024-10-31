@@ -11,6 +11,8 @@ async def code_check(code: str, uid: str = None, trace_id: str = None):
         raise RateLimit(trace_id=trace_id)
     if code in RequestError.ERROR_CODES:
         raise RequestError(code, uid=uid, trace_id=trace_id)
+    if code == "unauthorized":
+        raise ValueError("API key is unauthorized. (认证失败，请检测API key是否正确)")
     if code not in ["ok", "success"]:
         raise Exception(f"Unknown error code: {code}, UID: {uid}, Trace ID: {trace_id}")
 
@@ -50,7 +52,7 @@ class RequestError(Exception):
     SOLUTIONS = {
         "parse_quota_limit": "当前可用的页数不足，请检查余额或联系负责人 (Insufficient parsing quota, check balance or contact support)",
         "parse_create_task_error": "短暂等待后重试, 如果还出现报错则请联系负责人 (Retry after a short wait, contact support if error persists)",
-        "parse_file_too_large": "当前允许单个文件大小 <= 300M, 请拆分 pdf (File size must be <= 300MB, please split the PDF)",
+        "parse_file_too_large": "当前允许单个文件大小 <= 300MB, 请拆分 pdf (File size must be <= 300MB, please split the PDF)",
         "parse_file_page_limit": "当前允许单个文件页数 <= 1000页, 请拆分 pdf (File page count must be <= 1000 pages, please split the PDF)",
         "parse_file_lock": "为了防止反复解析, 暂时锁定一天,考虑PDF可能有兼容性问题, 重新打印后再尝试。仍然失败请反馈request_id给负责人 (Locked for a day to prevent repeated parsing. Consider reprinting the PDF if compatibility issues persist. Report request_id if it still fails)",
         "parse_pdf_invalid": "不是有效的PDF文件,考虑PDF可能有兼容性问题, 重新打印后再尝试。仍然失败请反馈request_id给负责人 (File is not a valid PDF. Consider reprinting the PDF if compatibility issues persist. Report request_id if it still fails)",
@@ -111,7 +113,13 @@ def async_retry(max_retries=2, backoff_factor=2, timeout=60):
                     logging.warning(
                         f"Function '{func.__name__}' timed out, retrying..."
                     )
-                except (RateLimit, FileError, RequestError, FileNotFoundError) as e:
+                except (
+                    RateLimit,
+                    FileError,
+                    RequestError,
+                    FileNotFoundError,
+                    ValueError,
+                ) as e:
                     logging.error(
                         f"Error in '{func.__name__}': {type(e).__name__} - {e}"
                     )

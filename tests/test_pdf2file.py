@@ -47,3 +47,18 @@ def test_multiple_pdf2file():
     print(success)
     print(failed)
     print(flag)
+
+
+def test_all_fail_pdf2file():
+    client = Doc2X(debug=True, thread=1)
+    success, failed, flag = client.pdf2file(
+        pdf_file="tests/pdf/sample_bad.pdf",
+        output_path="./Output/test/allfail/pdf2file",
+        output_format="md",
+    )
+    assert flag
+    assert len(success) == 1
+    assert len(failed) == 1
+    print(success)
+    print(failed)
+    print(flag)

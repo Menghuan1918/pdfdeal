@@ -242,7 +242,7 @@ def mds_replace_imgs(
     else:
         raise ValueError("The replace must be 'local' or a function.")
 
-    from pdfdeal import gen_folder_list
+    from pdfdeal.FileTools.file_tools import gen_folder_list
 
     mdfiles = gen_folder_list(path=path, mode="md", recursive=True)
     if len(mdfiles) == 0:

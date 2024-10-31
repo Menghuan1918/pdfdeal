@@ -26,17 +26,42 @@ async def parse_pdf(
     wait_time: int,
     max_time: int,
     convert: bool,
+    oss_choose: str = "auto",
 ) -> Tuple[str, List[str], List[dict]]:
     """Parse PDF file and return uid and extracted text"""
     thread_lock = False
+    for attempt in range(maxretry):
+        try:
+            logger.info(f"Uploading {pdf_path}...")
+            uid = await upload_pdf(apikey, pdf_path, ocr, oss_choose)
+            logger.info(f"Uploading successful for {pdf_path} with uid {uid}")
 
-    async def retry_upload():
-        for _ in range(maxretry):
-            try:
-                return await upload_pdf(apikey, pdf_path, ocr)
-            except RateLimit:
+            for _ in range(max_time // 3):
+                try:
+                    progress, status, texts, locations = await uid_status(
+                        apikey, uid, convert
+                    )
+                    if status == "Success":
+                        logger.info(f"Parsing successful for {pdf_path} with uid {uid}")
+                        return uid, texts, locations
+                    elif status == "Processing file":
+                        logger.info(f"Processing {uid} : {progress}%")
+                        await asyncio.sleep(3)
+                    else:
+                        raise RequestError(
+                            f"Unexpected status: {status} with uid: {uid}"
+                        )
+                except RateLimit:
+                    logger.warning(
+                        "Rate limit reached during status check, retrying from upload..."
+                    )
+                    await asyncio.sleep(wait_time)
+                    break
+            else:
+                raise RequestError(f"Max time reached for uid_status with uid: {uid}")
+        except RateLimit:
+            if attempt < maxretry - 1:
                 global limit_lock, get_max_limit, max_threads, full_speed, thread_min
-                nonlocal thread_lock
                 if full_speed:
                     if not get_max_limit and not thread_lock:
                         thread_lock = True
@@ -47,30 +72,14 @@ async def parse_pdf(
                         if not thread_lock:
                             max_threads = max(thread_min, max_threads - 1)
                             thread_lock = True
-                logger.warning("Rate limit reached, retrying...")
+                logger.warning("Rate limit reached during upload, retrying...")
                 await asyncio.sleep(wait_time)
-        raise RequestError(
-            "Max retry reached for upload_pdf, this may be a rate limit issue, try to reduce the number of threads."
-        )
+            else:
+                raise RequestError(
+                    "Max retry reached for parse_pdf, this may be a rate limit issue, try to reduce the number of threads."
+                )
 
-    logger.info(f"Uploading {pdf_path}...")
-    try:
-        uid = await upload_pdf(apikey, pdf_path, ocr)
-    except RateLimit:
-        uid = await retry_upload()
-
-    logger.info(f"Uploading successful for {pdf_path} with uid {uid}")
-    for _ in range(max_time // 3):
-        progress, status, texts, locations = await uid_status(apikey, uid, convert)
-        if status == "Success":
-            logger.info(f"Parsing successful for {pdf_path} with uid {uid}")
-            return uid, texts, locations
-        elif status == "Processing file":
-            logger.info(f"Processing {uid} : {progress}%")
-            await asyncio.sleep(3)
-        else:
-            raise RequestError(f"Unexpected status: {status} with uid: {uid}")
-    raise RequestError(f"Max time reached for uid_status with uid: {uid}")
+    raise RequestError("Failed to parse PDF after maximum retries")
 
 
 async def convert_to_format(
@@ -163,6 +172,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
+        oss_choose: str = "auto",
     ) -> Tuple[List[str], List[dict], bool]:
         if isinstance(pdf_file, str):
             if os.path.isdir(pdf_file):
@@ -217,6 +227,7 @@ class Doc2X:
             if page_count > self.max_pages:
                 logger.warning(f"File {pdf} has too many pages, skipping.")
                 results[index] = ("", "File has too many pages", False)
+                return
 
             nonlocal total_pages, last_request_time
 
@@ -248,6 +259,7 @@ class Doc2X:
                         wait_time=5,
                         max_time=self.max_time,
                         convert=convert,
+                        oss_choose=oss_choose,
                     )
                     parse_results[index] = (uid, texts, locations)
                     # Create convert task as soon as parse is complete
@@ -335,14 +347,19 @@ class Doc2X:
         # Wait for remaining convert tasks
         if convert_tasks:
             await asyncio.wait(convert_tasks)
+        else:
+            logger.warning("No successful parse tasks, skipping conversion.")
+
         if full_speed:
             logger.info(f"Convert tasks done with {max_threads} threads.")
-        success_files = [r[0] if r[2] else "" for r in results]
+        success_files = [r[0] if r and r[2] else "" for r in results]
         failed_files = [
-            {"error": r[1], "path": pdf} if not r[2] else {"error": "", "path": ""}
+            {"error": r[1] if r else "Unknown error", "path": pdf}
+            if not (r and r[2])
+            else {"error": "", "path": ""}
             for r, pdf in zip(results, pdf_file)
         ]
-        has_error = any(not r[2] for r in results)
+        has_error = any(not (r and r[2]) for r in results)
 
         if has_error:
             failed_count = sum(1 for fail in failed_files if fail["error"] != "")
@@ -393,6 +410,7 @@ class Doc2X:
             PDF conversion functionality. It handles all the necessary setup for running
             the asynchronous code in a synchronous context.
         """
+        oss_choose = "never"  #! DO NOT CHANGE THIS, not finished yet
         return run_async(
             self.pdf2file_back(
                 pdf_file=pdf_file,
@@ -401,5 +419,6 @@ class Doc2X:
                 output_format=output_format,
                 ocr=ocr,
                 convert=convert,
+                oss_choose=oss_choose,
             )
         )
