@@ -354,7 +354,9 @@ class Doc2X:
             logger.info(f"Convert tasks done with {max_threads} threads.")
         success_files = [r[0] if r and r[2] else "" for r in results]
         failed_files = [
-            {"error": r[1] if r else "Unknown error", "path": pdf} if not (r and r[2]) else {"error": "", "path": ""}
+            {"error": r[1] if r else "Unknown error", "path": pdf}
+            if not (r and r[2])
+            else {"error": "", "path": ""}
             for r, pdf in zip(results, pdf_file)
         ]
         has_error = any(not (r and r[2]) for r in results)
