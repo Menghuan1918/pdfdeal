@@ -30,14 +30,38 @@ async def parse_pdf(
 ) -> Tuple[str, List[str], List[dict]]:
     """Parse PDF file and return uid and extracted text"""
     thread_lock = False
+    for attempt in range(maxretry):
+        try:
+            logger.info(f"Uploading {pdf_path}...")
+            uid = await upload_pdf(apikey, pdf_path, ocr, oss_choose)
+            logger.info(f"Uploading successful for {pdf_path} with uid {uid}")
 
-    async def retry_upload():
-        for _ in range(maxretry):
-            try:
-                return await upload_pdf(apikey, pdf_path, ocr, oss_choose)
-            except RateLimit:
+            for _ in range(max_time // 3):
+                try:
+                    progress, status, texts, locations = await uid_status(
+                        apikey, uid, convert
+                    )
+                    if status == "Success":
+                        logger.info(f"Parsing successful for {pdf_path} with uid {uid}")
+                        return uid, texts, locations
+                    elif status == "Processing file":
+                        logger.info(f"Processing {uid} : {progress}%")
+                        await asyncio.sleep(3)
+                    else:
+                        raise RequestError(
+                            f"Unexpected status: {status} with uid: {uid}"
+                        )
+                except RateLimit:
+                    logger.warning(
+                        "Rate limit reached during status check, retrying from upload..."
+                    )
+                    await asyncio.sleep(wait_time)
+                    break
+            else:
+                raise RequestError(f"Max time reached for uid_status with uid: {uid}")
+        except RateLimit:
+            if attempt < maxretry - 1:
                 global limit_lock, get_max_limit, max_threads, full_speed, thread_min
-                nonlocal thread_lock
                 if full_speed:
                     if not get_max_limit and not thread_lock:
                         thread_lock = True
@@ -48,30 +72,14 @@ async def parse_pdf(
                         if not thread_lock:
                             max_threads = max(thread_min, max_threads - 1)
                             thread_lock = True
-                logger.warning("Rate limit reached, retrying...")
+                logger.warning("Rate limit reached during upload, retrying...")
                 await asyncio.sleep(wait_time)
-        raise RequestError(
-            "Max retry reached for upload_pdf, this may be a rate limit issue, try to reduce the number of threads."
-        )
+            else:
+                raise RequestError(
+                    "Max retry reached for parse_pdf, this may be a rate limit issue, try to reduce the number of threads."
+                )
 
-    logger.info(f"Uploading {pdf_path}...")
-    try:
-        uid = await upload_pdf(apikey, pdf_path, ocr, oss_choose)
-    except RateLimit:
-        uid = await retry_upload()
-
-    logger.info(f"Uploading successful for {pdf_path} with uid {uid}")
-    for _ in range(max_time // 3):
-        progress, status, texts, locations = await uid_status(apikey, uid, convert)
-        if status == "Success":
-            logger.info(f"Parsing successful for {pdf_path} with uid {uid}")
-            return uid, texts, locations
-        elif status == "Processing file":
-            logger.info(f"Processing {uid} : {progress}%")
-            await asyncio.sleep(3)
-        else:
-            raise RequestError(f"Unexpected status: {status} with uid: {uid}")
-    raise RequestError(f"Max time reached for uid_status with uid: {uid}")
+    raise RequestError("Failed to parse PDF after maximum retries")
 
 
 async def convert_to_format(
