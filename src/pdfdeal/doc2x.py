@@ -29,6 +29,23 @@ async def parse_pdf(
     oss_choose: str = "auto",
 ) -> Tuple[str, List[str], List[dict]]:
     """Parse PDF file and return uid and extracted text"""
+
+    async def task_limit_lock():
+        global full_speed
+        if full_speed:
+            global limit_lock, get_max_limit, max_threads, thread_min
+            nonlocal thread_lock
+            if not get_max_limit and not thread_lock:
+                get_max_limit = True
+                thread_lock = True
+                async with limit_lock:
+                    max_threads = max(thread_min, max_threads - 1)
+            else:
+                if not thread_lock:
+                    async with limit_lock:
+                        max_threads = max(thread_min, max_threads - 1)
+                    thread_lock = True
+
     thread_lock = False
     for attempt in range(maxretry):
         try:
@@ -55,23 +72,14 @@ async def parse_pdf(
                     logger.warning(
                         "Rate limit reached during status check, retrying from upload..."
                     )
+                    await task_limit_lock()
                     await asyncio.sleep(wait_time)
                     break
             else:
                 raise RequestError(f"Max time reached for uid_status with uid: {uid}")
         except RateLimit:
             if attempt < maxretry - 1:
-                global limit_lock, get_max_limit, max_threads, full_speed, thread_min
-                if full_speed:
-                    if not get_max_limit and not thread_lock:
-                        thread_lock = True
-                        get_max_limit = True
-                        async with limit_lock:
-                            max_threads = max(thread_min, max_threads - 1)
-                    else:
-                        if not thread_lock:
-                            max_threads = max(thread_min, max_threads - 1)
-                            thread_lock = True
+                await task_limit_lock()
                 logger.warning("Rate limit reached during upload, retrying...")
                 await asyncio.sleep(wait_time)
             else:
@@ -213,6 +221,7 @@ class Doc2X:
         if full_speed:
             self.max_time = 180
             self.retry_time = 10
+            self.request_interval = 0.01
 
         async def process_file(index, pdf, name):
             try:
@@ -233,21 +242,20 @@ class Doc2X:
 
             try:
                 # Check if we can start new task
-                async with page_lock:
-                    if total_pages + page_count > self.max_pages:
-                        # Wait for some tasks to complete
-                        while total_pages + page_count > self.max_pages:
-                            await asyncio.sleep(0.1)
+                while True:
+                    async with page_lock:
+                        if total_pages + page_count <= self.max_pages:
+                            current_time = time.time()
+                            if current_time - last_request_time < self.request_interval:
+                                await asyncio.sleep(
+                                    self.request_interval
+                                    - (current_time - last_request_time)
+                                )
 
-                    # Ensure minimum interval between requests
-                    current_time = time.time()
-                    if current_time - last_request_time < self.request_interval:
-                        await asyncio.sleep(
-                            self.request_interval - (current_time - last_request_time)
-                        )
-
-                    total_pages += page_count
-                    last_request_time = time.time()
+                            total_pages += page_count
+                            last_request_time = time.time()
+                            break
+                    await asyncio.sleep(0.1)
 
                 # Process the file
                 try:
