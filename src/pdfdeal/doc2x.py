@@ -393,6 +393,7 @@ class Doc2X:
         output_format: str = "md_dollar",
         ocr: bool = True,
         convert: bool = False,
+        oss_choose: str = "always",
     ) -> Tuple[List[str], List[dict], bool]:
         """Convert PDF files to the specified format.
 
@@ -403,6 +404,7 @@ class Doc2X:
             output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, will return the path of files, support output variable: `text`|`texts`|`detailed`(it means `string in md format`, `list of strings split by page`, `list of strings split by page (including detailed page information)`)
             ocr (bool, optional): Whether to use OCR. Defaults to True.
             convert (bool, optional): Whether to convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
+            oss_choose (str, optional): Now can upload files directly through API or through OSS link given by API. Acceptable values: `auto`, `always`, `never` (it means `Only >=100MB files will be uploaded to OSS`, `All files will be uploaded to OSS`, `All files will be uploaded directly`). Defaults to "always".
 
         Returns:
             Tuple[List[str], List[dict], bool]: A tuple containing:
@@ -418,7 +420,6 @@ class Doc2X:
             PDF conversion functionality. It handles all the necessary setup for running
             the asynchronous code in a synchronous context.
         """
-        oss_choose = "never"  #! DO NOT CHANGE THIS, not finished yet
         return run_async(
             self.pdf2file_back(
                 pdf_file=pdf_file,
