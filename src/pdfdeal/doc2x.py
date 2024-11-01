@@ -21,7 +21,6 @@ logger = logging.getLogger(name="pdfdeal.doc2x")
 async def parse_pdf(
     apikey: str,
     pdf_path: str,
-    ocr: bool,
     maxretry: int,
     wait_time: int,
     max_time: int,
@@ -50,7 +49,7 @@ async def parse_pdf(
     for attempt in range(maxretry):
         try:
             logger.info(f"Uploading {pdf_path}...")
-            uid = await upload_pdf(apikey, pdf_path, ocr, oss_choose)
+            uid = await upload_pdf(apikey, pdf_path, oss_choose)
             logger.info(f"Uploading successful for {pdf_path} with uid {uid}")
 
             for _ in range(max_time // 3):
@@ -178,7 +177,6 @@ class Doc2X:
         output_names: List[str] = None,
         output_path: str = "./Output",
         output_format: str = "md_dollar",
-        ocr: bool = True,
         convert: bool = False,
         oss_choose: str = "auto",
     ) -> Tuple[List[str], List[dict], bool]:
@@ -262,7 +260,6 @@ class Doc2X:
                     uid, texts, locations = await parse_pdf(
                         apikey=self.apikey,
                         pdf_path=pdf,
-                        ocr=ocr,
                         maxretry=self.retry_time,
                         wait_time=5,
                         max_time=self.max_time,
@@ -391,7 +388,6 @@ class Doc2X:
         output_names: List[str] = None,
         output_path: str = "./Output",
         output_format: str = "md_dollar",
-        ocr: bool = True,
         convert: bool = False,
         oss_choose: str = "always",
     ) -> Tuple[List[str], List[dict], bool]:
@@ -402,7 +398,6 @@ class Doc2X:
             output_names (List[str], optional): List of output file names. Defaults to None.
             output_path (str, optional): Directory path for output files. Defaults to "./Output".
             output_format (str, optional): Desired output format. Defaults to `md_dollar`. Supported formats include:`md_dollar`|`md`|`tex`|`docx`, will return the path of files, support output variable: `text`|`texts`|`detailed`(it means `string in md format`, `list of strings split by page`, `list of strings split by page (including detailed page information)`)
-            ocr (bool, optional): Whether to use OCR. Defaults to True.
             convert (bool, optional): Whether to convert "[" and "[[" to "$" and "$$", only valid if `output_format` is a variable format(`txt`|`txts`|`detailed`). Defaults to False.
             oss_choose (str, optional): Now can upload files directly through API or through OSS link given by API. Acceptable values: `auto`, `always`, `never` (it means `Only >=100MB files will be uploaded to OSS`, `All files will be uploaded to OSS`, `All files will be uploaded directly`). Defaults to "always".
 
@@ -426,7 +421,6 @@ class Doc2X:
                 output_names=output_names,
                 output_path=output_path,
                 output_format=output_format,
-                ocr=ocr,
                 convert=convert,
                 oss_choose=oss_choose,
             )
