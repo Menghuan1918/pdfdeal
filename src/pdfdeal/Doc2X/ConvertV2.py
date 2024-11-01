@@ -13,16 +13,13 @@ logger = logging.getLogger("pdfdeal.convertV2")
 
 
 @async_retry(timeout=200)
-async def upload_pdf(
-    apikey: str, pdffile: str, ocr: bool = True, oss_choose: str = "auto"
-) -> str:
+async def upload_pdf(apikey: str, pdffile: str, oss_choose: str = "always") -> str:
     """Upload pdf file to server and return the uid of the file
 
     Args:
         apikey (str): The key
         pdffile (str): The pdf file path
-        ocr (bool, optional): Do OCR or not. Defaults to True.
-        oss_choose (str, optional): OSS upload preference. "always" for always using OSS, "auto" for using OSS only when the file size exceeds 100MB, "never" for never using OSS. Defaults to "auto".
+        oss_choose (str, optional): OSS upload preference. "always" for always using OSS, "auto" for using OSS only when the file size exceeds 100MB, "never" for never using OSS. Defaults to "always".
 
     Raises:
         FileError: Input file size is too large
@@ -37,7 +34,7 @@ async def upload_pdf(
     if oss_choose == "always" or (
         oss_choose == "auto" and os.path.getsize(pdffile) >= 100 * 1024 * 1024
     ):
-        return await upload_pdf_big(apikey, pdffile, ocr)
+        return await upload_pdf_big(apikey, pdffile)
     elif oss_choose == "none" and os.path.getsize(pdffile) >= 100 * 1024 * 1024:
         logger.warning("Now not support PDF file > 300MB!")
         raise RequestError("parse_file_too_large")
@@ -50,7 +47,6 @@ async def upload_pdf(
     async with httpx.AsyncClient(timeout=httpx.Timeout(120), http2=True) as client:
         post_res = await client.post(
             url,
-            params={"ocr": str(ocr).lower()},
             headers={
                 "Authorization": f"Bearer {apikey}",
                 "Content-Type": "application/pdf",
@@ -78,13 +74,12 @@ async def upload_pdf(
     )
 
 
-async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
+async def upload_pdf_big(apikey: str, pdffile: str) -> str:
     """Upload big pdf file to server and return the uid of the file
 
     Args:
         apikey (str): The key
         pdffile (str): The pdf file path
-        ocr (bool, optional): Do OCR or not. Defaults to True.
 
     Raises:
         FileError: Input file size is too large
@@ -110,17 +105,19 @@ async def upload_pdf_big(apikey: str, pdffile: str, ocr: bool = True) -> str:
         post_res = await client.post(
             url,
             headers={"Authorization": f"Bearer {apikey}"},
-            json={"file_name": filename, "ocr": ocr},
+            json={"file_name": filename},
         )
     trace_id = post_res.headers.get("trace-id")
     if post_res.status_code == 200:
         response_data = json.loads(post_res.content.decode("utf-8"))
+        uid = response_data.get("data", {}).get("uid")
+        await code_check(
+            code=response_data.get("code", response_data),
+            uid=uid,
+            trace_id=trace_id,
+        )
         upload_data = response_data["data"]
         upload_url = upload_data["url"]
-        uid = upload_data["uid"]
-        await code_check(
-            code=response_data.get("code", response_data), uid=uid, trace_id=trace_id
-        )
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(180), http2=True) as client:
             s3_res = await client.put(
