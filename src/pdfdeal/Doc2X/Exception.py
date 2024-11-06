@@ -47,6 +47,7 @@ class RequestError(Exception):
         "parse_file_not_image": "传入的文件不在支持的图片文件范围内 (File is not a supported image type)",
         "internal_error": "内部错误 (Internal error)",
         "parse_concurrency_limit": "同时解析的PDF页数超出上限 (Concurrent PDF page parsing limit exceeded)",
+        "parse_error": "解析失败 (Parsing failed)",
     }
 
     SOLUTIONS = {
@@ -60,6 +61,7 @@ class RequestError(Exception):
         "parse_file_not_image": "目前只支持 jpg/png 图片文件的解析 (Currently only jpg/png image files are supported)",
         "internal_error": "请联系技术支持 (Please contact technical support)",
         "parse_concurrency_limit": "短暂等待后重试, 当前解析的PDF页数超出上限 (Retry after a short wait, concurrent PDF page parsing limit exceeded)",
+        "parse_error": "短暂等待后重试, 如果还出现报错则请联系负责人 (Retry after a short wait, contact support if error persists)",
     }
 
     def __init__(self, error_code, uid: str = None, trace_id: str = None, message=None):

@@ -1,6 +1,6 @@
 [project]
 name = "pdfdeal"
-version = "0.4.8b1"
+version = "0.4.8b2"
 authors = [{ name = "Menghuan1918", email = "menghuan@menghuan1918.com" }]
 description = "A python wrapper for the Doc2X API and comes with native texts processing (to improve texts recall in RAG)."
 readme = "README.md"
