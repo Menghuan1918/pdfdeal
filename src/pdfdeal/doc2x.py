@@ -348,16 +348,24 @@ class Doc2X:
                 except asyncio.TimeoutError:
                     all_results.append("")
                     all_errors.append(
-                        "Operation timed out, this may be a rate limit issue or network issue, try to reduce the number of threads."
+                        f"Operation timed out while converting to {fmt}, this may be a rate limit issue or network issue, try to reduce the number of threads."
                     )
                 except Exception as e:
                     all_results.append("")
-                    all_errors.append(str(e))
+                    error_message = str(e) if str(e) else type(e).__name__
+                    all_errors.append(
+                        f"Error while converting to {fmt}: {error_message}"
+                    )
 
-            if any(not result for result in all_results):
-                results[index] = (all_results, all_errors, True)
-            else:
-                results[index] = (all_results, all_errors, False)
+            results[index] = (
+                (all_results[0], all_errors[0], not all_results[0])
+                if len(all_results) == 1 and len(all_errors) == 1
+                else (
+                    all_results,
+                    all_errors,
+                    any(not result for result in all_results),
+                )
+            )
 
         # Create and run parse tasks with controlled concurrency
         for i, (pdf, name) in enumerate(zip(pdf_file, output_names)):
@@ -387,36 +395,45 @@ class Doc2X:
         success_files = []
         for r in results:
             if r and r[2]:
-                # If multiple formats, return list of results
+                # 处理多个格式的情况
                 if isinstance(r[0], list):
-                    success_files.append(r[0])
-                # If single format, return the result directly
+                    success_files.extend(r[0])
+                # 处理单个格式的情况
                 else:
-                    success_files.append([r[0]])
+                    success_files.append(r[0])
             else:
-                success_files.append([""])
+                success_files.append("")
 
-        failed_files = [
-            {"error": r[1] if r else ["Unknown error"], "path": pdf}
-            if not (r and r[2])
-            else {"error": [""], "path": ""}
-            for r, pdf in zip(results, pdf_file)
-        ]
-        has_error = any(not (r and r[2]) for r in results)
-
+        failed_files = []
+        for r, pdf in zip(results, pdf_file):
+            if r and r[2]:
+                failed_files.append({"error": r[1], "path": pdf})
+            else:
+                failed_files.append({"error": r[1], "path": ""})
+        has_error = any(r[2] for r in results if r)
         if has_error:
-            failed_count = sum(1 for fail in failed_files if fail["error"] != "")
+            error_count = sum(1 for r in results if r and r[2])
             logger.error(
-                f"{failed_count} file(s) failed to convert, please enable DEBUG mod to check or read the output variable."
+                f"Failed to convert {error_count} file(s), please enable DEBUG mode to check or read the output variable."
             )
             if self.debug:
-                for fail in failed_files:
-                    if fail["error"] != "":
-                        print("====================================")
-                        print(f"Failed to convert {fail['path']}: {fail['error']}")
-                        print("====================================")
+                if has_error:
+                    print("=" * 10)
+                    for fail in failed_files:
+                        if isinstance(fail["error"], list):
+                            for e in fail["error"]:
+                                if e != "":
+                                    print(f"Failed to convert {fail['path']}: {e}")
+                            print("=" * 10)
+                        else:
+                            if fail["error"] != "":
+                                print(
+                                    f"Failed to convert {fail['path']}: {fail['error']}"
+                                )
+                                print("=" * 10)
+
         logger.info(
-            f"Successfully converted {sum(1 for file in success_files if file)} file(s)."
+            f"Successfully converted {sum(1 for r in results if r and r[2])} file(s) and failed to convert {error_count} file(s)."
         )
         return success_files, failed_files, has_error
 

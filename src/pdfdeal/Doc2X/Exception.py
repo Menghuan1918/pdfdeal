@@ -135,7 +135,7 @@ def async_retry(max_retries=2, backoff_factor=2, timeout=60):
                         raise
                     wait_time = backoff_factor**retries
                     logging.warning(
-                        f"Server disconnected, this is most likely a network link issue, if this problem occurs frequently check your network environment (e.g. turn off your VPN, check your DNS seeting), will retry in {wait_time} seconds..."
+                        f"{type(e).__name__}, this is most likely a network link issue, if this problem occurs frequently check your network environment (e.g. turn off your VPN, check your DNS seeting), will retry in {wait_time} seconds..."
                     )
                     await asyncio.sleep(wait_time)
                 except Exception as e:
