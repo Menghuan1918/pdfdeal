@@ -4,7 +4,7 @@ import time
 import sys
 from concurrent.futures import ThreadPoolExecutor
 import logging
-from httpx import RemoteProtocolError, ConnectError
+from httpx import RemoteProtocolError, ConnectError, ConnectTimeout
 
 
 async def code_check(code: str, uid: str = None, trace_id: str = None):
@@ -127,7 +127,7 @@ def async_retry(max_retries=2, backoff_factor=2, timeout=60):
                         f"Error in '{func.__name__}': {type(e).__name__} - {e}"
                     )
                     raise
-                except (RemoteProtocolError, ConnectError) as e:
+                except (RemoteProtocolError, ConnectError, ConnectTimeout) as e:
                     if retries == max_retries:
                         logging.error(
                             f"Error in '{func.__name__}': {type(e).__name__} - {e}"

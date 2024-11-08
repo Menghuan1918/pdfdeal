@@ -299,9 +299,10 @@ class Doc2X:
 
             uid, texts, locations = parse_results[index]
             all_results = []
+            all_errors = []
 
-            try:
-                for fmt in output_formats:
+            for fmt in output_formats:
+                try:
                     if fmt in ["md", "md_dollar", "tex", "docx"]:
                         nonlocal last_request_time
                         # Wait for request interval
@@ -324,6 +325,7 @@ class Doc2X:
                             max_time=self.max_time,
                         )
                         all_results.append(result)
+                        all_errors.append("")
                         # Wait 35 seconds between formats
                         if fmt != output_formats[-1]:
                             logger.info(
@@ -341,16 +343,21 @@ class Doc2X:
                                 for text, loc in zip(texts, locations)
                             ]
                         all_results.append(result)
+                        all_errors.append("")
 
-                results[index] = (all_results, "", True)
-            except asyncio.TimeoutError:
-                results[index] = (
-                    "",
-                    "Operation timed out, this may be a rate limit issue or network issue, try to reduce the number of threads.",
-                    False,
-                )
-            except Exception as e:
-                results[index] = ("", str(e), False)
+                except asyncio.TimeoutError:
+                    all_results.append("")
+                    all_errors.append(
+                        "Operation timed out, this may be a rate limit issue or network issue, try to reduce the number of threads."
+                    )
+                except Exception as e:
+                    all_results.append("")
+                    all_errors.append(str(e))
+
+            if any(not result for result in all_results):
+                results[index] = (all_results, all_errors, True)
+            else:
+                results[index] = (all_results, all_errors, False)
 
         # Create and run parse tasks with controlled concurrency
         for i, (pdf, name) in enumerate(zip(pdf_file, output_names)):
@@ -377,11 +384,22 @@ class Doc2X:
 
         if full_speed:
             logger.info(f"Convert tasks done with {max_threads} threads.")
-        success_files = [r[0] if r and r[2] else "" for r in results]
+        success_files = []
+        for r in results:
+            if r and r[2]:
+                # If multiple formats, return list of results
+                if isinstance(r[0], list):
+                    success_files.append(r[0])
+                # If single format, return the result directly
+                else:
+                    success_files.append([r[0]])
+            else:
+                success_files.append([""])
+
         failed_files = [
-            {"error": r[1] if r else "Unknown error", "path": pdf}
+            {"error": r[1] if r else ["Unknown error"], "path": pdf}
             if not (r and r[2])
-            else {"error": "", "path": ""}
+            else {"error": [""], "path": ""}
             for r, pdf in zip(results, pdf_file)
         ]
         has_error = any(not (r and r[2]) for r in results)
