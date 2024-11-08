@@ -194,12 +194,22 @@ class Doc2X:
         if len(pdf_file) != len(output_names):
             raise ValueError("The length of files and output_names should be the same.")
 
-        try:
-            output_format = OutputFormat(output_format)
-        except ValueError as e:
-            raise ValueError(f"Invalid output format: {e}")
+        output_formats = []
+        if isinstance(output_format, str):
+            if "," in output_format:
+                output_formats = [fmt.strip() for fmt in output_format.split(",")]
+                logger.warning(
+                    "You are using multiple output formats, this will increase many time, please be patient.(您正在使用多个输出格式，这将增加很多时间，请耐心等待。)"
+                )
+            else:
+                output_formats = [output_format]
+        else:
+            raise ValueError("Invalid output format, should be a string.")
 
-        output_format = output_format.value
+        for fmt in output_formats:
+            fmt = OutputFormat(fmt)
+            if isinstance(fmt, OutputFormat):
+                fmt = fmt.value
 
         # Track total pages and last request time
         total_pages = 0
@@ -288,41 +298,51 @@ class Doc2X:
                 return
 
             uid, texts, locations = parse_results[index]
+            all_results = []
+
             try:
-                if output_format in ["md", "md_dollar", "tex", "docx"]:
-                    nonlocal last_request_time
-                    # Wait for request interval
-                    current_time = time.time()
-                    if current_time - last_request_time < self.request_interval:
-                        await asyncio.sleep(
-                            self.request_interval - (current_time - last_request_time)
+                for fmt in output_formats:
+                    if fmt in ["md", "md_dollar", "tex", "docx"]:
+                        nonlocal last_request_time
+                        # Wait for request interval
+                        current_time = time.time()
+                        if current_time - last_request_time < self.request_interval:
+                            await asyncio.sleep(
+                                self.request_interval
+                                - (current_time - last_request_time)
+                            )
+
+                        async with page_lock:
+                            last_request_time = time.time()
+
+                        result = await convert_to_format(
+                            apikey=self.apikey,
+                            uid=uid,
+                            output_format=fmt,
+                            output_path=output_path,
+                            output_name=f"{name}_{fmt}" if name else None,
+                            max_time=self.max_time,
                         )
-
-                    async with page_lock:
-                        last_request_time = time.time()
-
-                    result = await convert_to_format(
-                        apikey=self.apikey,
-                        uid=uid,
-                        output_format=output_format,
-                        output_path=output_path,
-                        output_name=name,
-                        max_time=self.max_time,
-                    )
-                else:
-                    if output_format == "texts":
-                        result = texts
-                    elif output_format == "text":
-                        result = "\n".join(texts)
-                    elif output_format == "detailed":
-                        result = [
-                            {"text": text, "location": loc}
-                            for text, loc in zip(texts, locations)
-                        ]
+                        all_results.append(result)
+                        # Wait 35 seconds between formats
+                        if fmt != output_formats[-1]:
+                            logger.info(
+                                f"Due to the rate limit, waiting 35 seconds before converting to the next format for {name}."
+                            )
+                            await asyncio.sleep(35)
                     else:
-                        raise ValueError(f"Unsupported output format: {output_format}")
+                        if fmt == "texts":
+                            result = texts
+                        elif fmt == "text":
+                            result = "\n".join(texts)
+                        elif fmt == "detailed":
+                            result = [
+                                {"text": text, "location": loc}
+                                for text, loc in zip(texts, locations)
+                            ]
+                        all_results.append(result)
 
-                results[index] = (result, "", True)
+                results[index] = (all_results, "", True)
             except asyncio.TimeoutError:
                 results[index] = (
                     "",
