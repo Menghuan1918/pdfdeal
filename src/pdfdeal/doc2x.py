@@ -101,7 +101,6 @@ async def convert_to_format(
 
     logger.info(f"Converting {uid} to {output_format}...")
     status, url = await convert_parse(apikey, uid, output_format)
-
     for _ in range(max_time // 3):
         if status == "Success":
             logger.info(f"Downloading {uid} {output_format} file to {output_path}...")
@@ -183,7 +182,10 @@ class Doc2X:
         if isinstance(pdf_file, str):
             if os.path.isdir(pdf_file):
                 pdf_file, output_names = get_files(
-                    path=pdf_file, mode="pdf", out=output_format
+                    # 实际上由于文件后缀名是在下载阶段才确定的，所以这里的后缀名是无效的，只是为了向上兼容
+                    path=pdf_file,
+                    mode="pdf",
+                    out="md_dollar",
                 )
             else:
                 pdf_file = [pdf_file]
@@ -235,15 +237,15 @@ class Doc2X:
             try:
                 page_count = get_pdf_page_count(pdf)
             except RequestError as e:
-                results[index] = ("", str(e), False)
-                logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
+                results[index] = ("", str(e), True)
+                logger.warning(f"Skiping {pdf}: {str(e)}")
                 return
             except Exception as e:
                 logger.warning(f"Failed to get page count for {pdf}: {str(e)}")
                 page_count = self.max_pages - 1  #! Assume the worst case
             if page_count > self.max_pages:
                 logger.warning(f"File {pdf} has too many pages, skipping.")
-                results[index] = ("", "File has too many pages", False)
+                results[index] = ("", "File has too many pages", True)
                 return
 
             nonlocal total_pages, last_request_time
@@ -285,10 +287,10 @@ class Doc2X:
                     results[index] = (
                         "",
                         "Operation timed out, this may be a rate limit issue or network issue, try to reduce the number of threads.",
-                        False,
+                        True,
                     )
                 except Exception as e:
-                    results[index] = ("", str(e), False)
+                    results[index] = ("", str(e), True)
             finally:
                 async with page_lock:
                     total_pages -= page_count
@@ -321,7 +323,7 @@ class Doc2X:
                             uid=uid,
                             output_format=fmt,
                             output_path=output_path,
-                            output_name=f"{name}_{fmt}" if name else None,
+                            output_name=name,
                             max_time=self.max_time,
                         )
                         all_results.append(result)
@@ -329,7 +331,7 @@ class Doc2X:
                         # Wait 35 seconds between formats
                         if fmt != output_formats[-1]:
                             logger.info(
-                                f"Due to the rate limit, waiting 35 seconds before converting to the next format for {name}."
+                                f"Due to the rate limit, waiting 35 seconds before converting {pdf_file[index]} to the{fmt} format."
                             )
                             await asyncio.sleep(35)
                     else:
@@ -394,15 +396,7 @@ class Doc2X:
             logger.info(f"Convert tasks done with {max_threads} threads.")
         success_files = []
         for r in results:
-            if r and r[2]:
-                # 处理多个格式的情况
-                if isinstance(r[0], list):
-                    success_files.extend(r[0])
-                # 处理单个格式的情况
-                else:
-                    success_files.append(r[0])
-            else:
-                success_files.append("")
+            success_files.append(r[0])
 
         failed_files = []
         for r, pdf in zip(results, pdf_file):
@@ -412,28 +406,27 @@ class Doc2X:
                 failed_files.append({"error": r[1], "path": ""})
         has_error = any(r[2] for r in results if r)
         if has_error:
-            error_count = sum(1 for r in results if r and r[2])
             logger.error(
-                f"Failed to convert {error_count} file(s), please enable DEBUG mode to check or read the output variable."
+                f"Failed to convert {sum(1 for r in results if r and r[2])} file(s), please enable DEBUG mode to check or read the output variable."
             )
             if self.debug:
                 if has_error:
-                    print("=" * 10)
+                    print("=====================")
                     for fail in failed_files:
                         if isinstance(fail["error"], list):
                             for e in fail["error"]:
                                 if e != "":
-                                    print(f"Failed to convert {fail['path']}: {e}")
-                            print("=" * 10)
+                                    print(
+                                        f"Failed to convert {fail['path']}: {e}\n====================="
+                                    )
                         else:
                             if fail["error"] != "":
                                 print(
-                                    f"Failed to convert {fail['path']}: {fail['error']}"
+                                    f"Failed to convert {fail['path']}: {fail['error']}\n====================="
                                 )
-                                print("=" * 10)
 
         logger.info(
-            f"Successfully converted {sum(1 for r in results if r and r[2])} file(s) and failed to convert {error_count} file(s)."
+            f"Successfully converted {sum(1 for r in results if r and not r[2])} file(s) and failed to convert {sum(1 for r in results if r and r[2])} file(s)."
         )
         return success_files, failed_files, has_error
 
