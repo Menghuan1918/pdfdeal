@@ -63,6 +63,7 @@ def test_all_fail_pdf2file():
     print(failed)
     print(flag)
 
+
 def test_multiple_outtypes():
     client = Doc2X(debug=True, thread=1)
     success, failed, flag = client.pdf2file(
