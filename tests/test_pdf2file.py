@@ -62,3 +62,22 @@ def test_all_fail_pdf2file():
     print(success)
     print(failed)
     print(flag)
+
+
+def test_multiple_outtypes():
+    client = Doc2X(debug=True, thread=1)
+    success, failed, flag = client.pdf2file(
+        pdf_file="tests/pdf/sample.pdf",
+        output_path="./Output/test/multiple_outtypes/pdf2file",
+        output_names=[["sample1.docx", "sample2.zip"]],
+        output_format="docx,md",
+    )
+    assert len(success) == 1
+    assert len(failed) == 1
+    for s in success:
+        if isinstance(s, list):
+            for i in s:
+                assert i.endswith("sample1.docx") or i.endswith("sample2.zip")
+    print(success)
+    print(failed)
+    print(flag)

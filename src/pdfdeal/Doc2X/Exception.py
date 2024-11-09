@@ -4,6 +4,7 @@ import time
 import sys
 from concurrent.futures import ThreadPoolExecutor
 import logging
+from httpx import RemoteProtocolError, ConnectError, ConnectTimeout
 
 
 async def code_check(code: str, uid: str = None, trace_id: str = None):
@@ -126,6 +127,17 @@ def async_retry(max_retries=2, backoff_factor=2, timeout=60):
                         f"Error in '{func.__name__}': {type(e).__name__} - {e}"
                     )
                     raise
+                except (RemoteProtocolError, ConnectError, ConnectTimeout) as e:
+                    if retries == max_retries:
+                        logging.error(
+                            f"Error in '{func.__name__}': {type(e).__name__} - {e}"
+                        )
+                        raise
+                    wait_time = backoff_factor**retries
+                    logging.warning(
+                        f"{type(e).__name__}, this is most likely a network link issue, if this problem occurs frequently check your network environment (e.g. turn off your VPN, check your DNS seeting), will retry in {wait_time} seconds..."
+                    )
+                    await asyncio.sleep(wait_time)
                 except Exception as e:
                     if isinstance(e, RequestError):
                         logging.error(str(e))
