@@ -298,12 +298,18 @@ class Doc2X:
         async def convert_file(index, name):
             if parse_results[index] is None:
                 return
-
             uid, texts, locations = parse_results[index]
             all_results = []
             all_errors = []
 
-            for fmt in output_formats:
+            for name_index, fmt in enumerate(output_formats):
+                if isinstance(name, list):
+                    try:
+                        name_fmt = name[name_index]
+                    except IndexError:
+                        name_fmt = name[-1]
+                else:
+                    name_fmt = name
                 try:
                     if fmt in ["md", "md_dollar", "tex", "docx"]:
                         nonlocal last_request_time
@@ -323,7 +329,7 @@ class Doc2X:
                             uid=uid,
                             output_format=fmt,
                             output_path=output_path,
-                            output_name=name,
+                            output_name=name_fmt,
                             max_time=self.max_time,
                         )
                         all_results.append(result)
