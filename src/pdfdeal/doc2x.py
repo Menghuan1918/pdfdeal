@@ -334,12 +334,12 @@ class Doc2X:
                         )
                         all_results.append(result)
                         all_errors.append("")
-                        # Wait 35 seconds between formats
+                        # Wait 5 seconds between formats
                         if fmt != output_formats[-1]:
                             logger.info(
-                                f"Due to the rate limit, waiting 35 seconds before converting {pdf_file[index]} to the{fmt} format."
+                                f"Due to the rate limit, waiting 5 seconds before converting {pdf_file[index]} to the{fmt} format."
                             )
-                            await asyncio.sleep(35)
+                            await asyncio.sleep(5)
                     else:
                         if fmt == "texts":
                             result = texts
