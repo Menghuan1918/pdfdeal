@@ -1,11 +1,5 @@
-
-
 import os
 from minio import Minio, S3Error
-
-
-# MinIO使用bucket（桶）来组织对象。
-# bucket类似于文件夹或目录，其中每个bucket可以容纳任意数量的对象。
 class MINIO:
 
     def __init__(self, minio_address, minio_admin, minio_password, bucket_name):
@@ -32,7 +26,6 @@ class MINIO:
         check_bucket = self.minioClient.bucket_exists(self.bucket_name)
         if not check_bucket:
             self.minioClient.make_bucket(self.bucket_name)
-
         try:
             path, file_name = os.path.split(local_file_path)
             self.minioClient.fput_object(bucket_name=self.bucket_name,
@@ -45,7 +38,7 @@ class MINIO:
         except S3Error as err:
             print("upload_failed:", err)
 
-def MiN(minio_address, minio_admin, minio_password, bucket_name) -> callable:
+def Min(minio_address, minio_admin, minio_password, bucket_name) -> callable:
         Min_uploader = MINIO(
         minio_address = minio_address,
         minio_admin = minio_admin,
