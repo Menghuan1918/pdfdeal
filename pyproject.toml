@@ -1,6 +1,6 @@
 [project]
 name = "pdfdeal"
-version = "0.4.9"
+version = "0.4.10"
 authors = [{ name = "Menghuan1918", email = "menghuan@menghuan1918.com" }]
 description = "A python wrapper for the Doc2X API and comes with native texts processing (to improve texts recall in RAG)."
 readme = "README.md"
@@ -13,8 +13,26 @@ classifiers = [
 dependencies = ["httpx[http2]>=0.23.1, <1", "pypdf"]
 
 [project.optional-dependencies]
-rag = ["emoji", "Pillow", "reportlab", "oss2", "boto3", "minio"]
-dev = ["pytest", "emoji", "Pillow", "reportlab", "oss2", "boto3", "minio"]
+tools = ["emoji", "Pillow", "reportlab", "beautifulsoup4"]
+rag = [
+    "emoji",
+    "Pillow",
+    "reportlab",
+    "oss2",
+    "boto3",
+    "minio",
+    "beautifulsoup4",
+]
+dev = [
+    "pytest",
+    "emoji",
+    "Pillow",
+    "reportlab",
+    "oss2",
+    "boto3",
+    "minio",
+    "beautifulsoup4",
+]
 
 [project.urls]
 Issues = "https://github.com/Menghuan1918/pdfdeal/issues"

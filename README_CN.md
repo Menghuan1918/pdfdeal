@@ -40,6 +40,17 @@
 
 对 PDF 使用 Doc2X 转换并预处理后，与知识库应用程序（例如[graphrag](https://github.com/microsoft/graphrag)，[Dify](https://github.com/langgenius/dify)，[FastGPT](https://github.com/labring/FastGPT)），可以显著提升召回率。
 
+### Markdown 文档处理功能
+
+`pdfdeal` 也提供了一系列强大的工具来处理 Markdown 文档：
+
+- **HTML 表格转换为 Markdown 格式**：可以将 HTML 格式的表格转换为 Markdown 格式，方便在 Markdown 文档中使用。
+- **图片上传到远端储存服务**：支持将 Markdown 文档中的本地或在线图片上传到远端储存服务，确保图片的持久性和可访问性。
+- **在线图片转换为本地图片**：可以将 Markdown 文档中的在线图片下载并转换为本地图片，便于离线使用。
+- **文档拆分与分隔符添加**：支持按照标题拆分 Markdown 文档或在文档中添加分隔符，以便于文档的组织和管理。
+
+详细功能介绍和使用方法请参见[文档链接](https://menghuan1918.github.io/pdfdeal-docs/zh/guide/Tools/)。
+
 ## 案例
 
 ### graphrag

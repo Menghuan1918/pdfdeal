@@ -2,6 +2,7 @@ import re
 from typing import Tuple, Callable
 import httpx
 import os
+import hashlib
 from ..Doc2X.Exception import nomal_retry
 import concurrent.futures
 import logging
@@ -59,6 +60,7 @@ def md_replace_imgs(
     outputpath: str = "",
     relative: bool = False,
     threads: int = 5,
+    path_style: bool = False,
 ) -> bool:
     """Replace the image links in the markdown file (cdn links -> local file).
 
@@ -69,6 +71,7 @@ def md_replace_imgs(
         outputpath (str, optional): The output path to save the images, if not set, will create a folder named as same as the markdown file name and add `_img`. **⚠️Only works when `replace` is "local".**
         relative (bool, optional): The output path to save the images with relative path. Defaults to False. **⚠️Only works when `replace` is "local".**
         threads (int, optional): The number of threads to download the images. Defaults to 5.
+        path_style (bool, optional): Whether to use path style when uploading to OSS. If True, the path will be /{filename}/{md5}.{extension}. Defaults to False.
 
     Returns:
         bool: If all images are downloaded successfully, return True, else return False.
@@ -115,7 +118,7 @@ def md_replace_imgs(
                 return (imglist[i], f"![{imgurl}](<{savepath}>)\n")
         except Exception as e:
             logging.warning(
-                f"Error to download the image: {imgurl}, continue to download the next image:\n {e}"
+                f"Error to download the image: {imgurl}, keep original url:\n {e}"
             )
             return None
 
@@ -137,13 +140,12 @@ def md_replace_imgs(
             if result:
                 replacements.append(result)
 
-    flag = True
     for old, new in replacements:
         content = content.replace(old, new)
 
     if len(replacements) < len(imglist):
         logging.info(
-            "Some images may not be downloaded successfully. Please check the log."
+            "Some images were not downloaded successfully. Original URLs have been kept."
         )
         flag = False
 
@@ -158,21 +160,27 @@ def md_replace_imgs(
             if os.path.isabs(img_path) is False:
                 img_path = os.path.join(os.path.dirname(mdfile), img_path)
             try:
-                remote_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{os.path.basename(img_path)}"
+                if path_style:
+                    with open(img_path, "rb") as f:
+                        file_md5 = hashlib.md5(f.read()).hexdigest()
+                    file_ext = os.path.splitext(img_path)[1]
+                    remote_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}/{file_md5}{file_ext}"
+                else:
+                    remote_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{os.path.basename(img_path)}"
                 new_url, flag = replace(img_path, remote_file_name)
                 if flag:
                     img_url = f"![{os.path.splitext(os.path.basename(mdfile))[0]}](<{new_url}>)\n"
                     return img_url, True, i
                 else:
                     logging.error(
-                        f"Error to upload the image: {img_path}, {new_url}, continue to upload the next image."
+                        f"Error to upload the image: {img_path}, {new_url}, keeping original path."
                     )
                     return new_url, False, i
             except Exception:
                 logging.exception(
-                    f"=====\nError to upload the image: {img_path}, Continue to upload the next image:"
+                    f"=====\nError to upload the image: {img_path}, keeping original path:"
                 )
-                return new_url, False, i
+                return None, False, i
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
             futures = [
@@ -187,18 +195,20 @@ def md_replace_imgs(
                     pass
                 else:
                     logging.warning(
-                        f"=====\nError to upload the image: {imgpath[i]}, {new_url}, continue to upload the next image."
+                        f"=====\nError to upload the image: {imgpath[i]}, keeping original path."
                     )
                     flag = False
 
         if no_outputppath_flag:
-            for img in imgpath:
+            for i, img in enumerate(imgpath):
                 try:
-                    os.remove(img)
+                    if futures[i].result()[1]:
+                        os.remove(img)
                 except Exception:
                     pass
             try:
-                os.rmdir(outputpath)
+                if not os.listdir(outputpath):
+                    os.rmdir(outputpath)
             except Exception as e:
                 logging.error(f"\nError to remove the folder: {outputpath}, {e}")
 
@@ -217,6 +227,7 @@ def mds_replace_imgs(
     skip: str = None,
     threads: int = 2,
     down_load_threads: int = 3,
+    path_style: bool = False,
 ) -> Tuple[list, list, bool]:
     """Replace the image links in the markdown file (cdn links -> local file).
 
@@ -228,6 +239,7 @@ def mds_replace_imgs(
         skip (str, optional): The URL start with this string will be skipped. Defaults to None. For example, "https://menghuan1918.github.io/pdfdeal-docs".
         threads (int, optional): The number of threads to download the images. Defaults to 2.
         down_load_threads (int, optional): The number of threads to download the images in one md file. Defaults to 3.
+        path_style (bool, optional): Whether to use path style when uploading to OSS. If True, the path will be /{filename}/{md5}.{extension}. Defaults to False.
 
     Returns:
         Tuple[list, list, bool]:
@@ -260,6 +272,7 @@ def mds_replace_imgs(
                 relative=relative,
                 skip=skip,
                 threads=down_load_threads,
+                path_style=path_style,
             )
             return mdfile, None
         except Exception as e:

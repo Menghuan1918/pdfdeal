@@ -6,6 +6,7 @@ from .FileTools.file_tools import (
     unzips,
 )
 from .FileTools.extract_img import md_replace_imgs, mds_replace_imgs
+from .FileTools.html2md import html_table_to_md
 
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "mds_replace_imgs",
     "auto_split_md",
     "auto_split_mds",
+    "html_table_to_md",
 ]
