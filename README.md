@@ -39,6 +39,18 @@ Use various OCR or PDF recognition tools to identify images and add them to the 
 
 After conversion and pre-processing of PDF using Doc2X, you can achieve better recognition rates when used with knowledge base applications such as [graphrag](https://github.com/microsoft/graphrag), [Dify](https://github.com/langgenius/dify), and [FastGPT](https://github.com/labring/FastGPT).
 
+### Markdown Document Processing Features
+
+`pdfdeal` also provides a series of powerful tools to handle Markdown documents:
+
+- **Convert HTML tables to Markdown format**: Allows conversion of HTML formatted tables to Markdown format for easy use in Markdown documents.
+- **Upload images to remote storage services**: Supports uploading local or online images in Markdown documents to remote storage services to ensure image persistence and accessibility.
+- **Convert online images to local images**: Allows downloading and converting online images in Markdown documents to local images for offline use.
+- **Document splitting and separator addition**: Supports splitting Markdown documents by headings or adding separators within documents for better organization and management.
+
+For detailed feature introduction and usage, please refer to the [documentation link](https://menghuan1918.github.io/pdfdeal-docs/guide/Tools/).
+
+
 ## Cases
 
 ### graphrag
