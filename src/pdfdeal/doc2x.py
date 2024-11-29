@@ -126,7 +126,7 @@ class Doc2X:
         thread: int = 5,
         max_pages: int = 1000,
         retry_time: int = 5,
-        max_time: int = 90,
+        max_time: int = 300,
         debug: bool = False,
         full_speed: bool = False,
     ) -> None:
@@ -138,7 +138,7 @@ class Doc2X:
             thread (int, optional): The maximum number of concurrent threads at same time. Defaults to 5.
             max_pages (int, optional): The maximum number of pages to process at same time. Defaults to 1000.
             retry_time (int, optional): The number of retry attempts. Defaults to 5.
-            max_time (int, optional): The maximum time (in seconds) to wait for a response. Defaults to 90.
+            max_time (int, optional): The maximum time (in seconds) to wait for a response. Defaults to 300.
             debug (bool, optional): Whether to enable debug logging. Defaults to False.
             full_speed (bool, optional): **Experimental function**. Whether to enable automatic sniffing of the concurrency limit. Defaults to False.
 
@@ -229,7 +229,7 @@ class Doc2X:
         max_threads = self.thread
 
         if full_speed:
-            self.max_time = 180
+            self.max_time = 600
             self.retry_time = 10
             self.request_interval = 0.01
 
