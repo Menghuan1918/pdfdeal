@@ -6,6 +6,7 @@ import hashlib
 from ..Doc2X.Exception import nomal_retry
 import concurrent.futures
 import logging
+import uuid
 
 
 def get_imgcdnlink_list(text: str) -> Tuple[list, list]:
@@ -162,7 +163,7 @@ def md_replace_imgs(
                 img_path = os.path.join(os.path.dirname(mdfile), img_path)
             try:
                 if uuid_rename:
-                    new_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{os.path.basename(img_path)}"
+                    new_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{str(uuid.uuid4())}_{os.path.basename(img_path)}"
                     new_local_path = os.path.join(os.path.dirname(img_path), new_file_name.replace('/', '_'))
                     try:
                         os.rename(img_path, new_local_path)
