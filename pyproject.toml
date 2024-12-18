@@ -1,6 +1,6 @@
 [project]
 name = "pdfdeal"
-version = "1.0.0"
+version = "1.0.1"
 authors = [{ name = "Menghuan1918", email = "menghuan@menghuan1918.com" }]
 description = "A python wrapper for the Doc2X API and comes with native texts processing (to improve texts recall in RAG)."
 readme = "README.md"
@@ -22,7 +22,6 @@ rag = [
     "boto3",
     "minio",
     "beautifulsoup4",
-    "marker-pdf"
 ]
 dev = [
     "pytest",
