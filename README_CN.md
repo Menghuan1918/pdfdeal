@@ -125,4 +125,44 @@ print(failed)
 print(flag)
 ```
 
+### 使用Marker PDF处理PDF文件并导出到指定文件夹
+```python
+from pdfdeal.MarkerPDF import markerPDF
+
+# 基本使用（无上传器）
+marker = MarkerPDF("input_folder", "output_folder")
+result = marker.convert()
+
+# 使用 AliOSS 上传器的完整配置
+marker = MarkerPDF(
+    input_dir="input_folder",
+    output_dir="output_folder",
+    uploader_config={
+        'type': 'alioss',
+        'access_key_id': 'your_key_id',
+        'access_key_secret': 'your_key_secret',
+        'endpoint': 'your_endpoint',
+        'bucket': 'your_bucket'
+    },
+    qps=2000, #提供对上传器API querys per second per thread的限制功能
+    threads=10,
+    steps_to_run=[1, 3],
+    process_each=True
+)
+result = marker.convert()
+
+# 使用 PicGO 上传器
+marker = MarkerPDF(
+    input_dir="input_folder",
+    output_dir="output_folder",
+    uploader_config={
+        'type': 'picgo',
+        'endpoint': 'http://127.0.0.1:36677'
+    },
+    process_each=True
+)
+result = marker.convert()
+
+```
+
 更多详细请参见在线文档。

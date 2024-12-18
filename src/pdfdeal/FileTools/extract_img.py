@@ -6,6 +6,7 @@ import hashlib
 from ..Doc2X.Exception import nomal_retry
 import concurrent.futures
 import logging
+import uuid
 
 
 def get_imgcdnlink_list(text: str) -> Tuple[list, list]:
@@ -61,6 +62,7 @@ def md_replace_imgs(
     relative: bool = False,
     threads: int = 5,
     path_style: bool = False,
+    uuid_rename: bool = False
 ) -> bool:
     """Replace the image links in the markdown file (cdn links -> local file).
 
@@ -72,7 +74,7 @@ def md_replace_imgs(
         relative (bool, optional): The output path to save the images with relative path. Defaults to False. **⚠️Only works when `replace` is "local".**
         threads (int, optional): The number of threads to download the images. Defaults to 5.
         path_style (bool, optional): Whether to use path style when uploading to OSS. If True, the path will be /{filename}/{md5}.{extension}. Defaults to False.
-
+        uuid_rename (bool, optioonal): Rename the file with uuid if need
     Returns:
         bool: If all images are downloaded successfully, return True, else return False.
     """
@@ -160,6 +162,14 @@ def md_replace_imgs(
             if os.path.isabs(img_path) is False:
                 img_path = os.path.join(os.path.dirname(mdfile), img_path)
             try:
+                if uuid_rename:
+                    new_file_name = f"{os.path.splitext(os.path.basename(mdfile))[0]}_{str(uuid.uuid4())}_{os.path.basename(img_path)}"
+                    new_local_path = os.path.join(os.path.dirname(img_path), new_file_name.replace('/', '_'))
+                    try:
+                        os.rename(img_path, new_local_path)
+                        img_path = new_local_path  # 更新img_path为新的路径
+                    except Exception as e:
+                        logging.warning(f"Failed to rename file {img_path} to {new_local_path}: {e}")
                 if path_style:
                     with open(img_path, "rb") as f:
                         file_md5 = hashlib.md5(f.read()).hexdigest()
@@ -228,6 +238,7 @@ def mds_replace_imgs(
     threads: int = 2,
     down_load_threads: int = 3,
     path_style: bool = False,
+    uuid_raname: bool = False
 ) -> Tuple[list, list, bool]:
     """Replace the image links in the markdown file (cdn links -> local file).
 
@@ -273,6 +284,7 @@ def mds_replace_imgs(
                 skip=skip,
                 threads=down_load_threads,
                 path_style=path_style,
+                uuid_rename=uuid_raname
             )
             return mdfile, None
         except Exception as e:

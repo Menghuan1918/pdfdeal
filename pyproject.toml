@@ -22,6 +22,7 @@ rag = [
     "boto3",
     "minio",
     "beautifulsoup4",
+    "marker-pdf"
 ]
 dev = [
     "pytest",
