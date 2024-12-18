@@ -317,7 +317,7 @@ def list_rename(files: list, new_name: list) -> list:
 
 def auto_split_md(
     mdfile: str,
-    mode: str = "title",
+    mode: str = "auto",
     out_type: str = "single",
     split_str: str = "=+=+=+=+=+=+=+=+=",
     output_path: str = "./Output",
@@ -326,7 +326,7 @@ def auto_split_md(
 
     Args:
         mdfile (str): The path to md file
-        mode (str, optional): The way to split. **Only support `title`(split by every title) now.** Defaults to "title".
+        mode (str, optional): The way to split. Support `auto`, `H1`, `H2`, `H3`. Defaults to "auto".
         out_type (str, optional): The way to output the splited file. Support `single`(one file) ,`replace`(replace the original file) and `multi`(multiple files) now. Defaults to "single".
         split_str (str, optional): The string to split the md file. Defaults to `=+=+=+=+=+=+=+=+=`.
         output_path (str, optional): The path to output the splited file. Defaults to "./Output". Not work when `out_type` is `replace`.
@@ -339,9 +339,8 @@ def auto_split_md(
     elif os.path.isdir(mdfile):
         raise IsADirectoryError(f"The path {mdfile} is a directory.")
 
-    #! In the future, will support more modes.
     try:
-        new_content = split_of_md(mdfile=mdfile, mode="title")
+        new_content = split_of_md(mdfile=mdfile, mode=mode)
     except Exception as e:
         logging.exception(f"Error deal with {mdfile} :")
         return f"Error deal with {mdfile} : {e}", False
@@ -380,7 +379,7 @@ def auto_split_md(
 
 def auto_split_mds(
     mdpath: str,
-    mode: str = "title",
+    mode: str = "auto",
     out_type: str = "single",
     split_str: str = "=+=+=+=+=+=+=+=+=",
     output_path: str = "./Output",
@@ -390,7 +389,7 @@ def auto_split_mds(
 
     Args:
         mdpath (str): The path to the folder containing md files
-        mode (str, optional): The way to split. **Only support `title`(split by every title) now.** Defaults to "title".
+        mode (str, optional): The way to split. Support `auto`, `H1`, `H2`, `H3`. Defaults to "auto".
         out_type (str, optional): The way to output the splited file. Support `single`(one file) ,`replace`(replace the original file) and `multi`(multiple files) now. Defaults to "single".
         split_str (str, optional): The string to split the md file. Defaults to `=+=+=+=+=+=+=+=+=`.
         output_path (str, optional): The path to output the splited file. Defaults to "./Output". Not work when `out_type` is `replace`.
