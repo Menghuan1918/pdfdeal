@@ -65,42 +65,4 @@ def split_of_md(mdfile: str, mode: str = "auto") -> list:
         segments.append(content[start:end].strip())
         start = end
     segments.append(content[start:].strip())
-
-    # Process segments to include H1 and H2 titles and split into chunks
-    final_segments = []
-    h1_title = ""
-    h2_title = ""
-    for segment in segments:
-        # Check if this segment is an H1 or H2 header
-        if re.match(patterns["H1"], segment):
-            h1_title = segment.lstrip("#").strip()
-            h2_title = ""
-        elif re.match(patterns["H2"], segment):
-            h2_title = segment.lstrip("#").strip()
-        else:
-            # It's a content segment
-            if h2_title:
-                prefix = f"H1: {h1_title}, H2: {h2_title}\n"
-            elif h1_title:
-                prefix = f"H1: {h1_title}\n"
-            else:
-                prefix = ""
-
-            # Split the content into chunks of ~640 characters, ending at punctuation
-            chunk = prefix + segment
-            while len(chunk) > 640:
-                # Try to find the last punctuation within the first 640 characters
-                end = 640
-                while end > 0 and chunk[end] not in "。；？！.?;!>":
-                    end -= 1
-
-                # If no punctuation found, force split at 640
-                if end == 0:
-                    end = 640
-
-                final_segments.append(chunk[:end].strip())
-                chunk = chunk[end:].lstrip()
-            if chunk:
-                final_segments.append(chunk.strip())
-
-    return final_segments
+    return segments
