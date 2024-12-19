@@ -243,7 +243,7 @@ def mds_replace_imgs(
     threads: int = 2,
     down_load_threads: int = 3,
     path_style: bool = False,
-    uuid_raname: bool = False,
+    uuid_rename: bool = False,
 ) -> Tuple[list, list, bool]:
     """Replace the image links in the markdown file (cdn links -> local file).
 
@@ -256,7 +256,7 @@ def mds_replace_imgs(
         threads (int, optional): The number of threads to download the images. Defaults to 2.
         down_load_threads (int, optional): The number of threads to download the images in one md file. Defaults to 3.
         path_style (bool, optional): Whether to use path style when uploading to OSS. If True, the path will be /{filename}/{md5}.{extension}. Defaults to False.
-        uuid_raname (bool, optioonal): Rename the file with uuid if need, Defaults to False.
+        uuid_rename (bool, optioonal): Rename the file with uuid if need, Defaults to False.
 
     Returns:
         Tuple[list, list, bool]:
@@ -290,7 +290,7 @@ def mds_replace_imgs(
                 skip=skip,
                 threads=down_load_threads,
                 path_style=path_style,
-                uuid_rename=uuid_raname,
+                uuid_rename=uuid_rename,
             )
             return mdfile, None
         except Exception as e:
